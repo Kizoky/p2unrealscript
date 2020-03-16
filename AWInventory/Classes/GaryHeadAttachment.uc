@@ -1,0 +1,10 @@
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+class GaryHeadAttachment extends P2WeaponAttachment;
+
+defaultproperties
+{
+     WeapClass=Class'AWInventory.GaryHeadWeapon'
+     RelativeLocation=(Y=1.000000,Z=-0.300000)
+     RelativeRotation=(Roll=32768)
+}

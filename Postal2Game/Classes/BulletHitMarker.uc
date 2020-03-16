@@ -1,0 +1,13 @@
+///////////////////////////////////////////////////////////////////////////////
+// A bullet (pistol, shotgun, not rockets) has hits this spot.
+///////////////////////////////////////////////////////////////////////////////
+class BulletHitMarker extends TimedMarker;
+
+defaultproperties
+{
+	CollisionRadius=1024
+	CollisionHeight=512
+//	UseLifeMax=2.0
+	Priority=5
+	bCreatorIsAttacker=true
+}

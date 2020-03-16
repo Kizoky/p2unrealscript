@@ -1,0 +1,13 @@
+///////////////////////////////////////////////////////////////////////////////
+// DeadCatHitGuyMarker
+//
+//  a flying, dead cat (shot off a gun) hit some guy--tell everyone! it's funny!
+///////////////////////////////////////////////////////////////////////////////
+class DeadCatHitGuyMarker extends TimedMarker;
+
+defaultproperties
+{
+	CollisionRadius=2048
+	CollisionHeight=1024
+	Priority=7
+}

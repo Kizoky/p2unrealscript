@@ -1,0 +1,32 @@
+///////////////////////////////////////////////////////////////////////////////
+// ErrandGoalUrineQuotaMet
+// Copyright 2002 Running With Scissors, Inc.  All Rights Reserved.
+//
+// Errand goal that requires a UrineRecorder to have
+// reported that enough urine has hit it
+//
+///////////////////////////////////////////////////////////////////////////////
+class ErrandGoalUrineQuotaMet extends ErrandGoal;
+
+///////////////////////////////////////////////////////////////////////////////
+// Vars
+///////////////////////////////////////////////////////////////////////////////
+var ()name UrineRecorderTag;	// Tag of actor (probably a UrineRecorder trigger)
+							// that has said enough urine has hit it to finish an errand
+
+///////////////////////////////////////////////////////////////////////////////
+// Check to see if this errand is done
+///////////////////////////////////////////////////////////////////////////////
+function bool CheckForCompletion(Actor Other, Actor Another, Pawn ActionPawn)
+{
+	// Check if it's the right thing that needs to be hit by urine
+	if(Other != None
+		&& Other.Tag == UrineRecorderTag)
+			return true;
+
+	return false;
+}
+
+defaultproperties
+{
+}

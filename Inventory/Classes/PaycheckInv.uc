@@ -1,0 +1,41 @@
+///////////////////////////////////////////////////////////////////////////////
+// PaycheckInv
+// Copyright 2002 Running With Scissors, Inc.  All Rights Reserved.
+//
+// Paycheck inventory item.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+class PaycheckInv extends OwnedInv;
+
+///////////////////////////////////////////////////////////////////////////////
+// Active state: this inventory item is armed and ready to rock!
+///////////////////////////////////////////////////////////////////////////////
+state Activated
+{
+Begin:
+	CheckToGiveToInterest();
+	GotoState('');
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Default properties
+///////////////////////////////////////////////////////////////////////////////
+defaultproperties
+	{
+	PickupClass=class'PaycheckPickup'
+	Icon=Texture'HUDPack.Icon_Inv_Paycheck'
+	InventoryGroup=102
+	GroupOffset=1
+	PowerupName="Paycheck"
+	PowerupDesc="Cash this at the Bank."
+	bPaidFor=false
+	LegalOwnerTag="Jenny"
+	UseForErrands=1
+
+	Hint1="Press %KEY_InventoryActivate% to hand it over."
+	Hint2="Head to the bank."
+	Hint3=""
+	bUsePaidHints=false
+	bUseCashierHints=true
+	}

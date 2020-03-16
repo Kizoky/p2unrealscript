@@ -1,0 +1,13 @@
+///////////////////////////////////////////////////////////////////////////////
+// PistolBulletSplat.
+// Bullet hole
+///////////////////////////////////////////////////////////////////////////////
+class PistolBulletSplat extends Splat;
+
+defaultproperties
+{
+	MaterialBlendingOp=PB_None
+	FrameBufferBlendingOp=PB_AlphaBlend
+	ProjTexture=Material'nathans.skins.pistolhitblend'
+	DrawScale=0.15
+}

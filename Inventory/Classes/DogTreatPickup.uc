@@ -1,0 +1,23 @@
+///////////////////////////////////////////////////////////////////////////////
+// DogTreatPickup
+// Copyright 2002 Running With Scissors, Inc.  All Rights Reserved.
+//
+// A doggie treat
+// 
+///////////////////////////////////////////////////////////////////////////////
+
+class DogTreatPickup extends OwnedPickup;
+
+///////////////////////////////////////////////////////////////////////////////
+// Default properties
+///////////////////////////////////////////////////////////////////////////////
+defaultproperties
+	{
+	InventoryType=class'DogTreatInv'
+	PickupMessage="You picked up a Doggie Treat."
+	DrawType=DT_StaticMesh
+	StaticMesh=StaticMesh'stuff.stuff1.DogTreat'
+	bEdible=true
+	DesireMarkerClass=class'OtherFoodMarker'
+	BounceSound=Sound'MiscSounds.PickupSounds.BookDropping'
+	}

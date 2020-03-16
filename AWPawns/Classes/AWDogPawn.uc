@@ -1,0 +1,13 @@
+///////////////////////////////////////////////////////////////////////////////
+// AWDogPawn for Postal 2 AW
+//
+// Copyright 2004 Running With Scissors, Inc.  All Rights Reserved.
+//
+///////////////////////////////////////////////////////////////////////////////
+class AWDogPawn extends DogPawn;
+
+defaultproperties
+{
+     ControllerClass=Class'AWDogController'
+     Skins(0)=Texture'AnimalSkins.Dog'
+}

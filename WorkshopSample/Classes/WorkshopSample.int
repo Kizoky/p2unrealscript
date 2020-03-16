@@ -1,0 +1,13 @@
+; Sample Workshop INT file
+; This is an example of how to format your INT files for Workshop.
+; Remember, your INT file must be in POSTAL2Editor\System when testing!
+
+[Public]
+Object=(Name=WorkshopSample.FastBystanders,Class=Class,MetaClass=Postal2Game.P2GameMod)
+Object=(Name=WorkshopSample.CatMode,Class=Class,MetaClass=Postal2Game.P2GameMod)
+Object=(Name=WorkshopSample.GoldenGun,Class=Class,MetaClass=Postal2Game.P2GameMod)
+Object=(Name=WorkshopSample.AW7School,Class=Class,MetaClass=Postal2Game.P2GameMod)
+Object=(Name=WorkshopSample.DudeOnTheRun,Class=Class,MetaClass=Postal2Game.P2GameMod)
+Object=(Name=WorkshopSample.SandboxGame,Class=Class,MetaClass=Postal2Game.P2GameInfoSingle)
+Object=(Name=WorkshopSample.UltimateSandboxGame,Class=Class,MetaClass=Postal2Game.P2GameInfoSingle)
+Object=(Name=WorkshopSample.ErrandDemoGame,Class=Class,MetaClass=Postal2Game.P2GameInfoSingle)

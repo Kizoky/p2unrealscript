@@ -1,0 +1,75 @@
+///////////////////////////////////////////////////////////////////////////////
+// MenuImageCredits.uc
+// Copyright 2003 Running With Scissors, Inc.  All Rights Reserved.
+//
+// The credits menu.
+//
+//	History:
+//	01/26/03 JMI	Started from MenuImageBuy.  Using Buy image until Credits
+//					is available.
+//
+///////////////////////////////////////////////////////////////////////////////
+// This class describes the credits screen.
+//
+// Future enhancements:
+//
+///////////////////////////////////////////////////////////////////////////////
+class MenuImageCredits extends MenuImage;
+
+var() string CreditsMusic;
+var int MusicHandle;
+
+
+///////////////////////////////////////////////////////////////////////////////
+// Vars, structs, consts, enums...
+///////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////
+// Create menu contents
+///////////////////////////////////////////////////////////////////////////////
+function CreateMenuContents()
+	{
+	Super.CreateMenuContents();
+
+	ItemAlign  = TA_Left;
+	BackChoice = AddChoice(BackText,	"", ItemFont, ItemAlign, true);
+	//MusicHandle = FPSGameInfo(GetLevel().Game).PlayMusicExt(CreditsMusic, 0.5);
+	}
+
+// Stop the awesome music
+function OnCleanUp()
+{
+	Super.OnCleanUp();
+	FPSGameInfo(GetLevel().Game).StopMusicExt(MusicHandle, 0.5);
+}
+	
+	
+///////////////////////////////////////////////////////////////////////////////
+// Handle notifications from controls
+///////////////////////////////////////////////////////////////////////////////
+function Notify(UWindowDialogControl C, byte E)
+	{
+	Super.Notify(C, E);
+	switch(E)
+		{
+		case DE_Click:
+			switch (C)
+				{
+				case BackChoice:
+					GoBack();
+					break;
+				}
+			break;
+		}
+	}
+
+///////////////////////////////////////////////////////////////////////////////
+// Default properties
+///////////////////////////////////////////////////////////////////////////////
+defaultproperties
+	{
+	TextureImageName = "p2misc_full.credits-1412"
+	CreditsMusic = "uncledave_heavymetal.ogg"
+
+	aregButtons[0]=(X=560,Y=450,W=80,H=30)	// Using 640x480 locations to determine percentages.
+	}

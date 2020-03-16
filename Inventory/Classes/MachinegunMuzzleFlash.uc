@@ -1,0 +1,11 @@
+///////////////////////////////////////////////////////////////////////////////
+//  MachinegunMuzzleFlash
+///////////////////////////////////////////////////////////////////////////////
+class MachinegunMuzzleFlash extends MuzzleFlashAttachment;
+
+defaultproperties
+{
+	DrawType=DT_StaticMesh
+	StaticMesh=StaticMesh'Timb_mesh.muzzle_flashes.mf_machinegun'
+	DrawScale=2.0
+}

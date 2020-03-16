@@ -1,0 +1,11 @@
+///////////////////////////////////////////////////////////////////////////////
+// Apocalypse Weekend dude controller
+// Copyright 2004 Running With Scissors, Inc.  All Rights Reserved.
+//
+///////////////////////////////////////////////////////////////////////////////
+//class AWPlayer extends AWInvPlayer;
+class AWPlayer extends DudePlayer;	// AWInv stuff backported to P2Player. - K
+
+defaultproperties
+{
+}

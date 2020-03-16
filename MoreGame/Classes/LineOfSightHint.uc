@@ -1,0 +1,69 @@
+///////////////////////////////////////////////////////////////////////////////
+// LineOfSightHint.uc
+// Copyright 2002 Running With Scissors, Inc.  All Rights Reserved.
+//
+// Display a hint when the player looks at this actor.
+//
+// History:
+//	10/11/02 MJR	Started.
+//
+///////////////////////////////////////////////////////////////////////////////
+class LineOfSightHint extends LineOfSightTrigger;
+
+
+///////////////////////////////////////////////////////////////////////////////
+// Vars, structs, consts, enums...
+///////////////////////////////////////////////////////////////////////////////
+
+var(LineOfSightTrigger) localized String		HintText;
+var(LineOfSightTrigger) Sound					HintSound;
+var(LineOfSightTrigger) bool					bTriggerOnceOnly;
+var(LineOfSightTrigger) float					ReTriggerDelay;
+
+///////////////////////////////////////////////////////////////////////////////
+// Setup
+///////////////////////////////////////////////////////////////////////////////
+function PostBeginPlay()
+	{
+	Super.PostBeginPlay();
+
+	// If SeenActorTag feature wasn't used, then use ourself as the target
+	if (SeenActor == None)
+		SeenActor = self;
+	}
+
+///////////////////////////////////////////////////////////////////////////////
+// Called when player sees me
+///////////////////////////////////////////////////////////////////////////////
+event PlayerSeesMe(PlayerController P)
+	{
+//	Super.PlayerSeesMe(P);
+
+	if (HintText != "")
+		P.ClientMessage(HintText);
+
+	if (HintSound != None)
+		P.PlayOwnedSound(HintSound);
+
+	if (bTriggerOnceOnly)
+		bEnabled = false;
+	else if (ReTriggerDelay > 0.0)
+		{
+		bEnabled = false;
+		SetTimer(ReTriggerDelay, false);
+		}
+	}
+
+event Timer()
+	{
+	bEnabled = true;
+	}
+
+///////////////////////////////////////////////////////////////////////////////
+// Default properties
+///////////////////////////////////////////////////////////////////////////////
+defaultproperties
+{
+	Texture=Texture'PostEd.Icons_256.lookathint'
+	DrawScale=0.25
+}

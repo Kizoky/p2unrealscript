@@ -1,0 +1,29 @@
+///////////////////////////////////////////////////////////////////////////////
+// SteakInv
+// Copyright 2002 Running With Scissors, Inc.  All Rights Reserved.
+//
+// Steak inventory item.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+class SteakInv extends OwnedInv;
+
+///////////////////////////////////////////////////////////////////////////////
+// Default properties
+///////////////////////////////////////////////////////////////////////////////
+defaultproperties
+	{
+	PickupClass=class'SteakPickup'
+	Icon=Texture'HUDPack.Icon_Inv_Steaks'
+	InventoryGroup=102
+	GroupOffset=9
+	PowerupName="Steaks"
+	PowerupDesc="For the Psychotic Friends Network BBQ"
+	Price=200
+	bPaidFor=true
+	LegalOwnerTag="fred"
+	UseForErrands=1
+	Hint1=""
+	Hint2=""
+	Hint3=""
+	}
