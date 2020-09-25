@@ -12,7 +12,6 @@
 
 class GasCanWeapon extends P2WeaponStreaming;
 
-
 ///////////////////////////////////////////////////////////////////////////////
 // Vars, structs, consts
 ///////////////////////////////////////////////////////////////////////////////
@@ -24,6 +23,19 @@ var() Rotator FireRotator;
 
 const MATCH_LAUNCH_VEL_MAG	=	800;
 
+// Change by NickP: MP fix
+replication
+{
+	// functions client sends to server
+	reliable if (Role < ROLE_Authority)
+		xCallEndStream;
+}
+
+function xCallEndStream()
+{
+	GotoState('EndStream');
+}
+// End
 
 ///////////////////////////////////////////////////////////////////////////////
 // Play animation/sound/etc
@@ -72,7 +84,7 @@ function SnapGasPourToGun(optional bool bInitArc)
 ///////////////////////////////////////////////////////////////////////////////
 // Generate a match
 ///////////////////////////////////////////////////////////////////////////////
-simulated function GenerateMatch()
+function GenerateMatch()
 	{
 	local vector HitLocation, HitNormal, StartTrace, EndTrace, X,Y,Z;
 	local actor Other;
@@ -146,11 +158,12 @@ simulated function Notify_LightMatch()
 ///////////////////////////////////////////////////////////////////////////////
 // Streaming, make gas come out in this mode
 ///////////////////////////////////////////////////////////////////////////////
-state Streaming
+simulated state Streaming
 {
-	function Tick( float DeltaTime )
+	simulated function Tick( float DeltaTime )
 	{
-		// Cut immediately if you stop early
+		// Change by NickP: MP fix
+		/*// Cut immediately if you stop early
 		if(!Instigator.PressingFire())
 			GotoState('EndStream');
 		else
@@ -158,16 +171,37 @@ state Streaming
 			SnapGasPourToGun();
 
 			ReduceAmmo(DeltaTime);
+		}*/
+		// Cut immediately if you stop early
+		if( NotDedOnServer() )
+		{
+			if( !Instigator.PressingFire() )
+			{
+				xCallEndStream();
+				GotoState('EndStream');
+			}
 		}
+		///steam 12/10/2016
+		if( AmmoType != None && AmmoType.HasAmmo() )
+		{
+			SnapGasPourToGun();
+			ReduceAmmo(DeltaTime);
+		}
+		else
+		{
+			xCallEndStream();
+			GotoState('EndStream');
+		}
+		// End
 	}
 
-	function EndState()
+	simulated function EndState()
 	{
 		Super.EndState();
 		ForceEndFire();
 	}
 
-	function BeginState()
+	simulated function BeginState()
 	{
 		Super.BeginState();
 		gaspour = spawn(class'GasPourFeeder',Instigator,,,Rotation);

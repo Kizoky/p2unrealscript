@@ -1960,7 +1960,8 @@ function ChopInHalf(Pawn InstigatedBy, class<DamageType> DamageType, out vector 
 	HalfTorsoStumps();
 
 	// Spawn the bottom half
-	bottomh = spawn(class,Owner,,HitLocation);
+	if (Level.NetMode == NM_StandAlone) // Change by NickP: MP fix, there's no way to handle chopped body on client
+		bottomh = spawn(class,Owner,,HitLocation);
 	if(bottomh != None)
 	{
 		bottomh.bBottomHalfNewSpawn=true;
@@ -2291,6 +2292,7 @@ function TakeDamage( int Damage, Pawn instigatedBy, Vector hitlocation,
 	local int actualDamage, StartDamage;
 	local Controller Killer;
 	local byte StateChange;	
+	local class<DamageType> OriginalDamageType;
 	
 	//debuglog(self@"take damage of"@DamageType);
 
@@ -2318,6 +2320,7 @@ function TakeDamage( int Damage, Pawn instigatedBy, Vector hitlocation,
 
 	StartDamage = Damage;
 	DamageInstigator = instigatedBy;
+	OriginalDamageType = damageType;
 
 	// Reduce damage as necessary
 	if(ClassIsChildOf(damageType, class'MacheteDamage'))
@@ -2444,8 +2447,22 @@ function TakeDamage( int Damage, Pawn instigatedBy, Vector hitlocation,
 	{
 		//debuglog("going to super.");
 		Super.TakeDamage(Damage, InstigatedBy, HitLocation, momentum, damageType);
+
+		// Change by NickP: MP fix
+		if (Health <= 0)
+		{
+			MultiplayerDismemberment(OriginalDamageType, HitLocation);
+		}
+		// End
 	}
 }
+
+// Change by NickP: MP fix
+simulated function MultiplayerDismemberment(class<DamageType> damageType, vector HitLocation)
+{
+	// STUB
+}
+// End
 
 ///////////////////////////////////////////////////////////////////////////////
 // Copy of P2MocapPawn, but changed the head setup because it caused karma
@@ -2987,6 +3004,59 @@ Begin:
 	Sleep(0.05);
 	bHidden=false;
 }
+
+// Change by NickP: MP fix
+simulated function ClientSetupStump(Stump aStump)
+{
+	local int i;
+
+	if (aStump == None || aStump.bDeleteMe)
+		return;
+
+	aStump.SetupStump(Skins[0], AmbientGlow, bIsFat, bIsFemale, bPants, bSkirt);
+	aStump.bTearOff = true;
+
+	// Bottom torso removed
+	if( aStump.AttachmentBone == BONE_MID_SPINE )
+	{
+		const USE_MAX_RENDER_TIME = 1.0;
+		if ( (Level.TimeSeconds - LastRenderTime) < USE_MAX_RENDER_TIME )
+		{
+			SetBoneScale(TORSO_INDEX, 1/SHRINK_PELVIS, BONE_PELVIS);
+			SetBoneScale(TORSO_INDEX+1, SHRINK_PELVIS, TOP_TORSO);
+		}
+		else aStump.bHidden = true;
+	}
+	// Top torso removed
+	else if( aStump.AttachmentBone == BOTTOM_TORSO )
+	{
+		SetBoneDirection(SeverBone[0], rot(0,0,0), vect(0,0,0), 0);
+		SetBoneDirection(SeverBone[1], rot(0,0,0), vect(0,0,0), 0);
+		SetBoneDirection(SeverBone[2], rot(0,0,0), vect(0,0,0), 0);
+		SetBoneDirection(SeverBone[3], rot(0,0,0), vect(0,0,0), 0);
+
+		SetBoneDirection(TOP_TORSO, rot(0,0,0), vect(0,0,0), 0);
+		SetBoneScale(TORSO_INDEX, 0.0, TOP_TORSO);
+	}
+	// Other limbs removed
+	else
+	{
+		for( i = 0 ; i < SeverBone.Length ; i+=2 )
+		{
+			if( aStump.AttachmentBone == SeverBone[i] )
+				break;
+		}
+		SetBoneDirection(SeverBone[i+1], rot(0,0,0), vect(0,0,0), 0);
+		SetBoneScale(i+1, 0.0, SeverBone[i+1]);
+		SetBoneDirection(SeverBone[i], rot(0,0,0), vect(0,0,0), 0);
+		SetBoneScale(i, 0.2, SeverBone[i]);
+	}
+
+	// Since it's called client-side only we can use this array too
+	Stumps.Insert(Stumps.Length, 1);
+	Stumps[Stumps.Length-1] = aStump;
+}
+// End
 
 defaultproperties
 {

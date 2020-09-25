@@ -1,7 +1,7 @@
 ///////////////////////////////////////////////////////////////////////////
 // Feeder that attaches to other objects to be poured out (like a gas tank)
 ///////////////////////////////////////////////////////////////////////////
-class UrinePourFeeder extends FluidPourFeeder;
+class UrinePourFeeder extends FluidPourFeederMP;//FluidPourFeeder; // Change by NickP: MP fix
 
 var Actor CurrentSteamAttach;			// The current thing the steam is attached to
 

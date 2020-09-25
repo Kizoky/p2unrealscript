@@ -14,10 +14,25 @@ const DAMAGE_FOR_NON_LINE=200;
 const MIN_PARTICLES = 10;
 const PARTICLE_EMISSION_RATIO=1.4;
 
+// Change by NickP: MP fix
+auto simulated state Expanding
+{
+	simulated function BeginState()
+	{
+		Super.BeginState();
+		if(Role < ROLE_Authority)
+		{
+			FitToNormal(vect(0,0,1));
+			CalcStartupNeeds(DistToParticleRatio);
+		}
+	}
+}
+// End
+
 ///////////////////////////////////////////////////////////////////////////////
 // Do all the work you need to do to accomodate hitting this normal
 ///////////////////////////////////////////////////////////////////////////////
-function FitToNormal(vector HNormal)
+simulated function FitToNormal(vector HNormal)
 {
 	local float usez;
 	// Make velocity push away from walls
@@ -290,7 +305,7 @@ function StarterAtEnd(float SetDist)
 // Figure out how many particles to use.
 // Figure out if we should play a sound or not
 ///////////////////////////////////////////////////////////////////////////////
-function CalcStartupNeeds(float newdist)
+simulated function CalcStartupNeeds(float newdist)
 {
 	local int newmax;
 	local FireStreak fs;
@@ -303,7 +318,8 @@ function CalcStartupNeeds(float newdist)
 		newmax = MIN_PARTICLES;
 
 	// Decrease fire detail 
-	newmax = P2GameInfo(Level.Game).ModifyByFireDetail(newmax);
+	//newmax = P2GameInfo(Level.Game).ModifyByFireDetail(newmax);
+	newmax = class'P2GameInfo'.static.ModifyByFireDetail(newmax); // Change by NickP: MP fix
 
 	Emitters[0].ParticlesPerSecond = PARTICLE_EMISSION_RATIO*newmax;
 	Emitters[0].InitialParticlesPerSecond = Emitters[0].ParticlesPerSecond;

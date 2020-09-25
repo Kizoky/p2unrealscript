@@ -323,6 +323,10 @@ event Landed(Vector HitNormal)
 			keepp.WeaponDropped(self);
 		}
 	}
+
+	// Change by NickP: MP fix
+	P2GameInfo(Level.Game).NotifyPickupDropped(self);
+	// End
 }
 
 ///////////////////////////////////////////////////////////////////////////////

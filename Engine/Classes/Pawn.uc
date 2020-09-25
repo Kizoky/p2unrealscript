@@ -215,6 +215,11 @@ var const bool FootStill;
 var byte  ViewPitch;      // jjs - something to replicate so we can see which way remote clients are looking
 // RWS Change 07/23/03, end
 
+// Change by NickP: MP fix
+var bool bReplicateMovementAnim; // Should replicate MovementAnims[0]
+var name RepMovementAnim;
+// End
+
 replication
 {
 	// Variables the server should send to the client.
@@ -236,6 +241,12 @@ replication
 	// replicated functions sent to server by owning client
 	reliable if( Role<ROLE_Authority )
 		ServerChangedWeapon;
+
+	// Change by NickP: MP fix
+	unreliable if( (!bSkipActorPropertyReplication || bNetInitial)
+				&& (Role==ROLE_Authority) && (DrawType==DT_Mesh) && bReplicateMovementAnim )
+		RepMovementAnim;
+	// End
 }
 
 // RWS Change 07/23/03	brought over from 2141 to do torso twisting
@@ -1918,4 +1929,10 @@ defaultproperties
 	 
 	 WalkFriction=8.0
 	 CullDistance=15000.0
+
+	// Change by NickP: MP fix
+	bReplicateMovementAnim=true
+	bReplicateAnimations=true
+	bReplicateSkin=true
+	// End
 }

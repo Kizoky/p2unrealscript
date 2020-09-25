@@ -845,8 +845,10 @@ function AddTo(out SLine line, String SoundName, int Usage, optional float Bleep
 		// If the specified scheme is less than or equal to how much memory
 		// the user wants dialog to take up, then we use this sound.  Otherwise
 		// we ignore it and it will never get used.
-		if (Usage <= MemUsage)
-			{
+// Change by NickP: dialog fix
+		// if (Usage <= MemUsage)
+			// {
+// End
 			// Add sound to array
 			i = line.sounds.Length;
 			line.sounds.Insert(i, 1);
@@ -859,7 +861,10 @@ function AddTo(out SLine line, String SoundName, int Usage, optional float Bleep
 			// loaded the first time it is played)
 			if (Preload)
 				LoadDynSound(line.sounds[i]);
-			}
+// Change by NickP: dialog fix
+			// }
+			// else log("hui dialog not loaded" @ self @ MemUsage);
+// End
 		}
 	}
 

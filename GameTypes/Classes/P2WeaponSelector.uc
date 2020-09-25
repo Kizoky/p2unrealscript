@@ -423,6 +423,10 @@ function PrevWeapon()
 
 	if(!ValidIndexesSelected())
 	{
+		// Change by NickP: MP fix
+		xCoopRefreshList();
+		// End
+
 		SelectedGroupIndex = GetWeaponGroupSlot(PlayerOwner.Pawn.Weapon.InventoryGroup);
 		SelectedWListIndex = FindWeaponInWList(PlayerOwner.Pawn.Weapon, SelectedGroupIndex);
 		// Can't find weapon, dude probably has zipper out.
@@ -470,6 +474,10 @@ function NextWeapon()
 
 	if(!ValidIndexesSelected())
 	{
+		// Change by NickP: MP fix
+		xCoopRefreshList();
+		// End
+
 		SelectedGroupIndex = GetWeaponGroupSlot(PlayerOwner.Pawn.Weapon.InventoryGroup);
 		SelectedWListIndex = FindWeaponInWList(PlayerOwner.Pawn.Weapon, SelectedGroupIndex);
 		// Can't find weapon, dude probably has zipper out.
@@ -516,7 +524,13 @@ function SwitchWeapon(byte F)
 	//log("SwitchWeapon"@F@"Selected"@SelectedGroupIndex@"WList"@SelectedWListIndex);
 	
 	if (!ValidIndexesSelected())
+	{
+		// Change by NickP: MP fix
+		xCoopRefreshList();
+		// End
+
 		ViewportOwner.Actor.ConsoleCommand("MENUEXCLUSIVEMODE 1");
+	}
 	
 	W = None;
 	OldGroupIndex = SelectedGroupIndex;
@@ -1342,7 +1356,7 @@ function CoopGetList()
 	local int Count;
 
 	PlayerOwner = P2Player(ViewportOwner.Actor);
-	WeaponGroups.Remove(0, WeaponGroups.Length);
+	//WeaponGroups.Remove(0, WeaponGroups.Length);
 
 	for(inv = PlayerOwner.Pawn.Inventory; inv != None; inv = inv.Inventory)
 	{
@@ -1359,6 +1373,17 @@ function CoopGetList()
 	SetDestinations(true);
 }
 //end
+
+// Change by NickP: MP fix
+function xCoopRefreshList()
+{
+	if(PlayerOwner != None && PlayerOwner.Role < ROLE_Authority)
+	{
+		CoopClearList();
+		CoopGetList();
+	}
+}
+// End
 
 defaultproperties
 {

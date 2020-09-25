@@ -2,19 +2,19 @@ class UTBrowserUpdateServerLink extends UBrowserUpdateServerLink;
 
 function SetupURIs()
 {
-	local string Type;
+	// local string Type;
 
-	if(Level.IsDemoBuild())
-		Type = "Demo";
+	// if(Level.IsDemoBuild())
+		// Type = "Demo";
 
 	MaxURI = 3;
-	URIs[3] = "/UpdateServer/p2"$Type$"motd"$Level.EngineVersion$".html";
-	URIs[2] = "/UpdateServer/p2"$Type$"motdfallback.html";
-	URIs[1] = "/UpdateServer/p2"$Type$"masterserver.txt";
-	URIs[0] = "/UpdateServer/p2"$Type$"ircserver.txt";
+	URIs[3] = "/p2mp/p2_motd.html";
+	URIs[2] = "/p2mp/p2_motdfallback.html";
+	URIs[1] = "/p2mp/p2_masterserver.txt";
+	URIs[0] = "/p2mp/p2_ircserver.txt";
 }
 
 defaultproperties
 {
-	UpdateServerAddress="updateserver.postal2.com"
+	UpdateServerAddress="developerfuntime.com"
 }

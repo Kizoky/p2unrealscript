@@ -4,6 +4,10 @@ class ProtestSignWeapon extends ProtestSignWeaponBase;
 
 var ProtestSign A;
 
+// Change by NickP: MP fix
+var Texture InvisSkinTex;
+// End
+
 ///////////////////////////////////////////////////////////////////////////////
 // Set the texture that would handle the blood
 ///////////////////////////////////////////////////////////////////////////////
@@ -60,7 +64,8 @@ simulated function AttachToPawn(Pawn P)
 
 simulated function PostNetBeginPlay()
 {
-    local PlayerController PC;
+	// Change by NickP: MP fix
+    /*local PlayerController PC;
 	local Pawn P;
 
     Super.PostNetBeginPlay();
@@ -85,8 +90,38 @@ simulated function PostNetBeginPlay()
              A = None;
 			}
 	   }
-	}
+	}*/
+	Super.PostNetBeginPlay();
+	AttachFPPart();
+	// End
 }
+
+// Change by NickP: MP fix
+simulated function AttachFPPart()
+{
+    local PlayerController PC;
+	local Pawn P;
+
+    P  = Pawn(Owner);
+	PC = PlayerController(P.Controller);
+
+	if( P.IsLocallyControlled() && PC != None && !PC.bBehindView )
+	{
+		if( A == None )
+			A = Spawn(class'ProtestSign',self);
+		AttachToBone(A, 'shuvel');
+	}
+
+	if( A != None && A.AttachmentBone == '' )
+		A.Skins[0] = InvisSkinTex;
+}
+
+simulated function BringUp()
+{
+    Super.BringUp();
+	AttachFPPart();
+}
+// End
 
 ///////////////////////////////////////////////////////////////////////////////
 // Toss this item out.
@@ -174,8 +209,17 @@ function DropFrom(vector StartLocation)
 		Velocity = vect(0,0,0);
 		Instigator = None;
 		Destroy();
-		A.Destroyed();
+		//A.Destroyed(); // Change by NickP: MP fix
 	}	
+
+	// Change by NickP: MP fix
+	if( A != None )
+	{
+		DetachFromBone(A);
+		A.Destroy();
+		A = None;
+	}
+	// End
 }
 
 simulated function Destroyed()
@@ -195,6 +239,10 @@ simulated function Destroyed()
 
 defaultproperties
 {
+	// Change by NickP: MP fix
+	InvisSkinTex=Shader'P2R_Tex_D.Weapons.fake'
+	// End
+
 	GroupOffset=68 //owe ya one.
 	AmmoName=Class'ProtestSignAmmoInv'
 	PickupClass=Class'ProtestSignPickup'

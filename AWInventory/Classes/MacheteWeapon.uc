@@ -37,6 +37,15 @@ replication
 	// Functions called by server on client
 	reliable if(Role == ROLE_Authority)
 		ClientMacheteShake;
+
+	// Change by NickP: MP fix
+	// Functions called by server on client
+	reliable if(Role == ROLE_Authority)
+		ClientWaitMachete, ClientCatchMachete, ClientThrownEmpty;
+	// functions client sends to server
+	reliable if (Role < ROLE_Authority)
+		ServerThrownEmpty;
+	// End
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -77,6 +86,7 @@ function bool GiveBackBlade()
 		if(P2Player(Instigator.Controller) != None)
 			P2Player(Instigator.Controller).CaughtMachete();
 		GotoState('CatchingBlade');
+		ClientCatchMachete(); // Change by NickP: MP fix
 		return true;
 	}
 	return false;
@@ -86,7 +96,7 @@ function bool GiveBackBlade()
 // Based on about where you'll hit the pawn in front of us, pick an animation
 // to play when swinging
 ///////////////////////////////////////////////////////////////////////////////
-function name PickFireAnim()
+simulated function name PickFireAnim()
 {
 	local vector StartTrace, EndTrace, X, Y, Z, HitLoc, HitNormal;
 	local vector usev;
@@ -194,9 +204,13 @@ simulated function PlayBladeWait()
 simulated function PlayBladeCatch()
 {
 	PlayAnim('BladeCatch', WeaponSpeedCatch, 0.05);
-	// Turn off the thing in his hand as it leaves
-	if(ThirdPersonActor != None)
-		ThirdPersonActor.bHidden=false;
+
+	if( Level.NetMode == NM_Standalone) // Change by NickP: MP fix
+	{
+		// Turn off the thing in his hand as it leaves
+		if(ThirdPersonActor != None)
+			ThirdPersonActor.bHidden=false;
+	} // End
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -259,6 +273,7 @@ function ThrowMachete()
 	{
 		// Wait to catch it
 		GotoState('WaitingOnBlade');
+		ClientWaitMachete(); // Change by Nick: MP fix
 	}
 	else // If not, go back to ready to throw/hack again
 		GotoState('Idle');
@@ -606,15 +621,47 @@ function DoHit( float Accuracy, float YOffset, float ZOffset )
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-function RemoveMe()
+simulated function RemoveMe()
 {
-	if(!bRemoved)
+	// Change by NickP: MP fix
+	/*if(!bRemoved)
 	{
 		Instigator.DeleteInventory(self);
 		bRemoved=true;
 		Destroy();
+	}*/
+	if(!bRemoved)
+	{
+		bRemoved=true;
+
+		if(Level.NetMode == NM_Standalone)
+		{
+			Instigator.DeleteInventory(self);
+			Destroy();
+		}
+		else
+		{
+			Instigator.Weapon = None;
+			if(P2Player(Instigator.Controller) != None)
+				P2Player(Instigator.Controller).SwitchToThisWeapon(P2Pawn(Instigator).HandsClass.default.InventoryGroup, 
+							P2Pawn(Instigator).HandsClass.default.GroupOffset, true);
+			if(Role == ROLE_Authority)
+			{
+				Instigator.DeleteInventory(self);
+				SetOwner(Instigator);
+				LifeSpan = 1.1;
+			}
+		}
 	}
+	// End
 }
+
+// Change by NickP: MP fix
+simulated function bool HasAmmo()
+{
+	return ( Super.HasAmmo() && !bRemoved );
+}
+// End
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -636,7 +683,15 @@ state WaitingOnBlade
 		local float frame,rate;
 		GetAnimParams(0,anim,frame,rate);
 		if ( bWeaponUp || (frame < 0.75) )
+		{
 			GotoState('DownWeaponEmpty');
+			// Change by NickP: MP fix
+			if(Role < ROLE_Authority)
+				ServerThrownEmpty();
+			if(Role == ROLE_Authority)
+				ClientThrownEmpty();
+			// End
+		}
 		else
 			bChangeWeapon = true;
 		return True;
@@ -649,6 +704,20 @@ Begin:
 	PlayBladeWait();
 }
 
+// Change by NickP: MP fix
+function ServerThrownEmpty()
+{
+	if(!IsInState('DownWeaponEmpty') && !bRemoved)
+		GotoState('DownWeaponEmpty');
+}
+
+simulated function ClientThrownEmpty()
+{
+	if(!IsInState('DownWeaponEmpty') && !bRemoved)
+		GotoState('DownWeaponEmpty');
+}
+// End
+
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -658,6 +727,13 @@ Begin:
 ///////////////////////////////////////////////////////////////////////////////
 state CatchingBlade extends Active
 {
+	// Change by NickP: MP fix
+	simulated function BeginState()
+	{
+		PlayBladeCatch();
+	}
+	// End
+
 Begin:
 	PlayBladeCatch();
 }
@@ -709,6 +785,22 @@ state NormalFire
 	}
 }
 
+// Change by NickP: MP fix
+simulated function ClientWaitMachete()
+{
+	if( ThirdPersonActor != None )
+		ThirdPersonActor.bHidden = true;
+	GotoState('WaitingOnBlade');
+}
+
+simulated function ClientCatchMachete()
+{
+	if( ThirdPersonActor != None )
+		ThirdPersonActor.bHidden = false;
+	GotoState('CatchingBlade');
+}
+// End
+
 ///////////////////////////////////////////////////////////////////////////////
 // Default properties
 ///////////////////////////////////////////////////////////////////////////////
@@ -742,7 +834,7 @@ defaultproperties
      WeaponSpeedHolster=1.500000
      WeaponSpeedShoot1Rand=0.100000
      AltFireSound=Sound'AWSoundFX.Machete.machetethrowin'
-     bCanThrowMP=False
+     bCanThrowMP=true
      AmmoName=Class'AWInventory.MacheteAmmoInv'
      FireOffset=(X=0.000000,Z=0.000000)
      ShakeRotTime=6.000000

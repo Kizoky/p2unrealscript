@@ -204,7 +204,9 @@ function NotifyAddInventory(inventory NewItem)
 				UseNewClass.default.FootTexture);
 		}
 	}
-	if(NewItem.IsA('Weapon'))
+
+	if(WeaponSelector != None // Change by NickP: MP fix
+		&& NewItem.IsA('Weapon'))
 		WeaponSelector.AddWeapon(Weapon(NewItem));
 }
 
@@ -1782,9 +1784,19 @@ function Possess(Pawn aPawn)
 	AddInventorySelector();
 }
 
+// Change by NickP: MP fix
+simulated function NotifyPlayerValid()
+{
+	Super.NotifyPlayerValid();
+	AddWeaponSelector();
+	AddInventorySelector();
+}
+// End
+
 function NotifyDeleteInventory(Inventory OldItem)
 {
-	if(OldItem.IsA('Weapon'))
+	if(WeaponSelector != None // Change by NickP: MP fix
+		&& OldItem.IsA('Weapon'))
 		WeaponSelector.RemoveWeapon(Weapon(OldItem));
 }
 
@@ -1810,7 +1822,7 @@ exec function PrevWeapon()
 		}
 		else
 			RapidWeaponChange = 0;
-		if (P2GameInfo(Level.Game).bWeaponSelectorAutoSwitch)
+		if (class'P2GameInfo'.Default.bWeaponSelectorAutoSwitch)
 			WeaponSelector.SwitchWeaponByIndex(true);
 	}
 	else
@@ -1851,7 +1863,7 @@ exec function NextWeapon()
 		}
 		else
 			RapidWeaponChange = 0;
-		if (P2GameInfo(Level.Game).bWeaponSelectorAutoSwitch)
+		if (class'P2GameInfo'.Default.bWeaponSelectorAutoSwitch)
 			WeaponSelector.SwitchWeaponByIndex(true);
 	}
 	else
@@ -1867,7 +1879,7 @@ exec function SwitchWeapon(byte F)
 		&& class'P2GameInfo'.Default.bUseWeaponSelector)
 	{
 		WeaponSelector.SwitchWeapon(F);
-		if (P2GameInfo(Level.Game).bWeaponSelectorAutoSwitch)
+		if (class'P2GameInfo'.Default.bWeaponSelectorAutoSwitch)
 			WeaponSelector.SwitchWeaponByIndex(true);
 	}
 	else
@@ -1882,7 +1894,7 @@ exec function Fire(float Value)
 	if((WeaponSelector != None) && (WeaponSelector.ValidIndexesSelected())
 		&& class'P2GameInfo'.Default.bUseWeaponSelector)
 	{
-		if(WeaponSelector.SwitchWeaponByIndex() && !P2GameInfo(Level.Game).bWeaponSelectorAutoSwitch)
+		if(WeaponSelector.SwitchWeaponByIndex() && !class'P2GameInfo'.Default.bWeaponSelectorAutoSwitch)
 		{
 			if (Pawn.PendingWeapon != None)
 				RegisterLastWeapon();

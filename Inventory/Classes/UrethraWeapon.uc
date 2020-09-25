@@ -410,14 +410,17 @@ function SnapUrineStreamToGun(optional bool bInitArc)
 		startpos = startpos + FireOffset.Z * Z;
 		UrineStream.SetLocation(startpos);
 		UrineStream.SetRotation(userot);
-		if(P2GameInfoSingle(Level.Game) != None)
+		// Change by NickP: MP fix
+		/*if(P2GameInfoSingle(Level.Game) != None)
 		{
 			UrineStream.SetDir(Instigator.Location, vector(userot),,bInitArc);
 		}
 		else
 		{
 			UrineStream.ServerSetDir(Instigator.Location, vector(userot),,bInitArc);
-		}
+		}*/
+		UrineStream.SetDir(Instigator.Location, vector(userot),,bInitArc);
+		// End
 	}
 }
 
@@ -508,13 +511,16 @@ function SpawnStream()
 	}
 	else
 	{
-		if(P2GameInfoSingle(Level.Game) != None)
+		// Change by NickP: MP fix
+		/*if(P2GameInfoSingle(Level.Game) != None)
 			// Make normal urine
 			UrineStream = spawn(class'UrinePourFeeder',Instigator,,,Rotation);
 		else
 		{
 			UrineStream = spawn(class'UrinePourFeederMP',Instigator,,,Rotation);
-		}
+		}*/
+		UrineStream = spawn(class'UrinePourFeeder',Instigator,,,Rotation);
+		// End
 	}
 	// Kamek 4-22
 	if(Level.NetMode != NM_DedicatedServer ) PlayerController(Instigator.Controller).GetEntryLevel().EvaluateAchievement(PlayerController(Instigator.Controller),'TakeAPiss');

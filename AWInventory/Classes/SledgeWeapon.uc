@@ -31,6 +31,12 @@ replication
 	// Functions called by server on client
 	reliable if(Role == ROLE_Authority)
 		ClientHammerShake;
+
+	// Change by NickP: MP fix
+	// Functions called by server on client
+	reliable if(Role == ROLE_Authority)
+		ClientThrownEmpty;
+	// End
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -189,6 +195,8 @@ function ThrowIt()
 	GotoState('NormalFire');
 
 //	PlayAltFiring();
+
+	PlayAltFiring(); // Change by NickP: MP fix
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -199,6 +207,8 @@ function SwingIt()
 	GotoState('NormalFire');
 
 //	PlayFiring();
+
+	PlayFiring(); // Change by NickP: MP fix
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -551,9 +561,17 @@ function ThrowSledge()
 		// you through it, now switch to another weapon with the sledge gone
 	{
 		GotoState('DownWeaponEmpty');
+		// Change by NickP: MP fix
+		ClientThrownEmpty(false);
+		// End
 	}
 	else // If not, go back to ready to throw/smash again
+	{
 		GotoState('Idle');
+		// Change by NickP: MP fix
+		ClientThrownEmpty(true);
+		// End
+	}
 
 	// Check if the projectile was made within the spawn and needs to be destroyed
 	if(sledgeproj.bMadePickup)
@@ -565,11 +583,21 @@ function ThrowSledge()
 		ThirdPersonActor.bHidden=true;
 }
 
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-function RemoveMe()
+// Change by NickP: MP fix
+simulated function ClientThrownEmpty(bool bIdle)
 {
-	if(!bRemoved)
+	if(!bIdle)
+		GotoState('DownWeaponEmpty');
+	else GotoState('Idle');
+}
+// End
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+simulated function RemoveMe()
+{
+	// Change by NickP: MP fix
+	/*if(!bRemoved)
 	{
 		Instigator.Weapon = None;
 		if(P2Player(Instigator.Controller) != None)
@@ -579,8 +607,36 @@ function RemoveMe()
 		Instigator.DeleteInventory(self);
 		bRemoved=true;
 		Destroy();
+	}*/
+	if(!bRemoved)
+	{
+		Instigator.Weapon = None;
+		if(P2Player(Instigator.Controller) != None)
+			P2Player(Instigator.Controller).SwitchToThisWeapon(P2Pawn(Instigator).HandsClass.default.InventoryGroup, 
+						P2Pawn(Instigator).HandsClass.default.GroupOffset, true);
+		bRemoved=true;
+		
+		if(Level.NetMode == NM_Standalone)
+		{
+			Instigator.DeleteInventory(self);
+			Destroy();
+		}
+		else if(Role == ROLE_Authority)
+		{
+			Instigator.DeleteInventory(self);
+			SetOwner(Instigator);
+			LifeSpan = 1.1;
+		}
 	}
+	// End
 }
+
+// Change by NickP: MP fix
+simulated function bool HasAmmo()
+{
+	return ( Super.HasAmmo() && !bRemoved );
+}
+// End
 
 ///////////////////////////////////////////////////////////////////////////////
 // Finish a sequence
@@ -898,7 +954,7 @@ defaultproperties
      WeaponSpeedHolster=1.500000
      WeaponSpeedShoot1Rand=0.010000
      AltFireSound=Sound'AWSoundFX.Sledge.hammerthrowin'
-     bCanThrowMP=False
+     bCanThrowMP=true
      AmmoName=Class'AWInventory.SledgeAmmoInv'
      FireOffset=(X=0.000000,Z=0.000000)
      ShakeRotTime=6.000000

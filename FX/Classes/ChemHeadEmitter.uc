@@ -138,4 +138,8 @@ defaultproperties
      Physics=PHYS_Trailer
 	 CollisionRadius=150
 	 CollisionHeight=150
+
+	// Change by NickP: MP fix
+	bReplicateMovement=true
+	// End
 }

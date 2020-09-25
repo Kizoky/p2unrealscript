@@ -52,7 +52,8 @@ simulated function PlayCheer()
 ///////////////////////////////////////////////////////////////////////////////
 simulated function name GetAnimCheer()
 {
-	local int rnd;
+	// Change by NickP: MP fix
+	/*local int rnd;
 
 	rnd = Rand(3);
 	switch(rnd)
@@ -66,7 +67,25 @@ simulated function name GetAnimCheer()
 	case 2:
 		return 's_cheer3';
 		break;
+	}*/
+	switch( Rand(4) )
+	{
+		case 0:
+			return 'dropped';
+			break;
+		case 1:
+			return 's_cheer1';
+			break;
+		case 2:
+			return 's_cheer3';
+			break;
+		case 3:
+			return 's_cheer4';
+			break;
+		default:
+			return 's_cheer4';
 	}
+	// End
 }
 
 

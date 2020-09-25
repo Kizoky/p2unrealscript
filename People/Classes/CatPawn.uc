@@ -298,6 +298,13 @@ function StopGrindingLimb()
 ///////////////////////////////////////////////////////////////////////////////
 function PlayDervish()
 {
+	// Change by NickP: MP fix
+	if (bReplicateAnimations)
+	{
+		SimAnimChannel = MOVEMENTCHANNEL;
+	}
+	// End
+
 	AnimBlendParams(MOVEMENTCHANNEL,1.0);
 	LoopAnim('spin', 1.0, 0.0, MOVEMENTCHANNEL);
 }
@@ -790,18 +797,21 @@ simulated function SetAnimStanding()
 
 simulated function SetAnimWalking()
 {
+	Super.SetAnimWalking();
 	AnimBlendParams(MOVEMENTCHANNEL,1.0);
 	LoopAnim('walk', 1.0, 0.2, MOVEMENTCHANNEL);// + FRand()*0.4);
 }
 
 simulated function SetAnimRunning()
 {
+	Super.SetAnimRunning();
 	AnimBlendParams(MOVEMENTCHANNEL,1.0);
 	LoopAnim('run', 2.5, 0.2, MOVEMENTCHANNEL);
 }
 
 simulated function SetAnimTrotting()
 {
+	Super.SetAnimTrotting();
 	AnimBlendParams(MOVEMENTCHANNEL,1.0);
 	LoopAnim('walk', 4.0, 0.2, MOVEMENTCHANNEL);// + FRand()*0.4);
 }
@@ -1032,6 +1042,13 @@ function PlayFalling()
 	if(AWCatController(Controller) == None
 		|| !AWCatController(Controller).bDervish)
 	{
+		// Change by NickP: MP fix
+		if (bReplicateAnimations)
+		{
+			SimAnimChannel = MOVEMENTCHANNEL;
+		}
+		// End
+
 		AnimBlendParams(MOVEMENTCHANNEL,1.0);
 		LoopAnim(GetAnimFalling(), , , MOVEMENTCHANNEL);
 	}

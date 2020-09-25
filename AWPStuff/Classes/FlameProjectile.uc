@@ -29,15 +29,15 @@ simulated function PostBeginPlay()
 	Super.PostBeginPlay();
 
 	//Dopamine -- Set the flying arrow on fire
-	if (Level.NetMode != NM_DedicatedServer)
-	{
+//	if (Level.NetMode != NM_DedicatedServer) // Change by NickP: MP fix
+//	{ // End
   		if(Level.Game == None
   			|| !Level.Game.bIsSinglePlayer)
   			ArrowFire = spawn(FireEffectsClass, self,, Location);
   		else
   			// Send player as owner so it will keep up in slomo time
   			ArrowFire = spawn(FireEffectsClass, Instigator,, Location);
-	}
+//	} // Change by NickP: MP fix
 
 	//log("my ArrowFire is" @ ArrowFire);
 	if (ArrowFire != None)

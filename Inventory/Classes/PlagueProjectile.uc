@@ -455,6 +455,12 @@ state Tumbling extends Eject
 
 defaultproperties
 {
+	// Change by NickP: MP fix
+	bNetTemporary=false
+	bReplicateMovement=true
+	bUpdateSimulatedPosition=true
+	// End
+
  	NoDamageTime=0.3
 	Speed=250.000000
     MaxSpeed=5000.000000

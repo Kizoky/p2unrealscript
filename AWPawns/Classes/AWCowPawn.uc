@@ -961,6 +961,7 @@ simulated function SetAnimStanding()
 
 simulated function SetAnimWalking()
 {
+	Super(AnimalPawn).SetAnimWalking();
 	GroundSpeed = default.GroundSpeed;
 	AnimBlendParams(MOVEMENTCHANNEL,1.0);
 	SetNormalRotationRate();
@@ -972,6 +973,7 @@ simulated function SetAnimRunning()
 {
 	local name runanim;
 
+	Super(AnimalPawn).SetAnimRunning();
 	AnimBlendParams(MOVEMENTCHANNEL,1.0);
 	SetFastRotationRate();
 	if(!bCharging)

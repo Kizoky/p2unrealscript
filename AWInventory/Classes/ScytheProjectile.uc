@@ -156,6 +156,7 @@ function MakePickup()
 			usemom = Velocity/2;
 			usemom.z+=FRand()*800;
 			usemom = 100*usemom;
+			newmac.bAllowMovement = true; // Change by NickP: MP fix
 			newmac.TakeDamage(1,Instigator,Location,usemom,class'damageType');
 		}
 	}
@@ -289,7 +290,11 @@ simulated function ProcessTouch(Actor Other, Vector HitLocation)
 						&& Other.Owner != LastPawnHit))
 				{
 					// Balance damage differently for MP vs SP
-					if(Level.NetMode == NM_Standalone)
+					// Change by NickP: MP fix
+					//if(Level.NetMode == NM_Standalone)
+					if(Level.Game != None
+						&& FPSGameInfo(Level.Game).bIsSinglePlayer)
+					// End
 					{
 						// People can possibly block a thrown projectile
 						if(PersonPawn(Other) == None)
@@ -471,7 +476,7 @@ defaultproperties
      VelDampen=1.000000
      RotDampen=1.000000
      StartSpinMag=-400000.000000
-     DamageMP=70.000000
+     DamageMP=140.000000
      speed=800.000000
      MaxSpeed=800.000000
      TossZ=0.000000

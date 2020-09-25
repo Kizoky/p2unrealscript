@@ -132,6 +132,10 @@ function Touch(Actor Other)
 
 defaultproperties
 {
+	// Change by NickP: MP fix
+	bReplicateSkin=true
+	// End
+
 	DrawType=DT_FluidSurface
 	Texture=S_FluidSurfaceInfo
 	

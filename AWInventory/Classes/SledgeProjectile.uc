@@ -204,6 +204,7 @@ function MakePickup()
 			}
 			usemom.z+=FRand()*800;
 			usemom = 100*usemom;
+			newmac.bAllowMovement = true; // Change by NickP: MP fix
 			newmac.TakeDamage(1,Instigator,Location,usemom,class'damageType');
 			bMadePickup=true;
 		}
@@ -215,7 +216,7 @@ function MakePickup()
 ///////////////////////////////////////////////////////////////////////////////
 // Prep me to destroy next.
 ///////////////////////////////////////////////////////////////////////////////
-function SetupForDestroy()
+simulated function SetupForDestroy()
 {
 	GotoState('DestroyNext');
 }
@@ -568,16 +569,25 @@ simulated state FallingDown
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-state DestroyNext
+simulated state DestroyNext
 {
 	ignores ProcessTouch, HitWall, Explode, MakePickup;
 Begin:
-	Sleep(0.0);
+	// Change by NickP: MP fix
+	//Sleep(0.0);
+	Sleep(0.01);
+	// End
 	Destroy();
 }
 
 defaultproperties
 {
+	// Change by NickP: MP fix
+	bNetTemporary=false
+	bReplicateMovement=true
+	bUpdateSimulatedPosition=true
+	// End
+
      BounceMax=6
      WallHitSound=Sound'AWSoundFX.Sledge.hammerhitwall_metalhit'
      FlyingSound=Sound'AWSoundFX.Sledge.hammerthrowloop'

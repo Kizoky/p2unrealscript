@@ -654,6 +654,11 @@ function UseHugeFont(Canvas Canvas)
 
 function ClipText(Canvas Canvas, coerce string Str, optional bool bCheckHotkey);
 
+function string GetButtonParsedText(Canvas Canvas, coerce string Str)
+{
+	return Str;
+}
+
 defaultproperties
 {
 	bMessageBeep=true

@@ -25,6 +25,13 @@ function ProcessTraceHit(Weapon W, Actor Other, Vector HitLocation, Vector HitNo
 	if ( Other == None )
 		return;
 
+	// Change by NickP: MP fix
+	if(Level.Game == None
+		|| !FPSGameInfo(Level.Game).bIsSinglePlayer)
+		DamageAmount = DamageAmountMP;
+	else DamageAmount = default.DamageAmount;
+	// End
+
 	if (Other.bStatic)//Other.bWorldGeometry )
 	{
 		//spawn(class'SliceSplatMaker',W.Owner, ,HitLocation, Rotator(HitNormal));
@@ -120,6 +127,7 @@ defaultproperties
      ShovelHitBot=Sound'AWSoundFX.Machete.machetehitwall'
      ShovelHitSkel=Sound'AWSoundFX.Machete.machetehitwall'
      DamageAmount=25.000000
+	 DamageAmountMP=50.000000
      MomentumHitMag=20000.000000
      DamageTypeInflicted=Class'MacheteDamage'
      AltDamageTypeInflicted=Class'ShotGunDamage'

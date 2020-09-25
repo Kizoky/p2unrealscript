@@ -69,6 +69,12 @@ var bool bPatrolJail;			// If you're patrolling, use PatrolJailToTarget
 
 var array<Sound> FartSounds;
 
+// Change by NickP: NicksCoop fix
+var bool bCoopAlertMode;
+var float fForceAlertTime;
+const FORCE_ALERT_DELAY = 0.1;
+// End
+
 ///////////////////////////////////////////////////////////////////////////////
 // Chance of going into cell phone idle sequence.
 ///////////////////////////////////////////////////////////////////////////////
@@ -318,6 +324,11 @@ function PoliceTrigger( actor Other, pawn EventInstigator )
 function SetToAttackPlayer(FPSPawn PlayerP)
 {
 	local FPSPawn keepp;
+
+	// Change by NickP: NicksCoop fix
+	if( bCoopAlertMode && MyPawn != None  )
+		MyPawn.bPlayerIsEnemy = true;
+	// End
 	
 	// If we're not a cop, do super instead
 	if (!Pawn.IsA('AuthorityFigure'))
@@ -4572,6 +4583,48 @@ Begin:
 	// And go back to what we were doing
 	DecideNextState();
 }
+
+// Change by NickP: NicksCoop fix
+function bool nc_PlayerIsEnemy()
+{
+	return ( MyPawn != None && (MyPawn.bPlayerIsEnemy || MyPawn.PawnInitialState == MyPawn.EPawnInitialState.EP_AttackPlayer) );
+}
+
+function bool nc_WantsToKill(Pawn Other)
+{
+	return ( Other != None && Other.Health > 0 && PlayerController(Other.Controller) != None );
+}
+
+function nc_ForceAlertMe(Pawn AlertPawn)
+{
+	if( Level.TimeSeconds < fForceAlertTime )
+		return;
+	fForceAlertTime = Level.TimeSeconds + FORCE_ALERT_DELAY;
+
+	if( Attacker != None 
+		&& ( Attacker == AlertPawn || VSize(AlertPawn.Location-MyPawn.Location) > VSize(Attacker.Location-MyPawn.Location)) )
+		return;
+
+	MakeMoreAlert();
+	SetToAttackPlayer(FPSPawn(AlertPawn));
+}
+
+function HearNoise(float Loudness, Actor NoiseMaker)
+{
+	if( bCoopAlertMode && nc_PlayerIsEnemy() && NoiseMaker != None && nc_WantsToKill(NoiseMaker.Instigator) )
+	{
+		nc_ForceAlertMe(NoiseMaker.Instigator);
+	}
+}
+
+event SeePlayer(Pawn SeenPlayer)
+{
+	if( bCoopAlertMode && nc_PlayerIsEnemy() && nc_WantsToKill(SeenPlayer) )
+	{
+		nc_ForceAlertMe(SeenPlayer);
+	}
+}
+// End
 
 defaultproperties
 {

@@ -21,14 +21,31 @@ function RemoveMe()
 {
 	if(!bRemoved)
 	{
-		Instigator.Weapon = None;
-		if(P2Player(Instigator.Controller) != None)
-			P2Player(Instigator.Controller).SwitchToThisWeapon(P2Pawn(Instigator).HandsClass.default.InventoryGroup, 
-						P2Pawn(Instigator).HandsClass.default.GroupOffset, true);
+		// Change by NickP: MP fix
+		if(Level.NetMode == NM_Standalone)
+		{
+		// End
+			Instigator.Weapon = None;
+			if(P2Player(Instigator.Controller) != None)
+				P2Player(Instigator.Controller).SwitchToThisWeapon(P2Pawn(Instigator).HandsClass.default.InventoryGroup, 
+							P2Pawn(Instigator).HandsClass.default.GroupOffset, true);
 
-		Instigator.DeleteInventory(self);
-		bRemoved=true;
-		Destroy();
+			Instigator.DeleteInventory(self);
+			bRemoved=true;
+			Destroy();
+		// Change by NickP: MP fix
+		}
+		else
+		{
+			if( P2Player(Instigator.Controller) != None )
+				P2Player(Instigator.Controller).ClientSwitchToHands(true);
+
+			bRemoved=true;
+			Instigator.DeleteInventory(self);
+			SetOwner(Instigator);
+			LifeSpan = 1.1;
+		}
+		// End
 	}
 }
 

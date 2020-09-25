@@ -321,13 +321,6 @@ var bool					bIsAutomaton;
 
 var int PeopleBurned;		// Number of people burned by our napalm launcher
 
-//ErikFOV Change: For Nick's coop replication
-var name NCRepMovementAnims[4];
-var name NCRepTurnLeftAnim;
-var name NCRepTurnRightAnim;
-var float NCRepAnimFrame;
-//end
-
 replication
 {
 	// Variables the server should send to the client.
@@ -346,11 +339,6 @@ replication
 	reliable if(Role == ROLE_Authority)
 		ClientSetFoot, ClientSetUrethra, ClientPlayerStartingFinished, ClientStartRocketBeeping,
 		ClientSniperViewingMe;
-		
-	//ErikFOV Change: For Nick's coop replication
-	unreliable if( Role == ROLE_Authority )
-		NCRepMovementAnims, NCRepTurnLeftAnim, NCRepTurnRightAnim, NCRepAnimFrame;
-	//end
 }
 
 // STUB
@@ -3114,6 +3102,11 @@ function bool AddInventory( inventory NewItem )
 
 		if ( Controller != None )
 			Controller.NotifyAddInventory(NewItem);
+
+		// Change by NickP: MP fix
+		if(P2Weapon(NewItem) != None)
+			P2Weapon(NewItem).ClientInventoryAdded();
+		// End
 	}
 
 	// Do anything extra after this first gets added
@@ -3312,6 +3305,11 @@ function DeleteInventory( inventory Item )
 			// Adding in NotifyDeleteInventory().
 			if ( Controller != None )
 				Controller.NotifyDeleteInventory(Item);
+
+			// Change by NickP: MP fix
+			if(P2Weapon(Item) != None)
+				P2Weapon(Item).ClientInventoryDeleted(Item.Owner);
+			// End
 
 			Link.Inventory = Item.Inventory;
 			Item.Inventory = None;

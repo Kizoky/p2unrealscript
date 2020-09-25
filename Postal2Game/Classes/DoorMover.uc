@@ -17,6 +17,7 @@ var() bool		StaysLocked;		// If true, door stays locked even if opened.
 var() Sound		BreakBoardSound;	// Sound to make when a board is broken
 var() Sound		CantOpenSound;		// Sound to make when the door is locked and the player tries to open it
 var() bool		bMakeBuffer;		// Make a buffer point to determine how many people can at max use this door
+var() bool		bTakeMpDamage;		// Is damage allowed in the mp game mode
 
 //var() bool		bFlipFlopPath;
 
@@ -165,6 +166,11 @@ function TakeDamage( int Damage, Pawn instigatedBy, Vector hitlocation,
 				bAcceptsThisDamage = True;
 				
 		//log(self@"taking"@Damage@"damage from"@DamageType@"accepted"@bAcceptsThisDamage,'Debug');
+
+		// Change by NickP: MP fix
+		if (P2GameInfoSingle(Level.Game) == None && !bTakeMpDamage)
+			bAcceptsThisDamage = false;
+		// End
 
 		// if so, take damage
 		if(bAcceptsThisDamage)

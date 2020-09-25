@@ -9,6 +9,30 @@ class BouncyProjectile extends P2Projectile;
 
 var sound BounceSound;
 
+// Change by NickP: MP fix
+var int BounceCounter;
+const MAX_BOUNCES = 3;
+
+simulated function PostBeginPlay()
+{
+	Super.PostBeginPlay();
+
+	if (Role < ROLE_Authority)
+	{
+		// setup linear speed
+		Velocity = VRand()*Speed;
+		if(Velocity.z < 0)
+			Velocity.z = -Velocity.z;
+		Velocity.z += TossZ;
+		// setup spin
+		RotationRate.Pitch = Rand(RotationRate.Yaw);
+		RotationRate.Roll = Rand(RotationRate.Yaw);
+
+		LifeSpan = 10.0;
+	}
+}
+// End
+
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 function BounceRecoil(vector HitNormal)
@@ -42,6 +66,16 @@ simulated function HitWall( vector HitNormal, actor Wall )
 			if(Trace(newhit, newnormal, EndPt, Location, false) != None)
 				bStopped=true;
 		}
+
+		// Change by NickP: MP fix
+		if (Role < ROLE_Authority)
+		{
+			if (BounceCounter >= MAX_BOUNCES)
+				bStopped=true;
+			BounceCounter++;
+		}
+		// End
+
 		// If we've stopped, zero out the appropriate entries
 		if(bStopped)
 		{

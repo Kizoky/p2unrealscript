@@ -411,4 +411,8 @@ defaultproperties
 	 Health=25
 	 RemoteRole=ROLE_SimulatedProxy
 	 bReplicateMovement=true
+
+	// Change by NickP: MP fix
+	bUpdateSimulatedPosition=true
+	// End
 }

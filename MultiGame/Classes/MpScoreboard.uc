@@ -264,14 +264,25 @@ function DrawMatchStatus(Canvas Canvas, optional float Y, optional bool bCritica
 		Canvas.DrawColor = GeneralTextColor;
 		Canvas.StrLen(str, XL, YL);
 		Canvas.SetPos(0, Y);
-		MyFont.DrawText(Canvas, str);
+		//MyFont.DrawText(Canvas, str);
+
+		// Change by NickP: MP fix
+		MyFont.TextColor = GeneralTextColor;
+		MyFont.DrawTextEx(Canvas, Canvas.ClipX, Canvas.ClipX/2, Y, str, 2, false, EJ_Center);
+		// End
+
 		if(bShowToggleTip)
 		{
 			Canvas.bCenter = true;
 			Canvas.Font = MyFont.GetFont(0, false, Canvas.ClipX );
 			Canvas.DrawColor = GeneralTextColor;
 			Canvas.SetPos(0, Y + YL);
-			MyFont.DrawText(Canvas, ToggleScoreText);
+			//MyFont.DrawText(Canvas, ToggleScoreText);
+
+			// Change by NickP: MP fix
+			MyFont.TextColor = GeneralTextColor;
+			MyFont.DrawTextEx(Canvas, Canvas.ClipX, Canvas.ClipX/2, Y + YL*1.25, str, 0, false, EJ_Center);
+			// End
 		}
 	}
 	// If all else fails, draw victory conditions
@@ -436,11 +447,22 @@ function DrawMatchHint(Canvas Canvas, optional float Y, optional bool bCriticalO
 					Canvas.SetPos(0, Y);
 				else
 					Canvas.SetPos(0, Y + YL/2);
-				MyFont.DrawText(Canvas, MatchHintText1);
+				//MyFont.DrawText(Canvas, MatchHintText1);
+
+				// Change by NickP: MP fix
+				MyFont.TextColor = GeneralTextColor;
+				MyFont.DrawTextEx(Canvas, Canvas.ClipX, Canvas.ClipX/2, Y + YL*0.4, MatchHintText1, 2, false, EJ_Center);
+				// End
+
 				if (MatchHintText2 != "")
 				{
 					Canvas.SetPos(0, Y + YL);
-					MyFont.DrawText(Canvas, MatchHintText2);
+					//MyFont.DrawText(Canvas, MatchHintText2);
+
+					// Change by NickP: MP fix
+					MyFont.TextColor = GeneralTextColor;
+					MyFont.DrawTextEx(Canvas, Canvas.ClipX, Canvas.ClipX/2, Y + YL, MatchHintText2, 2, false, EJ_Center);
+					// End
 				}
 			}
 			if(bShowUseNextTip)
@@ -449,7 +471,12 @@ function DrawMatchHint(Canvas Canvas, optional float Y, optional bool bCriticalO
 				Canvas.Font = MyFont.GetFont(0, false, Canvas.ClipX );
 				Canvas.DrawColor = GeneralTextColor;
 				Canvas.SetPos(0, Y + 2*YL);
-				MyFont.DrawText(Canvas, ForNextText);
+				//MyFont.DrawText(Canvas, ForNextText);
+
+				// Change by NickP: MP fix
+				MyFont.TextColor = GeneralTextColor;
+				MyFont.DrawTextEx(Canvas, Canvas.ClipX, Canvas.ClipX/2, Y + 2.5*YL, ForNextText, 0, false, EJ_Center);
+				// End
 			}
 		}
 	}
@@ -1049,8 +1076,12 @@ defaultproperties
 	PlayerSectionHeaderPY=0.095
 	PlayerSectionBodyPY=0.145
 	PlayerSectionBottomPY=0.94
-	MatchStatusPY=0.94
-	MatchHintPY=0.78
+	// Change by NickP: MP fix
+	//MatchStatusPY=0.94
+	MatchStatusPY=0.90
+	//MatchHintPY=0.78
+	MatchHintPY=0.74
+	// End
 
 	PlayerWindow=Texture'MpHud.field_gray'
 	PlayerNamePX=0.140
@@ -1143,5 +1174,8 @@ defaultproperties
 	MpHintMax=42
 
 	ServerText="Server: "
-	ServerNamePY=0.045
+	// Change by NickP: MP fix
+	//ServerNamePY=0.045
+	ServerNamePY=0.05
+	// End
 }

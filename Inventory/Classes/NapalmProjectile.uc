@@ -315,6 +315,12 @@ function Tick( float DeltaTime )
 
 defaultproperties
 {
+	// Change by NickP: MP fix
+	bNetTemporary=false
+	bReplicateMovement=true
+	bUpdateSimulatedPosition=true
+	// End
+
 	Speed=1200.000000
 	MaxSpeed=3000.000000
 	Damage=30.000000

@@ -100,4 +100,9 @@ defaultproperties
      SoundPitch=0
      TransientSoundVolume=255.000000
      TransientSoundRadius=60.000000
+
+	// Change by NickP: MP fix
+	bReplicateMovement=true
+	bUpdateSimulatedPosition=true
+	// End
 }

@@ -99,7 +99,19 @@ function PostBeginPlay()
 	// Disable physics if desired
 	if (!P2GameInfo(Level.Game).bEnableDismembermentPhysics)
 		SetCollision(false,false,false);
+
+	// Change by NickP: MP fix
+	MultiplayerSetupDestruction();
+	// End
 }
+
+// Change by NickP: MP fix, Let limbs lay around for limited period
+function MultiplayerSetupDestruction()
+{
+	if (Level.NetMode != NM_StandAlone && !bDeleteMe)
+		LifeSpan = 60;
+}
+// End
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -560,6 +572,10 @@ function TakeDamage( int Damage, Pawn instigatedBy, Vector hitlocation,
 	// Move it
 	if(VSize(Momentum) > 0 && Damage > 0)
 		GiveMomentum(Momentum);
+
+	// Change by NickP: MP fix
+	MultiplayerSetupDestruction();
+	// End
 
 	// If the player bumped us around mark us as such.
 	if(ClassIsChildOf(ThisDamage, class'BludgeonDamage'))
@@ -1037,6 +1053,10 @@ state Dissolving
 
 defaultproperties
 {
+	// Change by NickP: MP fix
+	bReplicateSkin=true
+	// End
+
      WaitTime=0.050000
      AnimalClassString="People.DogPawn"
      ExplodeLimbSound=Sound'AWSoundFX.Body.meathit'

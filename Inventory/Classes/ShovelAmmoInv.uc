@@ -82,10 +82,16 @@ function ProcessTraceHit(Weapon W, Actor Other, Vector HitLocation, Vector HitNo
 		if(FPSPawn(Other) != None)
 		{
 			if(P2Weapon(W).bAltFiring)
+			{
 				Instigator.PlayOwnedSound(ShovelStab, SLOT_None, 1.0,,TransientSoundRadius,GetRandPitch());
+				Instigator.PlaySound(ShovelStab, SLOT_Misc, 1.0,,TransientSoundRadius,GetRandPitch()); // Change by NickP: MP fix
+			}
 			else if(AnimalPawn(Other) != None
 				|| FPSPawn(Other).Health <= 0)
+			{
 				Instigator.PlayOwnedSound(ShovelHitBody, SLOT_None, 1.0,,TransientSoundRadius,GetRandPitch());
+				Instigator.PlaySound(ShovelHitBody, SLOT_Misc, 1.0,,TransientSoundRadius,GetRandPitch()); // Change by NickP: MP fix
+			}
 				
 			// HACK: We only want this to activate on the Shovel, not on anything that subclasses this because it may not have the blood textures set up
 			// If we hit a pawn make the weapon a little bloody
@@ -102,7 +108,10 @@ function ProcessTraceHit(Weapon W, Actor Other, Vector HitLocation, Vector HitNo
 				&& FPSGameInfo(Level.Game).bIsSinglePlayer)
 				smoke1.PlaySound(ShovelHitWall, SLOT_None, 1.0,,TransientSoundRadius,GetRandPitch());
 			else
+			{
 				Instigator.PlayOwnedSound(ShovelHitWall, SLOT_None, 1.0,,TransientSoundRadius,GetRandPitch());
+				Instigator.PlaySound(ShovelHitWall, SLOT_Misc, 1.0,,TransientSoundRadius,GetRandPitch()); // Change by NickP: MP fix
+			}
 		}
 	}
 }

@@ -117,6 +117,10 @@ function SortItemsIntoArray()
 	local P2PowerupInv Powerup;
 	local int PowerupIndex[INV_GROUP_COUNT];	// Keep track of what order we're in
 	local int UseRow, UseCol, UseSort;			// Temp vars
+
+	// Change by NickP: MP fix
+	local int Count;
+	// End
 	
 	// Empty current item list, if any.
 	DisplayItems.Length = 0;
@@ -130,7 +134,8 @@ function SortItemsIntoArray()
 	for (Inv = PlayerOwner.Pawn.Inventory; Inv != None; Inv = Inv.Inventory)
 	{
 		// Only track actual P2Powerup items
-		if (P2PowerupInv(Inv) != None)
+		if (P2PowerupInv(Inv) != None 
+			&& !Inv.bDeleteMe)
 		{		
 			Powerup = P2PowerupInv(Inv);
 			DisplayItems.Insert(0, 1);
@@ -154,6 +159,12 @@ function SortItemsIntoArray()
 			DisplayItems[0].SortOrder = UseSort;
 			ItemCount[UseRow]++;
 		}
+
+		// Change by NickP: MP fix
+		Count++;
+		if(Count > 5000)
+			break;
+		// End
 	}
 	
 	// Sort items so they'll draw from left to right based on group offset

@@ -1708,6 +1708,15 @@ function Died(Controller Killer, class<DamageType> damageType, vector HitLocatio
 event KExcessiveJointError()
 {
 	ChunkUp(0);
+
+	// Change by NickP: ragdolls issue fix
+	// SetPhysics(PHYS_None);
+	// MeshInstance = None;
+	// bInitializeAnimation = false;
+	// bInitialSetup = false;
+	// LinkAnims();
+	// PlayDyingAnim(DyingDamageType,Location);
+	// End
 }
 
 ///////////////////////////////////////////////////////////////////////////////

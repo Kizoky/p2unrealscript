@@ -65,6 +65,7 @@ var					bool	bTearOff;					// if true, this actor is no longer replicated to new
 var					bool	bOnlyDirtyReplication;		// if true, only replicate actor if bNetDirty is true - useful if no C++ changed attributes (such as physics)
 														// bOnlyDirtyReplication only used with bAlwaysRelevant actors
 var					bool	bReplicateAnimations;		// Should replicate SimAnim
+var					int		SimAnimChannel;				// Which channel is replicated for SimAnim
 // RWS CHANGE: Merged from UT2003 to fix problems with gameobject attachments
 var					bool	bAlwaysZeroBoneOffset;		// if true, offset always zero when attached to skeletalmesh
 
@@ -143,11 +144,9 @@ var(Display) array<UnEDLine>  	DrawLineActors;
 var Color LineColor;
 ////////////////////////////////////
 
-//ErikFOV Change: For Nick's coop replication
-var float fNCRepValue;
-var Name nNCRepValue;
-var Vector vNCRepValue;
-//End
+// Change by NickP: karma fix
+var(Karma) float KarmaMaxSpeed;				// Max speed actor with karma physics can achieve, pawns uses AirSpeed instead
+// End
 
 // Execution and timer variables.
 var				float       TimerRate;		// Timer event, 0=no timer.
@@ -648,6 +647,11 @@ enum EFlagState
     FLAG_Down,
 };
 
+// Change by NickP: MP fix
+var(Display) bool bReplicateSkin;			// Should replicate Skins[0]
+var Material RepSkin;						// Replicated skin
+// End
+
 //-----------------------------------------------------------------------------
 // natives.
 
@@ -751,10 +755,11 @@ replication
 	unreliable if( bDemoRecording )
 		DemoPlaySound;
 
-	// ErikFOV Change: For Nick's coop replication
-	unreliable if (Role == ROLE_Authority)
-		fNCRepValue, nNCRepValue, vNCRepValue;
-	//End
+	// Change by NickP: MP fix
+	unreliable if( (!bSkipActorPropertyReplication || bNetInitial)
+				&& (Role==ROLE_Authority) && bReplicateSkin && Skins.Length > 0 )
+		RepSkin;
+	// End
 }
 
 //=============================================================================
@@ -1749,6 +1754,11 @@ function vector GetCollisionExtent()
 
 defaultproperties
 {
+	// Change by NickP: karma fix
+	KarmaMaxSpeed=+02500.000000
+	SimAnimChannel=0
+	// End
+
      DrawType=DT_Sprite
      Texture=S_Actor
      DrawScale=+00001.000000

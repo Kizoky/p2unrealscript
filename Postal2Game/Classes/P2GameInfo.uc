@@ -194,6 +194,10 @@ const ErrandsReminderPath		= "Postal2Game.P2GameInfo bReminderHints"; // ini pat
 var globalconfig bool bUseWeaponSelector;		// If true, uses new weapon selector.
 var globalconfig bool bWeaponSelectorAutoSwitch;// If true, switches weapons while scrolling in weapon selector.
 
+// Change by NickP: MP fix
+var globalconfig float DroppedPickupLifespan;
+// End
+
 ///////////////////////////////////////////////////////////////////////////////
 // Startup stuff
 ///////////////////////////////////////////////////////////////////////////////
@@ -342,7 +346,7 @@ function bool IsCinematic()
 ///////////////////////////////////////////////////////////////////////////////
 // Modify the fire particle number by the detail level specified
 ///////////////////////////////////////////////////////////////////////////////
-function int ModifyByFireDetail(int startnum)
+/*function int ModifyByFireDetail(int startnum)
 {
 	if(FireDetail == FIRE_DETAIL_MAX)	// full fire
 		return startnum;
@@ -353,13 +357,27 @@ function int ModifyByFireDetail(int startnum)
 			startnum = 1;
 		return startnum;
 	}
+}*/
+// Change by NickP: MP fix
+static function int ModifyByFireDetail(int startnum)
+{
+	if(default.FireDetail == FIRE_DETAIL_MAX)	// full fire
+		return startnum;
+	else
+	{
+		startnum = (startnum / (FIRE_DETAIL_MAX - default.FireDetail));
+		if(startnum <= 0)
+			startnum = 1;
+		return startnum;
+	}
 }
+// End
 
 ///////////////////////////////////////////////////////////////////////////////
 // Modify the smoke particle number by the detail level specified
 // Make none come out of the detail level is 0.
 ///////////////////////////////////////////////////////////////////////////////
-function int ModifyBySmokeDetail(int startnum)
+/*function int ModifyBySmokeDetail(int startnum)
 {
 	if(SmokeDetail == SMOKE_DETAIL_MAX)	// full smoke
 		return startnum;
@@ -372,7 +390,23 @@ function int ModifyBySmokeDetail(int startnum)
 			startnum = 1;
 		return startnum;
 	}
+}*/
+// Change by NickP: MP fix
+static function int ModifyBySmokeDetail(int startnum)
+{
+	if(default.SmokeDetail == SMOKE_DETAIL_MAX)	// full smoke
+		return startnum;
+	else if(default.SmokeDetail == 0)	// no smoke
+		return 0;
+	else
+	{
+		startnum = (startnum / (SMOKE_DETAIL_MAX - default.SmokeDetail));
+		if(startnum <= 0)
+			startnum = 1;
+		return startnum;
+	}
 }
+// End
 
 ///////////////////////////////////////////////////////////////////////////////
 // Modifies lifetime based on fluid life
@@ -1176,12 +1210,24 @@ function P2Player xGetValidPlayerFor(LambController useController)
 }
 //End
 
+// Change by NickP: MP fix
+function NotifyPickupDropped(Pickup aPickup)
+{
+	if(!bIsSingleplayer && aPickup != None)
+		aPickup.LifeSpan = DroppedPickupLifespan;
+}
+// End
+
 ///////////////////////////////////////////////////////////////////////////////
 // Default properties
 ///////////////////////////////////////////////////////////////////////////////
 
 defaultproperties
 {
+	// Change by NickP: MP fix
+	DroppedPickupLifespan=30.0
+	// End
+
      MainMenuURL="Startup"
      ChameleonClass=Class'Postal2Game.Chameleon'
      ChamelHeadClass=Class'Postal2Game.ChamelHead'

@@ -555,6 +555,9 @@ final native function SteamPurgeWorkshop();
 // Detects ownership of DLC title.
 final native function bool SteamOwnsDLC(int appID);
 
+// Detects ownership of game.
+final native function bool SteamOwnsGame(int appID);
+
 // Displays DLC page.
 final native function SteamViewStorePage(int appID);
 

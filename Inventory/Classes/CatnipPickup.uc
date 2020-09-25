@@ -10,6 +10,8 @@ class CatnipPickup extends OwnedPickup;
 
 var StaticMesh NipLidMesh, NipBottomMesh;	// Mesh for catnip that's been used
 
+var CatnipPuff CatnipPuff; // Change by NickP: MP fix
+
 ///////////////////////////////////////////////////////////////////////////////
 // This catnip has been used and can't be hit anymore
 ///////////////////////////////////////////////////////////////////////////////
@@ -39,7 +41,7 @@ function ConvertToUsed()
 		bPersistent=false;
 		SetCollision(false, false, false);
 		// Make green dust around it
-		spawn(class'CatnipPuff',,,Location);
+		CatnipPuff = spawn(class'CatnipPuff',,,Location);
 		// Make no one want it any more (because it's used)
 		if(DesireMarker != None)
 		{
@@ -48,6 +50,15 @@ function ConvertToUsed()
 		}
 	}
 }
+
+// Change by NickP: MP fix
+simulated function Destroyed()
+{
+	Super.Destroyed();
+	if (CatnipPuff != None && !CatnipPuff.bDeleteMe)
+		CatnipPuff.Destroy();
+}
+// End
 
 ///////////////////////////////////////////////////////////////////////////////
 // Default properties

@@ -357,6 +357,11 @@ simulated event RenderOverlays( canvas Canvas )
 ///////////////////////////////////////////////////////////////////////////////
 defaultproperties
 {
+	// Change by NickP: MP fix
+	bReplicateMovement=true
+	bUpdateSimulatedPosition=true
+	// End
+
 	 DamageDistMag=1500;
 	 Damage = 500;
 

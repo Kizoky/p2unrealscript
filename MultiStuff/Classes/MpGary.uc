@@ -457,6 +457,11 @@ function MakeSniperGlare()
 
 defaultproperties
 	{
+	// Change by NickP: MP fix
+    StumpClass=Class'StumpGary'
+    LimbClass=Class'LimbGary'
+	// End
+
 	Mesh=Mesh'MP_Gary_Characters.Mini_M_Jacket_Pants'
 	CoreSPMesh=Mesh'Gary_Characters.Mini_M_Jacket_Pants'
 	Skins[0]=Texture'ChameleonSkins.Special.Gary'

@@ -34,4 +34,8 @@ defaultproperties
 {
 	bReplicateInstigator=true
 	FiringSpeed=+1.0
+
+	// Change by NickP: fix
+	CullDistance=0
+	// End
 }

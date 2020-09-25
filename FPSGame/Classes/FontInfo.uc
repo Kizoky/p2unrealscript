@@ -124,7 +124,6 @@ function string ParseForKeys(string S, Canvas Canvas)
 		
 	//ErikFOV Change: For Nick's coop
 	if( MyHUD.MyButtons == None 
-		|| Canvas.Viewport == None 
 		|| Canvas.Viewport.Actor == None )
 		return S;
 	//End
@@ -427,7 +426,6 @@ function DrawTextEx(Canvas Canvas, float CanvasWidth, float x, float y, String s
 function bool FindMyHudFIX(Canvas C)
 {
 	if( MyHud == None 
-		&& C.Viewport != None 
 		&& C.Viewport.Actor != None 
 		&& C.Viewport.Actor.MyHud != None )
 	{
@@ -531,6 +529,22 @@ function ClipText(Canvas Canvas, coerce string Str, optional bool bCheckHotkey)
 		Canvas.SetPos(SaveX, SaveY);
 		DrawIconsOverText(Canvas,,,,true);
 	}
+}
+
+function string GetButtonParsedText(Canvas Canvas, coerce string Str)
+{
+	if( MyHUD == None )
+		FindMyHudFIX(Canvas);
+
+	// If we don't have a HUD, find it!
+	if (MyHUD == None)
+		foreach DynamicActors(class'FPSHud', MyHud)
+			break;	
+
+	str = ParseForKeys(str, Canvas);
+	DrawIconsOverText(Canvas,,,,true);
+
+	return str;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -91,7 +91,8 @@ function Tick(float DeltaTime)
 	CheckToHitActors(DeltaTime);
 	
 	// Kamek additions to stop log spam when cow head users disconnect
-	if (!bDCdInstigator && Instigator == None)
+	if (!bDCdInstigator && (Instigator == None
+		|| Instigator.bDeleteMe)) // Change by NickP: MP fix
 	{
 		Instigator = None;
 		bDCdInstigator = True;

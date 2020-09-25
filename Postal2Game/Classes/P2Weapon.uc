@@ -293,6 +293,12 @@ replication
 	// client to server
 	reliable if( Role < ROLE_Authority )
 		ServerForceFinish;
+
+	// Change by NickP: MP fix
+	// Functions called by server on client
+	reliable if( Role==ROLE_Authority )
+		ClientInventoryAdded, ClientInventoryDeleted;
+	// End
 }
 
 // DQ's shovel achievement (basically stick this in Fire on any weapon that isn't a shovel, clipboard, match, or urethra)
@@ -423,13 +429,14 @@ function AfterItsTaken(P2Pawn CheckPawn)
 simulated function bool NotDedOnServer()
 {
 	//log(self$" net mode "$Level.NetMode$" role "$Role$" viewport "$ViewPort(PlayerController(Instigator.Controller).Player));
-	
+
+/*
 	//ErikFOV Change: Fix problem
-	/*return (Level.NetMode == NM_Client
-			|| Level.NetMode == NM_Standalone
-			|| (Level.NetMode == NM_ListenServer
-				&& Role == ROLE_Authority
-				&& ViewPort(PlayerController(Instigator.Controller).Player) != None));*/
+	// return (Level.NetMode == NM_Client
+			// || Level.NetMode == NM_Standalone
+			// || (Level.NetMode == NM_ListenServer
+				// && Role == ROLE_Authority
+				// && ViewPort(PlayerController(Instigator.Controller).Player) != None));
 	return (Level.NetMode == NM_Client
 		|| Level.NetMode == NM_Standalone
 		|| (Level.NetMode == NM_ListenServer
@@ -439,6 +446,21 @@ simulated function bool NotDedOnServer()
 				&& (PersonController(Instigator.Controller) != None 
 					|| ViewPort(PlayerController(Instigator.Controller).Player) != None))));
 	//end
+*/
+
+	// Change by NickP: MP fix
+	return (Level.NetMode == NM_Client
+			|| Level.NetMode == NM_Standalone
+			|| (Level.NetMode == NM_DedicatedServer 
+				&& Instigator != None 
+				&& !Instigator.bDeleteMe 
+				&& PersonController(Instigator.Controller) != None)
+			|| (Level.NetMode == NM_ListenServer
+				&& Role == ROLE_Authority
+				&& (Instigator != None && !Instigator.bDeleteMe 
+					&& (PersonController(Instigator.Controller) != None 
+						|| ViewPort(PlayerController(Instigator.Controller).Player) != None))));
+	// End
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -2629,6 +2651,24 @@ simulated function bool IsZoomed()
 {
 	return false;
 }
+
+// Change by NickP: MP fix
+simulated function ClientInventoryAdded()
+{
+	if(Role < ROLE_Authority 
+		&& Pawn(Owner) != None 
+		&& Pawn(Owner).Controller != None)
+		Pawn(Owner).Controller.NotifyAddInventory(self);
+}
+
+simulated function ClientInventoryDeleted(Actor OldOwner)
+{
+	if(Role < ROLE_Authority 
+		&& Pawn(OldOwner) != None 
+		&& Pawn(OldOwner).Controller != None)
+		Pawn(OldOwner).Controller.NotifyDeleteInventory(self);
+}
+// End
 
 ///////////////////////////////////////////////////////////////////////////////
 // DefaultProperties

@@ -557,6 +557,10 @@ event Landed(Vector HitNormal)
 	// Don't let powerups move in nightmare mode (allowing them to kick health "down the road" for later)
 	if(P2GameInfo(Level.Game).InNightmareMode())
 		bAllowMovement=false;
+
+	// Change by NickP: MP fix
+	P2GameInfo(Level.Game).NotifyPickupDropped(self);
+	// End
 }
 
 /*

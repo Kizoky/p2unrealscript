@@ -87,6 +87,9 @@ function ToggleFireMode()
 
 defaultproperties
 {
+	// Change by NickP: MP fix
+	NoAmmoChangeState="DownWeapon"
+
      bDisplayFireMode=True
      bSwitchesFireMode=True
      SelectAnims(0)="load_semi"

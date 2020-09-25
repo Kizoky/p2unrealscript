@@ -18,6 +18,38 @@ function bool AddToTeam(Controller Other)
 	return true;
 }
 
+// Change by NickP: MP fix
+function RosterEntry GetNextBot()
+{
+	local int i, n;
+	local array<int> RandRoster;
+
+	for ( i=0; i<Roster.Length; i++ )
+		if ( !Roster[i].bTaken )
+		{
+			n = RandRoster.Length;
+			RandRoster.Insert(n, 1);
+			RandRoster[n] = i;
+
+			//Roster[i].bTaken = true;
+			//return Roster[i];
+		}
+
+	if( RandRoster.Length != 0 )
+	{
+		i = RandRoster[Rand(RandRoster.Length-1)];
+		Roster[i].bTaken = true;
+		return Roster[i];
+	}
+
+	i = Roster.Length;
+	Roster.Length = Roster.Length + 1;
+	Roster[i] = GetRandomPlayer();
+	Roster[i].bTaken = true;
+	return Roster[i];
+}
+// End
+
 defaultproperties
 {
 	TeamIndex=255

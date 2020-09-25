@@ -8,6 +8,12 @@ var BodyPart HeadOwner;
 
 const VEL_Z_DOT_PLUS = 20;
 
+replication
+{
+	reliable if(Role == ROLE_Authority)
+		HeadOwner;
+}
+
 simulated function Destroyed()
 {
 	// Null out head's puke stream
@@ -48,12 +54,23 @@ function HittingOwner(vector Dir)
 ///////////////////////////////////////////////////////////////////////////
 // Make the emitter shoot out of Rotation
 ///////////////////////////////////////////////////////////////////////////
-function SetDir(vector newloc, vector startdir, optional float velmag, optional bool bInitArc)
+simulated function SetDir(vector newloc, vector startdir, optional float velmag, optional bool bInitArc)
 {
 	local int i;
 	local vector dir;
 	local float addzmag, usevelmag;
 	local vector ownervel;
+	local coords checkcoords; // Change by NickP: MP fix
+
+	// Change by NickP: MP fix
+	if(Level.NetMode != NM_Standalone && HeadOwner != None && !HeadOwner.bDeleteMe)
+	{
+		checkcoords = HeadOwner.GetBoneCoords('lower_lip');
+		SetLocation(checkcoords.Origin);
+		newloc = checkcoords.Origin;
+		startdir = checkcoords.YAxis;
+	}
+	// End
 
 	// Save our collision location each time--could be different than our visual location
 	CollisionStart = newloc;
@@ -115,11 +132,11 @@ function ToggleFlow(float TimeToStop, bool bIsOn)
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-auto state Starting
+auto simulated state Starting
 {
 	ignores CheckForFluidHit;
 
-	function Timer()
+	simulated function Timer()
 	{
 		AmbientSound=SplashingSound;
 

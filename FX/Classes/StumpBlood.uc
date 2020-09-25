@@ -17,6 +17,11 @@ function MakeBloodSplat()
 	local vector endpt, dir;
 	local Actor HitActor;
 
+	// Change by NickP: MP fix
+	if (Level.NetMode != NM_StandAlone)
+		return;
+	// End
+
 	dir = vector(Rotation) + 0.1*Vrand();
 	// make sure it always point downward some, unless it's already pointing upwards a lot
 	if(dir.z < 0.7)
@@ -39,8 +44,20 @@ function Timer()
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-auto state Spew
+auto simulated state Spew
 {
+	// Change by NickP: MP fix
+	simulated function BeginState()
+	{
+		Super.BeginState();
+		if (Role < ROLE_Authority)
+		{
+			SelfDestroy(true);
+			LifeSpan = 0.1;
+		}
+	}
+	// End
+
 begin:
 	SetTimer(SpewTime+0.5*SpewTime*Frand(), false);
 squirt:

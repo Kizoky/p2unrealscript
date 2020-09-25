@@ -178,6 +178,10 @@ var SubtitleManager SubtitleManager;
 var globalconfig int SubtitleLangIndex;
 //
 
+// Change by NickP: FOV fix
+var globalconfig float HackedFOV;
+// End
+
 replication
 {
 	// Things the server should send to the client.
@@ -270,6 +274,10 @@ event PostBeginPlay()
 	if (Level.LevelEnterText != "" )
 		ClientMessage(Level.LevelEnterText);
 
+	// Change by NickP: FOV fix
+	if( HackedFOV != 0 )
+		DefaultFOV = HackedFOV;
+	// End
     DesiredFOV = DefaultFOV;
 
 	//log("PlayerController::PostBeginPlay - FOV(DesiredFOV)");
@@ -288,7 +296,15 @@ event PostBeginPlay()
 function GetSubtitleManager(out SubtitleManager s)
 {
 	local SubtitleManager a;
-	
+
+	// Change by NickP: MP fix
+	if( Level.NetMode == NM_DedicatedServer )
+	{
+		s = None;
+		return;
+	}
+	// End
+
 	foreach AllActors(class'SubtitleManager',a)
 	{
 		if(a != none)
@@ -768,6 +784,7 @@ exec function FOV(float F)
 	{
         DefaultFOV = FClamp(F, 1, 170);
 		DesiredFOV = DefaultFOV;
+		HackedFOV = DefaultFOV; // Change by NickP: FOV fix
 		SaveConfig();
 		// We don't want to save the newly calculated FOV. That would confuse people.
 		// (Why is my FOV slider changing!?)
@@ -810,6 +827,10 @@ function float CalculateFOV(float FOV)
    //log(AspectRatio);
 
    horizontalFOV = ApplyAspectRatio(FOV);
+	// Change by NickP: MP fix
+	if(horizontalFOV == 0 )
+		horizontalFOV = FOV;
+	// End
 
    //log(horizontalFOV);
 
@@ -1513,7 +1534,8 @@ function ClientUpdatePosition()
 
 function AdjustRadius(float MaxMove)
 {
-	local Pawn P;
+	// Change by NickP: MP fix
+	/*local Pawn P;
 	local vector Dir;
 
 	// if other pawn moving away from player, push it away if its close
@@ -1527,7 +1549,8 @@ function AdjustRadius(float MaxMove)
 				if ( VSize(P.Location - Pawn.Location) < P.CollisionRadius + Pawn.CollisionRadius + MaxMove )
 					P.MoveSmooth(P.Velocity * 0.5 * PlayerReplicationInfo.Ping);
 			}
-		}
+		}*/
+	// End
 }
 
 final function SavedMove GetFreeMove()

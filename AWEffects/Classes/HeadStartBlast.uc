@@ -3,8 +3,19 @@ class HeadStartBlast extends P2Emitter;
 
 const BURN_TIME = 4.0;
 
-auto state Burning
+auto simulated state Burning
 {
+	// Change by NickP: MP fix
+	simulated function BeginState()
+	{
+		Super.BeginState();
+		if (Role < ROLE_Authority)
+		{
+			SelfDestroy();
+		}
+	}
+	// End
+
 Begin:
 	Sleep(BURN_TIME);
 	SelfDestroy();

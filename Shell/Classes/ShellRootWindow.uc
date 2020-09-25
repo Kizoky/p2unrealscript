@@ -97,11 +97,20 @@ var bool bHandledConfirm;
 
 var localized string			WorkshopStatus;
 
+// Change by NickP: MP fix
+var string DefaultStartupMapName;
+// End
+
 ///////////////////////////////////////////////////////////////////////////////
 // Get startup map
 ///////////////////////////////////////////////////////////////////////////////
 function string GetStartupMap()
 {
+	// Change by NickP: MP fix
+	if(GetGameSingle() == None)
+		return DefaultStartupMapName;
+	// End
+
 	//log("get startup map:"@GetGameSingle().MainMenuURL);
 	return GetGameSingle().MainMenuURL;
 }
@@ -1420,6 +1429,11 @@ function execMenuButton()
 ///////////////////////////////////////////////////////////////////////////////
 defaultproperties
 	{
+
+	// Change by NickP: MP fix
+	DefaultStartupMapName="startup"
+	// End
+
 	LookAndFeelClass="Shell.ShellLookAndFeel"
 	FontInfoClass="FPSGame.FontInfo"
 	MinRes="1024x768"
@@ -1435,7 +1449,7 @@ defaultproperties
 	ConnectingMessage="JOINING"
 	LoadingMessage="LOADING"
 //	StartupMapName="Startup"
-	EngineVersion="5023"
+	EngineVersion="5024"
 	HotfixText=""
 	bBuildDateAsHotfixText=false
 	WorkshopStatus="Workshop Status:"

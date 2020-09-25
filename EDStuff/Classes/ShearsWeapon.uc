@@ -447,7 +447,7 @@ defaultproperties
      WeaponSpeedShoot1=0.900000
      WeaponSpeedShoot1Rand=0.100000
      WeaponSpeedShoot2=1.100000
-     bCanThrowMP=False
+     bCanThrowMP=true
      AmmoName=Class'ShearsAmmoInv'
      FireOffset=(X=0.000000,Z=0.000000)
      ShakeRotTime=6.000000

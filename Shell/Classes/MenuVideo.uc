@@ -1264,9 +1264,10 @@ defaultproperties
 	astrTextureDetailNames(2)="Medium"
 	astrTextureDetailNames(3)="High"
 	bDefaultsStored=True
+	// Change by NickP: aDefaultValues(2)="0.100000" wrong gamma fixed (1.0)
 	aDefaultValues(0)="0.500000"	// Brightness
 	aDefaultValues(1)="0.500000"	// Contrast
-	aDefaultValues(2)="0.100000"	// Gamma
+	aDefaultValues(2)="1.000000"	// Gamma
 	aDefaultValues(3)="False"		// 16Bit Color
 	aDefaultValues(4)="False"		// Widescreen Stretch
 	aDefaultValues(5)="True" 		// VSync

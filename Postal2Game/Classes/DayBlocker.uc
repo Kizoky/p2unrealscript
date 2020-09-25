@@ -22,6 +22,10 @@ var() bool bDestroyOnDayNeeded;
 
 defaultproperties
 {
+	// Change by NickP: MP fix
+	bReplicateSkin=true
+	// End
+
 	 bStasis=true
 	 bNoDelete=false
      bStatic=false

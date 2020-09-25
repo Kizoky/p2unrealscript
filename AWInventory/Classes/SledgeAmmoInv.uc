@@ -24,6 +24,13 @@ function ProcessTraceHit(Weapon W, Actor Other, Vector HitLocation, Vector HitNo
 	if ( Other == None )
 		return;
 
+	// Change by NickP: MP fix
+	if(Level.Game == None
+		|| !FPSGameInfo(Level.Game).bIsSinglePlayer)
+		DamageAmount = DamageAmountMP;
+	else DamageAmount = default.DamageAmount;
+	// End
+
 	// Check if they're allowed to hit the person they did, if not, None out Other
 	// so it's like a wall hit
 	if(PersonPawn(Other) != None)
@@ -83,16 +90,26 @@ function ProcessTraceHit(Weapon W, Actor Other, Vector HitLocation, Vector HitNo
 		if (P2MocapPawn(Other) != None)
 		{
 			if (P2MocapPawn(Other).MyRace < RACE_Automaton)
+			{
 				Instigator.PlayOwnedSound(SledgeHitBody, SLOT_None, 1.0,,TransientSoundRadius,GetRandPitch());
+				Instigator.PlaySound(SledgeHitBody, SLOT_Misc, 1.0,,TransientSoundRadius,GetRandPitch()); // Change by NickP: MP fix
+			}
 			else if (P2MocapPawn(Other).MyRace == RACE_Automaton)
+			{
 				Instigator.PlayOwnedSound(SledgeHitBot, SLOT_None, 1.0,,TransientSoundRadius,GetRandPitch());
+				Instigator.PlaySound(SledgeHitBot, SLOT_Misc, 1.0,,TransientSoundRadius,GetRandPitch()); // Change by NickP: MP fix
+			}
 			else if (P2MocapPawn(Other).MyRace == RACE_Skeleton)
+			{
 				Instigator.PlayOwnedSound(SledgeHitSkel, SLOT_None, 1.0,,TransientSoundRadius,GetRandPitch());
+				Instigator.PlaySound(SledgeHitSkel, SLOT_Misc, 1.0,,TransientSoundRadius,GetRandPitch()); // Change by NickP: MP fix
+			}
 		}
 		else if(FPSPawn(Other) != None
 			|| PeoplePart(Other) != None)
 		{
 			Instigator.PlayOwnedSound(SledgeHitBody, SLOT_None, 1.0,,TransientSoundRadius,GetRandPitch());
+			Instigator.PlaySound(SledgeHitBody, SLOT_Misc, 1.0,,TransientSoundRadius,GetRandPitch()); // Change by NickP: MP fix
 		}
 		else
 		{
@@ -101,7 +118,10 @@ function ProcessTraceHit(Weapon W, Actor Other, Vector HitLocation, Vector HitNo
 				&& FPSGameInfo(Level.Game).bIsSinglePlayer)
 				smoke1.PlaySound(SledgeHitWall, SLOT_None, 1.0,,TransientSoundRadius,GetRandPitch());
 			else
+			{
 				Instigator.PlayOwnedSound(SledgeHitWall, SLOT_None, 1.0,,TransientSoundRadius,GetRandPitch());
+				Instigator.PlaySound(SledgeHitWall, SLOT_Misc, 1.0,,TransientSoundRadius,GetRandPitch()); // Change by NickP: MP fix
+			}
 		}
 	}
 }
@@ -114,6 +134,7 @@ defaultproperties
      SledgeHitBot=Sound'AWSoundFX.Sledge.hammerhitwall_metalhit'
      SledgeHitSkel=Sound'AWSoundFX.Sledge.hammerhitwall_metalhit'
      DamageAmount=100.000000
+	 DamageAmountMP=120.000000
      MomentumHitMag=50000.000000
      DamageTypeInflicted=Class'SledgeDamage'
      AltDamageTypeInflicted=Class'FlyingSledgeDamage'

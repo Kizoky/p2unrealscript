@@ -556,6 +556,11 @@ function ClipText(Canvas Canvas, coerce string Str, optional bool bCheckHotkey)
 	MyFont.ClipText(Canvas, Str, bCheckHotkey);
 }
 
+function string GetButtonParsedText(Canvas Canvas, coerce string Str)
+{
+	return MyFont.GetButtonParsedText(Canvas, Str);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Default properties
 ///////////////////////////////////////////////////////////////////////////////

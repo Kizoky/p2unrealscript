@@ -144,6 +144,10 @@ state Moving
 
 defaultproperties
 {
+	// Change by NickP: MP fix
+	bClientSync=false
+	// End
+
      ScaleSpeed=0.400000
      PosSpeed=-1.000000
      FemMesh=StaticMesh'awpeoplestatic.Limbs.Guts_Fem'

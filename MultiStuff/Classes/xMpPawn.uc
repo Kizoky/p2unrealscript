@@ -330,12 +330,47 @@ state Dying
 	}
 }
 
+// Change by NickP: MP fix, just before tearing off connection let us cut some limbs!
+simulated function MultiplayerDismemberment(class<DamageType> damageType, vector HitLocation)
+{
+	local int Damage;
+	local vector Momentum;
+
+	bNoDismemberment = false;
+	if(ClassIsChildOf(damageType, class'MacheteDamage'))
+		HandleSever(None, Momentum, damageType, INVALID_LIMB, Damage, HitLocation);
+	else if(ClassIsChildOf(damageType, class'SledgeDamage'))
+		HandleSledge(None, Momentum, damageType, Damage, HitLocation);
+	else if(ClassIsChildOf(damageType, class'ScytheDamage'))
+		HandleScythe(None, Momentum, damageType, Damage, HitLocation);
+}
+// End
+
+// Change by NickP: MP fix, allow ragdolls when burned
+function bool AllowRagdoll(class<DamageType> DamageType)
+{
+	if( (ClassIsChildOf(damageType, class'BurnedDamage') || ClassIsChildOf(damageType, class'OnFireDamage')) && !bForbidRagdoll )
+		return true;
+
+	return Super.AllowRagdoll(DamageType);
+}
+// End
 
 defaultproperties
 	{
+	// Change by NickP: MP fix
+	bNoDismemberment=true
+	bReplicateMovementAnim=false
+	bReplicateAnimations=false
+	bReplicateSkin=false
+	// End
+
 	bRandomizeHeadScale=false	// don't let head scale or it may clip with helmets
 
-	ControllerClass=class'MultiBase.Bot'
+	// Change by NickP: MP fix
+	//ControllerClass=class'MultiBase.Bot'
+	ControllerClass=class'MultiBase.BotAdvanced'
+	// End
 
 //	GameObjOffset=(x=15,Y=16,Z=0)
 //	GameObjRot=(Pitch=32768,Yaw=16384,Roll=-16384)

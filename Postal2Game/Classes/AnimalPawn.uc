@@ -72,6 +72,18 @@ simulated function PostBeginPlay()
 	SetupAnims();
 }
 
+// Change by NickP: MP fix
+simulated function PostNetBeginPlay()
+{
+	Super.PostNetBeginPlay();
+
+	if (Role < ROLE_Authority)
+	{
+		AnimBlendParams(MOVEMENTCHANNEL,0.0);
+	}
+}
+// End
+
 ///////////////////////////////////////////////////////////////////////////////
 // Clean up
 ///////////////////////////////////////////////////////////////////////////////
@@ -315,9 +327,33 @@ simulated function LoopIfNeeded(name NewAnim, float NewRate)
 // forward decs.
 ///////////////////////////////////////////////////////////////////////////////
 simulated function SetupAnims();
-simulated function SetAnimWalking();
-simulated function SetAnimRunning();
-simulated function SetAnimRunningScared();
+simulated function SetAnimWalking()
+{
+	// Change by NickP: MP fix
+	if (bReplicateAnimations)
+	{
+		SimAnimChannel = MOVEMENTCHANNEL;
+	}
+	// End
+}
+simulated function SetAnimRunning()
+{
+	// Change by NickP: MP fix
+	if (bReplicateAnimations)
+	{
+		SimAnimChannel = MOVEMENTCHANNEL;
+	}
+	// End
+}
+simulated function SetAnimRunningScared()
+{
+	// Change by NickP: MP fix
+	if (bReplicateAnimations)
+	{
+		SimAnimChannel = MOVEMENTCHANNEL;
+	}
+	// End
+}
 simulated function SetAnimFlying();
 simulated function SetAnimClimbing();
 simulated function SetAnimStanding();
@@ -351,7 +387,15 @@ simulated function PlayDruggedOut();
 simulated function PlayGetBackUp();
 simulated function PlayPissing(float AnimSpeed);
 simulated function PlayCovering();
-simulated function SetAnimTrotting();
+simulated function SetAnimTrotting()
+{
+	// Change by NickP: MP fix
+	if (bReplicateAnimations)
+	{
+		SimAnimChannel = MOVEMENTCHANNEL;
+	}
+	// End
+}
 simulated function SetToTrot(bool bSet);
 simulated function PlayShockedAnim();
 simulated function PlayGrabPickupOnGround();
@@ -403,6 +447,13 @@ simulated event PlayDying(class<DamageType> DamageType, vector HitLoc)
 		AnimBlendToAlpha(TAKEHITCHANNEL,0,0.0);
 		AnimBlendToAlpha(FALLINGCHANNEL,0,0.0);
 		AnimBlendToAlpha(MOVEMENTCHANNEL,0,0.0);
+
+		// Change by NickP: MP fix
+		if (bReplicateAnimations)
+		{
+			SimAnimChannel = RESTINGPOSECHANNEL;
+		}
+		// End
 
 		// If you start dead, then play your death animation
 		// but warp to the end of it (so it's like you're posing in the last frame
@@ -468,6 +519,17 @@ function ActionLoopAnim( name BaseAnim, float AnimRate)
 ///////////////////////////////////////////////////////////////////////////////
 simulated event AnimEnd(int Channel)
 	{
+	// Change by NickP: MP fix
+	if (bReplicateAnimations)
+	{
+		if (Physics == PHYS_Falling)
+			SimAnimChannel = FALLINGCHANNEL;
+		else if (VSize(Acceleration) > 1)
+			SimAnimChannel = MOVEMENTCHANNEL;
+		else SimAnimChannel = RESTINGPOSECHANNEL;
+	}
+	// End
+
 	if ( Channel == TAKEHITCHANNEL )
 		AnimBlendToAlpha(TAKEHITCHANNEL,0,0.1);
 //	else
@@ -985,6 +1047,10 @@ Begin:
 
 defaultproperties
 {
+	// Change by NickP: MP fix
+	bReplicateMovementAnim=false
+	// End
+
 	bTravel=true
     ControllerClass=class'AnimalController'
 	HealthMax=50

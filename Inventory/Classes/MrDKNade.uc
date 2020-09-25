@@ -102,10 +102,22 @@ simulated event Tick(float Delta)
 
 defaultproperties
 {
+	// Change by NickP: MP fix
+	RemoteRole=ROLE_None
+	bCollideActors=false
+	bCollideWorld=false
+	bBlockActors=false
+	bBlockKarma=false
+	bBlockPlayers=false
+	bBlockNonZeroExtentTraces=false
+	bBlockZeroExtentTraces=false
+	bProjTarget=false
+	// End
+
      MyAction=AT_OnBed
      MyAnims=MeshAnimation'P2R_Anims_D.Weapons.animKrotchy'
      bClientAnim=True
-     RemoteRole=ROLE_SimulatedProxy
+     //RemoteRole=ROLE_SimulatedProxy
      DrawType=DT_Mesh
      Mesh=SkeletalMesh'P2R_Anims_D.Weapons.Krotchy'
      DrawScale=0.155

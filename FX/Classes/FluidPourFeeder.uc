@@ -106,7 +106,7 @@ function EstimateArc()
 ///////////////////////////////////////////////////////////////////////////
 // Make the emitter shoot out of Rotation
 ///////////////////////////////////////////////////////////////////////////
-function SetDir(vector newloc, vector startdir, optional float velmag, optional bool bInitArc)
+simulated function SetDir(vector newloc, vector startdir, optional float velmag, optional bool bInitArc)
 {
 	local int i;
 	local vector dir;

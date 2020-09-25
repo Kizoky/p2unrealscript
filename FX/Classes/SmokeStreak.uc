@@ -12,7 +12,22 @@ const PARTICLE_EMISSION_RATIO=0.025;
 const VEL_RATIO = 0.65;
 const PLACEMENT_RATIO = 0.35;
 
-function CalcParticleNeed(float newdist)
+// Change by NickP: MP fix
+auto simulated state Smoking
+{
+	simulated function BeginState()
+	{
+		Super.BeginState();
+		if(Role < ROLE_Authority)
+		{
+			CalcParticleNeed(DIST_TO_PARTICLE_RATIO);
+			SetLine(Location, Location, class'FireStreak'.default.Emitters[0].StartVelocityRange, vect(0,0,1));
+		}
+	}
+}
+// End
+
+simulated function CalcParticleNeed(float newdist)
 {
 	local int newmax;
 	
@@ -20,7 +35,9 @@ function CalcParticleNeed(float newdist)
 	if(newmax < MIN_PARTICLES)
 		newmax = MIN_PARTICLES;
 	// Decrease smoke detail 
-	newmax = P2GameInfo(Level.Game).ModifyBySmokeDetail(newmax);
+//	newmax = P2GameInfo(Level.Game).ModifyBySmokeDetail(newmax);
+	newmax = class'P2GameInfo'.static.ModifyBySmokeDetail(newmax); // Change by NickP: MP fix
+
 	if(newmax > 0)
 	{
 		Emitters[0].ParticlesPerSecond = PARTICLE_EMISSION_RATIO*newmax;
@@ -33,7 +50,7 @@ function CalcParticleNeed(float newdist)
 		Emitters[0].Disabled=true;
 }
 
-function SetLine(vector lstart, vector lend, rangevector StartVelocity, vector UNormal)
+simulated function SetLine(vector lstart, vector lend, rangevector StartVelocity, vector UNormal)
 {
 	local vector usevel, placement;
 

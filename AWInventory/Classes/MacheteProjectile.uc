@@ -151,6 +151,7 @@ function MakePickup()
 		usemom = Velocity;
 		usemom.z+=FRand()*500;
 		usemom = 100*usemom;
+		newmac.bAllowMovement = true; // Change by NickP: MP fix
 		newmac.TakeDamage(1,Instigator,Location,usemom,class'damageType');
 		// Tell the instigator if they're waiting on us, to change to
 		// another weapon becuase we're not coming back
@@ -241,10 +242,10 @@ simulated function HitWall( vector HitNormal, actor Wall )
 			{
 				// Only make them turn into single pickups 
 				// in single player mode
-				if(FPSGameInfo(Level.Game).bIsSinglePlayer)
-				{
+				//if(FPSGameInfo(Level.Game).bIsSinglePlayer)
+				//{
 					MakePickup();
-				}
+				//}
 
 				// Throw off some sparks from the stick
 				spark1 = spawn(class'Fx.SparkHitProjectile',Owner,,Location,rotator(HitNormal));
@@ -326,7 +327,11 @@ simulated function ProcessTouch(Actor Other, Vector HitLocation)
 							&& Other.Owner != LastPawnHit))
 					{
 						// Balance damage differently for MP vs SP
-						if(Level.NetMode == NM_Standalone)
+						// Change by NickP: MP fix
+						//if(Level.NetMode == NM_Standalone)
+						if(Level.Game != None
+							&& FPSGameInfo(Level.Game).bIsSinglePlayer)
+						// End
 						{
 							//log(self$" check to hit "$Other);
 							// People can possibly block a thrown projectile
@@ -617,6 +622,12 @@ Begin:
 
 defaultproperties
 {
+	// Change by NickP: MP fix
+	bNetTemporary=false
+	bReplicateMovement=true
+	bUpdateSimulatedPosition=true
+	// End
+
      BounceMax=12
      WallHitSound=Sound'AWSoundFX.Machete.machetehitwall'
      FlyingSound=Sound'AWSoundFX.Machete.machetethrowloop'
@@ -634,7 +645,7 @@ defaultproperties
      VelDampen=1.000000
      RotDampen=1.000000
      StartSpinMag=-400000.000000
-     DamageMP=51.000000
+     DamageMP=100.000000
      speed=800.000000
      MaxSpeed=800.000000
      TossZ=0.000000

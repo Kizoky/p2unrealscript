@@ -26,6 +26,13 @@ function ProcessTraceHit(Weapon W, Actor Other, Vector HitLocation, Vector HitNo
 	if ( Other == None )
 		return;
 
+	// Change by NickP: MP fix
+	if(Level.Game == None
+		|| !FPSGameInfo(Level.Game).bIsSinglePlayer)
+		DamageAmount = DamageAmountMP;
+	else DamageAmount = default.DamageAmount;
+	// End
+
 	// Check if they're allowed to hit the person they did, if not, None out Other
 	// so it's like a wall hit
 	if(PersonPawn(Other) != None)
@@ -87,16 +94,26 @@ function ProcessTraceHit(Weapon W, Actor Other, Vector HitLocation, Vector HitNo
 		if (P2MocapPawn(Other) != None)
 		{
 			if (P2MocapPawn(Other).MyRace < RACE_Automaton)
+			{
 				Instigator.PlayOwnedSound(MacheteHitBody, SLOT_None, 1.0,,TransientSoundRadius,GetRandPitch());
+				Instigator.PlaySound(MacheteHitBody, SLOT_Misc, 1.0,,TransientSoundRadius,GetRandPitch()); // Change by NickP: MP fix
+			}
 			else if (P2MocapPawn(Other).MyRace == RACE_Automaton)
+			{
 				Instigator.PlayOwnedSound(MacheteHitBot, SLOT_None, 1.0,,TransientSoundRadius,GetRandPitch());
+				Instigator.PlaySound(MacheteHitBot, SLOT_Misc, 1.0,,TransientSoundRadius,GetRandPitch()); // Change by NickP: MP fix
+			}
 			else if (P2MocapPawn(Other).MyRace == RACE_Skeleton)
+			{
 				Instigator.PlayOwnedSound(MacheteHitSkel, SLOT_None, 1.0,,TransientSoundRadius,GetRandPitch());
+				Instigator.PlaySound(MacheteHitSkel, SLOT_Misc, 1.0,,TransientSoundRadius,GetRandPitch()); // Change by NickP: MP fix
+			}
 		}
 		else if(FPSPawn(Other) != None
 			|| PeoplePart(Other) != None)
 		{
 			Instigator.PlayOwnedSound(MacheteHitBody, SLOT_None, 1.0,,TransientSoundRadius,GetRandPitch());
+			Instigator.PlaySound(MacheteHitBody, SLOT_Misc, 1.0,,TransientSoundRadius,GetRandPitch()); // Change by NickP: MP fix
 		}
 		else
 		{
@@ -105,7 +122,10 @@ function ProcessTraceHit(Weapon W, Actor Other, Vector HitLocation, Vector HitNo
 				&& FPSGameInfo(Level.Game).bIsSinglePlayer)
 				smoke1.PlaySound(MacheteHitWall, SLOT_None, 1.0,,TransientSoundRadius,GetRandPitch());
 			else
+			{
 				Instigator.PlayOwnedSound(MacheteHitWall, SLOT_None, 1.0,,TransientSoundRadius,GetRandPitch());
+				Instigator.PlaySound(MacheteHitWall, SLOT_Misc, 1.0,,TransientSoundRadius,GetRandPitch()); // Change by NickP: MP fix
+			}
 		}
 	}
 }
@@ -119,6 +139,13 @@ function ProcessSeverHit(Weapon W, FPSPawn Other, Vector HitLocation, Vector Hit
 
 	if(Other == None)
 		return;
+
+	// Change by NickP: MP fix
+	if(Level.Game == None
+		|| !FPSGameInfo(Level.Game).bIsSinglePlayer)
+		DamageAmount = DamageAmountMP;
+	else DamageAmount = default.DamageAmount;
+	// End
 
 	if(HurtingAttacker(Other))
 	{
@@ -139,6 +166,7 @@ defaultproperties
      BodyDamage=Class'AxeDamage'
      SeverMag=40000.000000
      DamageAmount=50.000000
+	 DamageAmountMP=100.000000
      MomentumHitMag=50000.000000
      DamageTypeInflicted=Class'AxeDamage'
      AltDamageTypeInflicted=Class'AxeDamage'

@@ -37,4 +37,8 @@ defaultproperties
     End Object
     Emitters(0)=SpriteEmitter'SpriteEmitter49'
 	AutoDestroy=true
+
+	// Change by NickP: MP fix
+	RemoteRole=ROLE_SimulatedProxy
+	// End
 }

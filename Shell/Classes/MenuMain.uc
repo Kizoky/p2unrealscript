@@ -61,6 +61,7 @@ var localized string	ExitGameText;
 const DLC_Holiday = 'SeasonalAprilFools';
 const PL_DLC_APPID = 360960;
 const ED_DLC_APPID = -1;
+const P4_GAME_APPID = 707030;
 
 var ShellMenuChoice		DebugChoice;
 var localized string	DebugText;
@@ -78,6 +79,14 @@ var localized string SocialLaunchFailedTitle, SocialLaunchFailedText;
 var ShellBitmapSocial	ParadiseLostIcon;
 var Texture				ParadiseLostTexture;
 var localized string		ParadiseLostText;
+
+var ShellBitmapSocial	Postal4Icon;
+var Texture				Postal4Texture;
+var localized string	Postal4Text;
+
+// Change by NickP: MP fix
+var globalconfig bool bShowMP;
+// End
 
 ///////////////////////////////////////////////////////////////////////////////
 // Create menu contents
@@ -100,8 +109,11 @@ function CreateMenuContents()
 		DebugChoice = AddChoice(DebugText, DebugHelp, ItemFont, ItemAlign);
 		
 	//!! FIXME - launching DLC doesn't seem to work properly in Linux.
+	// Change by NickP: MP fix
 	//if (PlatformIsWindows())
-		//MultiChoice   = AddChoice(MultiText,		MultiHelp,									ItemFont, ItemAlign);
+	if (bShowMP)
+		MultiChoice   = AddChoice(MultiText,		MultiHelp,									ItemFont, ItemAlign);
+	// End
 
 	if (!GetLevel().SteamOwnsDLC(PL_DLC_APPID) && GetLevel().IsSteamBuild())
 		ActualDLCChoice = AddChoice(ActualDLCText, ActualDLCHelp, ItemFont, ItemAlign);
@@ -186,22 +198,39 @@ function AddSocialIcons()
 	TwitterIcon.R.H = TwitterIcon.T.VSize;
 	TwitterIcon.MyMenu = Self;
 
-	if (!GetLevel().SteamOwnsDLC(PL_DLC_APPID) && GetLevel().IsSteamBuild())
+	if (GetLevel().IsSteamBuild())
 	{
-		X = Root.WinWidth * DLC_ICON_X;
-		Y -= 255;
-		
-		ParadiseLostIcon = ShellBitmapSocial(Root.CreateWindow(class'ShellBitmapSocial', X, Y, 300, 235));
-		ParadiseLostIcon.bStretch = true;
-		ParadiseLostIcon.bCenter = true;
-		ParadiseLostIcon.T = ParadiseLostTexture;
-		ParadiseLostIcon.R.X = 0;
-		ParadiseLostIcon.R.Y = 0;
-		ParadiseLostIcon.R.W = ParadiseLostIcon.T.USize;
-		ParadiseLostIcon.R.H = ParadiseLostIcon.T.VSize;
-		ParadiseLostIcon.MyMenu = Self;
+		if (!GetLevel().SteamOwnsGame(P4_GAME_APPID))
+		{
+			X = Root.WinWidth * DLC_ICON_X;
+			Y -= 255;
+			
+			Postal4Icon = ShellBitmapSocial(Root.CreateWindow(class'ShellBitmapSocial', X, Y, 300, 235));
+			Postal4Icon.bStretch = true;
+			Postal4Icon.bCenter = true;
+			Postal4Icon.T = Postal4Texture;
+			Postal4Icon.R.X = 0;
+			Postal4Icon.R.Y = 0;
+			Postal4Icon.R.W = Postal4Icon.T.USize;
+			Postal4Icon.R.H = Postal4Icon.T.VSize;
+			Postal4Icon.MyMenu = Self;
+		}
+		else if (!GetLevel().SteamOwnsDLC(PL_DLC_APPID))
+		{
+			X = Root.WinWidth * DLC_ICON_X;
+			Y -= 255;
+			
+			ParadiseLostIcon = ShellBitmapSocial(Root.CreateWindow(class'ShellBitmapSocial', X, Y, 300, 235));
+			ParadiseLostIcon.bStretch = true;
+			ParadiseLostIcon.bCenter = true;
+			ParadiseLostIcon.T = ParadiseLostTexture;
+			ParadiseLostIcon.R.X = 0;
+			ParadiseLostIcon.R.Y = 0;
+			ParadiseLostIcon.R.W = ParadiseLostIcon.T.USize;
+			ParadiseLostIcon.R.H = ParadiseLostIcon.T.VSize;
+			ParadiseLostIcon.MyMenu = Self;
+		}
 	}
-	
 }
 
 function RemoveSocialIcons()
@@ -214,6 +243,8 @@ function RemoveSocialIcons()
 		WebsiteIcon.Close();
 	if (ParadiseLostIcon != None)
 		ParadiseLostIcon.Close();
+	if (Postal4Icon != None)
+		Postal4Icon.Close();
 }
 
 function SocialIconNotify(ShellBitmapSocial C, byte E)
@@ -238,6 +269,9 @@ function SocialIconNotify(ShellBitmapSocial C, byte E)
 				case ParadiseLostIcon:
 					GetLevel().SteamViewStorePage(PL_DLC_APPID);
 					break;
+				case Postal4Icon:
+					GetLevel().SteamViewStorePage(P4_GAME_APPID);
+					break;
 			}
 			ShellLookAndFeel(LookAndFeel).PlayThisLocalSound(self, ShellLookAndFeel(LookAndFeel).ClickSound, ShellLookAndFeel(LookAndFeel).ClickVolume);
 			break;
@@ -255,6 +289,9 @@ function SocialIconNotify(ShellBitmapSocial C, byte E)
 					break;
 				case ParadiseLostIcon:
 					HintText = ParadiseLostText;
+					break;
+				case Postal4Icon:
+					HintText = Postal4Text;
 					break;
 			}
 			if (HintItem != None && HintText != "")
@@ -324,8 +361,8 @@ function Notify(UWindowDialogControl C, byte E)
 						break;
 
 					case MultiChoice:
-						//GotoMenu(class'MenuMulti');
-						GotoMenu(class'MenuDLCLaunchMulti'); // not technically DLC, but is launched in the same manner.
+						GotoMenu(class'MenuMulti');
+						//GotoMenu(class'MenuDLCLaunchMulti'); // not technically DLC, but is launched in the same manner.
 						break;
 
 					case OptionsChoice:
@@ -434,4 +471,6 @@ defaultproperties
 	WebsiteText="Visit Running With Scissors on the Web!"
 	ParadiseLostTexture=Texture'P2Misc.dlc.paradiselost_menubutton'
 	ParadiseLostText="Buy Paradise Lost, the full-blown 5-day expansion, now!"
+	Postal4Texture=Texture'DLCBanner.postal4_menubutton'
+	Postal4Text="A long-awaited sequel, finally available on the steam!"
 	}

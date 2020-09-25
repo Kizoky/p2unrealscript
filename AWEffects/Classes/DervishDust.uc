@@ -64,4 +64,8 @@ defaultproperties
      End Object
      Emitters(1)=SpriteEmitter'AWEffects.SpriteEmitter12'
      AutoDestroy=True
+
+	// Change by NickP: MP fix
+	bReplicateMovement=true
+	// End
 }

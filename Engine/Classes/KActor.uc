@@ -156,6 +156,10 @@ event PostLoadGame()
 
 defaultproperties
 {
+	// Change by NickP: MP fix
+	bReplicateSkin=true
+	// End
+
 	bKTakeShot=true
 	DrawType=DT_StaticMesh
 	//StaticMesh=StaticMesh'MiscPhysicsMeshes.Barrels.Barrel1'

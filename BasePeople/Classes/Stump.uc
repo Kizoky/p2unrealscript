@@ -23,6 +23,8 @@ var const array<StaticMesh> SkirtMeshes; // same stumps, but for skirts
 var const byte LeftLegI, RightLegI, LeftArmI, RightArmI;	// indices into Meshes array
 var const byte TorsoI, PelvisI;
 
+var bool bClientSync;
+
 ///////////////////////////////////////////////////////////////////////////////
 // CONSTS
 ///////////////////////////////////////////////////////////////////////////////
@@ -114,8 +116,31 @@ simulated function SetupStump(Material NewSkin, byte NewAmbientGlow,
 	bSkirt = bNewSkirt;
 }
 
+// Change by NickP: MP fix
+simulated function PostNetBeginPlay()
+{
+	Super.PostNetBeginPlay();
+
+	if (Role < ROLE_Authority && bClientSync)
+	{
+		if (AWPerson(Base) != None 
+			&& !Base.bDeleteMe 
+			&& AttachmentBone != '')
+		{
+			AWPerson(Base).ClientSetupStump(self);
+		}
+		else Destroy();
+	}
+}
+// End
+
 defaultproperties
 {
+	// Change by NickP: MP fix
+	bClientSync=true
+	bReplicateSkin=true
+	// End
+
      Meshes(0)=StaticMesh'awpeoplestatic.Limbs.L_leg_stump'
      Meshes(1)=StaticMesh'awpeoplestatic.Limbs.R_leg_stump'
      Meshes(2)=StaticMesh'awpeoplestatic.Limbs.L_arm_stump'

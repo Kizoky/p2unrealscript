@@ -247,6 +247,7 @@ simulated function SetAnimStanding()
 
 simulated function SetAnimWalking()
 {
+	Super.SetAnimWalking();
 	AnimBlendParams(MOVEMENTCHANNEL,1.0);
 	SetNormalRotationRate();
 	LoopAnim('walk', 2.25, 0.15, MOVEMENTCHANNEL);// + FRand()*0.4);
@@ -255,6 +256,7 @@ simulated function SetAnimWalking()
 
 simulated function SetAnimRunning()
 {
+	Super.SetAnimRunning();
 	AnimBlendParams(MOVEMENTCHANNEL,1.0);
 	SetFastRotationRate();
 //	LoopAnim('run', 1.0);

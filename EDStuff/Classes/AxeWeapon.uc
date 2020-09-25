@@ -439,7 +439,7 @@ defaultproperties
      WeaponSpeedShoot1Rand=0.100000
      //WeaponSpeedShoot2=1.100000
      AltFireSound=Sound'EDWeaponSounds.Weapons.Meatcleaver_slash'
-     bCanThrowMP=False
+     bCanThrowMP=true
      AmmoName=Class'AxeAmmoInv'
      FireOffset=(X=0.000000,Z=0.000000)
      ShakeRotTime=6.000000

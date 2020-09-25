@@ -465,6 +465,7 @@ simulated function SetAnimStanding()
 
 simulated function SetAnimWalking()
 {
+	Super.SetAnimWalking();
 	GroundSpeed = default.GroundSpeed;
 	AnimBlendParams(MOVEMENTCHANNEL,1.0);
 	LoopAnim(GetAnimWalk(), 1.0, 0.15, MOVEMENTCHANNEL);// + FRand()*0.4);
@@ -475,6 +476,7 @@ simulated function SetAnimRunning()
 {
 	local name runanim;
 
+	Super.SetAnimRunning();
 	AnimBlendParams(MOVEMENTCHANNEL,1.0);
 	if(!bCharging)
 	{

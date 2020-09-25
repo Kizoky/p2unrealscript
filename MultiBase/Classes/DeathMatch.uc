@@ -362,7 +362,8 @@ function bool CheckEndGame(PlayerReplicationInfo Winner, string Reason)
 // If this is a GrabBag game though, the party is bigger around the dude and doesn't let girls
 // be in the back--in hopes that the girls don't clip with the bag.
 ///////////////////////////////////////////////////////////////////////////////
-function PartyForTheWinner(Actor Focus)
+// Change by NickP: MP fix
+/*function PartyForTheWinner(Actor Focus)
 {
 	local rotator rot;
 	local vector loc, starttest, endtest, gloc1, gloc2, newnormal;
@@ -510,7 +511,127 @@ function PartyForTheWinner(Actor Focus)
 		// blaring music
 		spawn(class'CheerLeaderMusic',EndGameFocus,,Focus.Location);
 	}
+}*/
+function PartyForTheWinner(Actor Focus)
+{
+	local rotator rot;
+	local vector loc, starttest, endtest, gloc1, gloc2, newnormal;
+	local class<actor> ExplosionClass;
+	local bool bgirl1, bgirl2, bfail;
+	local Actor Temp;
+
+	const SIDE_START_CHECK	=	120;
+	const SIDE_DIST_USE		=	60;
+
+	const FRONT_START_CHECK	=	160;
+	const FRONT_DIST_USE	=	100;
+	const UP_DOWN_TEST		=	75;
+
+	if(Focus != None)
+	{
+		rot = Focus.rotation;
+
+		if (ExplosionClassName != "")
+			ExplosionClass = class<actor>(DynamicLoadObject(ExplosionClassName, class'class'));
+
+		// Do some collision to pick the best spots to put the two girls. Try girl 1 on the left
+		// and the front, girl 2 on the right and back. If they fail both tests, don't put the
+		// girl at all, so it doesn't look too bad. The music will always play regardless.
+		bgirl1=true;
+		bgirl2=true;
+		// left side/forwards
+		rot.yaw += 16384;
+		endtest = Focus.Location + (vector(rot) * SIDE_START_CHECK);
+
+		///if(FastTrace(Focus.Location, starttest))
+		if(FastTrace(Focus.Location, endtest))
+		{
+			// Move it closer to the dude for the one we actually use
+			gloc1=Focus.location + (vector(rot) * SIDE_DIST_USE);
+		}
+		else
+			bfail=true;
+		if(bfail)  // if left side didn't work, check to put her in front
+		{
+			// Use special Front values still his gun could be sticking into
+			// the girl in certain poses.
+			loc = Focus.location + (vector(Focus.Rotation) * FRONT_START_CHECK);
+			if(FastTrace(Focus.Location, loc))
+				// Move it closer to the dude for the one we actually use
+				gloc1=Focus.location + (vector(Focus.Rotation) * FRONT_DIST_USE);
+			else
+				bgirl1=false;	// failed both tests, too close to make her
+		}
+
+		// right side/backwards
+		bfail=false;
+		rot.yaw -= 32768;
+		endtest = Focus.Location + (vector(rot) * SIDE_START_CHECK);
+		if(FastTrace(Focus.Location, endtest))
+		{
+			// Move it closer to the dude for the one we actually use
+			gloc2=Focus.location + (vector(rot) * SIDE_DIST_USE);
+		}
+		else bfail=true;
+
+		if(bfail)
+		{
+			// if right side didn't work, check to put her in back
+			// but the bag party has too much in the back to have a girl
+			rot = Focus.rotation;
+			rot.yaw += 32768;
+			// Use the same values as the sides, since his weapon will
+			// be facing forwards and not sticking into the girl
+			loc = Focus.location + (vector(rot) * SIDE_START_CHECK);
+			if(FastTrace(Focus.Location, loc))
+				// Move it closer to the dude for the one we actually use
+				gloc2=Focus.location + (vector(rot) * SIDE_DIST_USE);
+			else
+				bgirl2=false;
+		}
+
+		if(bgirl1)
+		{
+			// Find the floor for her, within reason. Start a little above her
+			// and test to a little below her
+			starttest = gloc1;
+			endtest = gloc1;
+			starttest.z += UP_DOWN_TEST;
+			endtest.z -= UP_DOWN_TEST;
+			if(Trace(loc, newnormal, endtest, starttest, false) != None)
+			{
+				gloc1=loc;
+				gloc1.z+=UP_DOWN_TEST;
+			}
+			// make the girl and the explosion					
+			Temp = spawn(CheerleaderClass1, EndGameFocus, , gloc1 + vect(0,0,0), Focus.rotation);
+			//Temp.SoundVolume = 20;
+			if (ExplosionClass != None)
+				spawn(ExplosionClass, EndGameFocus, , gloc1 + vect(0,0,-50), Focus.rotation);
+		}
+
+		if(bgirl2)
+		{
+			// Find the floor for her, within reason. Start a little above her
+			// and test to a little below her
+			starttest = gloc2;
+			endtest = gloc2;
+			starttest.z += UP_DOWN_TEST;
+			endtest.z -= UP_DOWN_TEST;
+			if(Trace(loc, newnormal, endtest, starttest, false) != None)
+			{
+				gloc2=loc;
+				gloc2.z+=UP_DOWN_TEST;
+			}
+			// make the girl and the explosion					
+			Temp = spawn(CheerleaderClass2, EndGameFocus, , gloc2 + vect(0,0,0), Focus.rotation);
+			//Temp.SoundVolume = 20;
+			if (ExplosionClass != None)
+				spawn(ExplosionClass, EndGameFocus, , gloc2 + vect(0,0,-50), Focus.rotation);
+		}
+	}
 }
+// End
 
 function PlayWinMessage(PlayerController Player, bool bWinner)
 {
@@ -923,6 +1044,11 @@ function PlayEndOfMatchMessage()
 				MpPlayer(C).PlayAnnouncement(EndGameSound[1],1,true);
 		}
 	}
+
+	// Change by NickP: MP fix
+	if( EndGameFocus != None )
+		spawn(class'PartyHardMusic',EndGameFocus,,EndGameFocus.Location);
+	// End
 }
 
 function PlayStartupMessage()
@@ -1446,7 +1572,10 @@ defaultproperties
 	WaitForParty=2.0
 	PartyMusic=Sound'AmbientSounds.hornyClub'
 	CheerleaderClass1=class'CheerleadersBlue'
-	CheerleaderClass2=class'CheerleadersBlue2'
+	// Change by NickP: MP fix
+	//CheerleaderClass2=class'CheerleadersBlue2'
+	CheerleaderClass2=class'CheerleadersRed'
+	// End
 
 	TimeLimit=25
 

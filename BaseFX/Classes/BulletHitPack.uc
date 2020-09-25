@@ -58,8 +58,10 @@ simulated function MakeMoreEffects()
 	// Only make bullet hole projectors in single player--don't do this
 	// in MP, it slows down things horribly
 	if(mysplatclass != None
-		&& Level.Game != None
-		&& Level.Game.bIsSinglePlayer)
+		&& Level.NetMode == NM_Standalone) // Change by NickP: MP fix
+		// && Level.Game != None
+		// && Level.Game.bIsSinglePlayer)
+		// End
 	{
 		// randomly orient the splat on the wall (rotate around the normal)
 		NewRot = Rotator(-vector(Rotation));

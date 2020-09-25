@@ -128,7 +128,8 @@ function BeforePaint(Canvas C, float X, float Y)
 	switch(Align)
 	{
 	case TA_Left:
-		SliderDrawX = WinWidth - SliderWidth;
+		//SliderDrawX = WinWidth - SliderWidth;
+		SliderDrawX = WinWidth - SliderWidth - TrackWidth*0.5; // Change by NickP: fix
 		TextX = 0;
 		ValX = SliderDrawX - fValW;
 		break;

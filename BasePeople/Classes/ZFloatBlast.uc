@@ -69,8 +69,20 @@ function RecreateZombie()
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-auto state FindingZombie
+auto simulated state FindingZombie
 {
+	// Change by NickP: MP fix
+	simulated function BeginState()
+	{
+		Super.BeginState();
+		if (Role < ROLE_Authority)
+		{
+			SelfDestroy(true);
+			LifeSpan = 0.1;
+		}
+	}
+	// End
+
 Begin:
 	// Play crazy sound from player
 	if(awp != None)

@@ -77,4 +77,8 @@ defaultproperties
      End Object
      Emitters(2)=MeshEmitter'MeshEmitter1'
      AutoDestroy=True
+
+	// Change by NickP: MP fix
+	LifeSpan = 5.0;
+	// End
 }

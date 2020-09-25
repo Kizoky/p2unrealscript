@@ -86,6 +86,10 @@ function ProcessURL(string URL)
 		GetPlayerOwner().ConsoleCommand("start "$URL);
 	if( Left(URL, 7) ~= "http://" )
 		GetPlayerOwner().ConsoleCommand("start "$URL);
+	// Change by NickP: MP fix
+	if( Left(URL, 8) ~= "https://" )
+		GetPlayerOwner().ConsoleCommand("start "$URL);
+	// End
 	if( Left(URL, 6) ~= "ftp://" )
 		GetPlayerOwner().ConsoleCommand("start "$URL);
 	if( Left(URL, 9) ~= "telnet://" )
@@ -98,8 +102,11 @@ function ProcessURL(string URL)
 		GetPlayerOwner().ConsoleCommand("start ftp://"$URL);
 	else
 // RWS Change, changed from unreal to postal2
-	if( Left(URL, 9) ~= "postal2://" )
+	// Change by NickP: MP fix
+	//if( Left(URL, 9) ~= "postal2://" )
+	if( Left(URL, 10) ~= "postal2://" )
 		LaunchUnrealURL(URL);
+	// End
 }
 
 function OverURL(string URL)

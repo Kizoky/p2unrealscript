@@ -21,10 +21,6 @@ var UWindowMessageBox ErrorMessageBox;
 var bool bDontClose;					// when closing, dont let GoBack or Close get executed again
 var bool bLocked;						// when true, dont make any other error boxes or change the error message until closed
 
-//ErikFOV Change: Fix problem
-var string DefaultStartupMapName;
-//end
-
 ///////////////////////////////////////////////////////////////////////////////
 // Create menu contents
 ///////////////////////////////////////////////////////////////////////////////
@@ -101,10 +97,12 @@ function GoBack()
 		GetGameSingle().QuitGame();
 	else
 	{
-		//ErikFOV Change: Fix problem
-		GetPlayerOwner().ConsoleCommand("open"@DefaultStartupMapName);
-			//GetPlayerOwner().ConsoleCommand("open startup");
-		//end
+		// Change by NickP: MP fix
+		//GetPlayerOwner().ConsoleCommand("open startup");
+		if(ShellRootWindow(Root) != None)
+			GetPlayerOwner().ConsoleCommand("open"@ShellRootWindow(Root).GetStartupMap());
+		else GetPlayerOwner().ConsoleCommand("open startup");
+		// End
 		HideMenu();
 	}
 		
@@ -130,5 +128,4 @@ function Close(optional bool bByParent)
 
 defaultproperties
 {
-	DefaultStartupMapName = "startup"
 }

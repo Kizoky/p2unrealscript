@@ -154,9 +154,15 @@ function ProcessTraceHit(Weapon W, Actor Other, Vector HitLocation, Vector HitNo
 		if(FPSPawn(Other) != None)
 		{
 			if(P2Weapon(W).bAltFiring)
+			{
 				Instigator.PlayOwnedSound(SignStab, SLOT_None, 1.0,,TransientSoundRadius,GetRandPitch());
+				Instigator.PlaySound(SignStab, SLOT_Misc, 1.0,,TransientSoundRadius,GetRandPitch()); // Change by NickP: MP fix
+			}
 			else
+			{
 				Instigator.PlayOwnedSound(SignHitBody, SLOT_None, 1.0,,TransientSoundRadius,GetRandPitch());
+				Instigator.PlaySound(SignHitBody, SLOT_Misc, 1.0,,TransientSoundRadius,GetRandPitch()); // Change by NickP: MP fix
+			}
 		}
 		else
 		{
@@ -165,7 +171,10 @@ function ProcessTraceHit(Weapon W, Actor Other, Vector HitLocation, Vector HitNo
 				&& FPSGameInfo(Level.Game).bIsSinglePlayer)
 				smoke1.PlaySound(SignHitWall, SLOT_None, 1.0,,TransientSoundRadius,GetRandPitch());
 			else
+			{
 				Instigator.PlayOwnedSound(SignHitWall, SLOT_None, 1.0,,TransientSoundRadius,GetRandPitch());
+				Instigator.PlaySound(SignHitWall, SLOT_Misc, 1.0,,TransientSoundRadius,GetRandPitch()); // Change by NickP: MP fix
+			}
 		}
 	}
 	

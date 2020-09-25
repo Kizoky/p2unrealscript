@@ -237,7 +237,6 @@ var Material LastSkin;								// Used to detect changes to skin in editor
 var EGender					ChameleonOnlyHasGender;	// When not Gender_Any, it means chameleon only offers specified gender
 
 var float					WeaponBlendTime;		// Blend time to use when switching weapons vs firing weapons
-var globalconfig bool 		bNCClientRagdolls;
 
 const MAX_UPWARD_MOMENTUM			= 15000;
 const MAX_DOWNWARD_MOMENTUM			= -5000;
@@ -412,6 +411,10 @@ var(Character) bool bForbidRagdoll;	// If true, this pawn will not use ragdoll p
 
 var bool bInitialSetup;	// Hack to not call LinkAnims twice
 var bool bInitialDifficulty;	// Hack to not set up difficulty adjustment twice
+
+// Change by NickP: MP fix
+var MeshAnimation ExtraCoopAnims;
+// End
 
 // STUBS defined later in AWPerson
 simulated function PlayCellIn();
@@ -616,6 +619,13 @@ simulated function PlayBlockMeleeAnim()
 	ChangePhysicsAnimUpdate(false);
 	AnimBlendParams(EXCHANGEITEMCHANNEL, 1.0, 0,0);
 	PlayAnim(GetAnimBlockMelee(), 1.0, 0.1, EXCHANGEITEMCHANNEL);
+
+	// Change by NickP: MP fix
+	if (bReplicateAnimations)
+	{
+		SimAnimChannel = EXCHANGEITEMCHANNEL;
+	}
+	// End
 }
 simulated function ContinueBlockAnim(int channel)
 {
@@ -837,6 +847,19 @@ simulated function PostBeginPlay()
 	Super.PostBeginPlay();
 	GroundSpeedMax = GroundSpeed;
 	}
+
+// Change by NickP: MP fix
+simulated function PostNetBeginPlay()
+{
+	Super.PostNetBeginPlay();
+
+	bInitializeAnimation = false;
+	SetupAnims();
+	if (ExtraCoopAnims != None)
+		LinkSkelAnim(ExtraCoopAnims);
+	ChangeAnimation();
+}
+// End
 
 ///////////////////////////////////////////////////////////////////////////////
 // Clean up
@@ -2268,12 +2291,26 @@ simulated function PlayGiveGesture()
 {
 	AnimBlendParams(EXCHANGEITEMCHANNEL, 1.0, 0,0);
 	PlayAnim('s_give', 1.0, 0.2, EXCHANGEITEMCHANNEL);
+
+	// Change by NickP: MP fix
+	if (bReplicateAnimations)
+	{
+		SimAnimChannel = EXCHANGEITEMCHANNEL;
+	}
+	// End
 }
 
 simulated function PlayTakeGesture()
 {
 	AnimBlendParams(EXCHANGEITEMCHANNEL, 1.0, 0,0);
 	PlayAnim('s_take', 1.0, 0.2, EXCHANGEITEMCHANNEL);
+
+	// Change by NickP: MP fix
+	if (bReplicateAnimations)
+	{
+		SimAnimChannel = EXCHANGEITEMCHANNEL;
+	}
+	// End
 }
 // Spawn some money or something in the hand as it comes up
 simulated function Notify_GiveSpawnItem()
@@ -2709,8 +2746,7 @@ simulated event PlayDying(class<DamageType> DamageType, vector HitLoc)
 			PopUpDead();
 		// only in MP
 		if(Level.Game == None
-			|| !Level.Game.bIsSinglePlayer
-			|| bNCClientRagdolls)
+			|| !Level.Game.bIsSinglePlayer)
 			TearOffNetworkConnection(DamageType);
 		HitDamageType = DamageType;
 		TakeHitLocation = HitLoc;
@@ -3621,6 +3657,13 @@ simulated event StopPlayFiring()
 ///////////////////////////////////////////////////////////////////////////////
 simulated event AnimEnd(int Channel)
 	{
+	// Change by NickP: MP fix
+	if (bReplicateAnimations)
+	{
+		SimAnimChannel = 0;
+	}
+	// End
+
 	if ( Channel == 0 )
 	{
 		// Turn physics anim-blending back on
@@ -4191,8 +4234,11 @@ simulated function SetAnimRunning()
 			switch (GetWeaponHoldStyle())
 				{
 				case WEAPONHOLDSTYLE_Single:
-					if(Level.Game != None
-						&& FPSGameInfo(Level.Game).bIsSinglePlayer)
+					// Change by NickP: MP fix
+				//	if(Level.Game != None
+				//		&& FPSGameInfo(Level.Game).bIsSinglePlayer)
+					if (!self.IsA('xMpPawn'))
+					// End
 					{
 						if(bIsTrained)
 						{

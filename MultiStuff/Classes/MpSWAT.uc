@@ -2,6 +2,11 @@ class MpSWAT extends xMpPawn;
 
 defaultproperties
 	{
+	// Change by NickP: MP fix
+	StumpClass=Class'StumpBigGuy'
+	LimbClass=Class'LimbBigGuy'
+	// End
+
 	Mesh=Mesh'MP_Characters.Big_M_LS_Pants'
 	CoreSPMesh=Mesh'Characters.Big_M_LS_Pants'
 	Skins[0]=Texture'Mp_Misc.Mp_swat'

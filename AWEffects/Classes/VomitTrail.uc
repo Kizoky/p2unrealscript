@@ -62,4 +62,9 @@ defaultproperties
      bReplicateMovement=True
      Physics=PHYS_Trailer
      LifeSpan=25.000000
+
+	// Change by NickP: MP fix
+	bReplicateMovement=true
+	bUpdateSimulatedPosition=true
+	// End
 }

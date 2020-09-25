@@ -225,7 +225,8 @@ function Tick(float DeltaTime)
 	DealDamage(DeltaTime);
 
 	// Kamek additions to stop log spam when cow head users disconnect
-	if (!bDCdInstigator && Instigator == None)
+	if (!bDCdInstigator && (Instigator == None 
+		|| Instigator.bDeleteMe)) // Change by NickP: MP fix
 	{
 		Instigator = None;
 		bDCdInstigator = True;
@@ -395,4 +396,8 @@ defaultproperties
 	WaitAfterFadeTime=1.0
 	Texture=Texture'PostEd.Icons_256.FireEmitter'
 	DrawScale=0.25
+
+	// Change by NickP: MP fix
+	bReplicateMovement=true
+	// End
 }

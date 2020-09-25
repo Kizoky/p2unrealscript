@@ -115,12 +115,53 @@ function Paint(Canvas C, float X, float Y)
 
 function LMouseDown(float X, float Y)
 {
+	// Change by NickP: fix
+
+	// Super.LMouseDown(X, Y);
+
+	// if(bDisabled) return;
+
+	// // Fuck this shit, just start dragging
+	// /*
+	// if(Y < ThumbStart)
+	// {
+		// Scroll(-(MaxVisible-1));
+		// NextClickTime = GetLevel().TimeSeconds + 0.5;
+		// return;
+	// }
+	// if(Y > ThumbStart + ThumbHeight)
+	// {
+		// Scroll(MaxVisible-1);
+		// NextClickTime = GetLevel().TimeSeconds + 0.5;
+		// return;
+	// }
+
+	// if((Y >= ThumbStart) && (Y <= ThumbStart + ThumbHeight))
+	// {
+		// DragY = Y - ThumbStart;
+		// bDragging = True;
+		// Root.CaptureMouse();
+		// return;
+	// }
+	// */
+	
+	// DragY = Y;
+	// while(Y < (ThumbStart+DragY) && Pos > MinPos)
+	// {
+		// Scroll(-1);
+	// }
+
+	// while(Y > (ThumbStart+DragY) && Pos < MaxPos)
+	// {
+		// Scroll(1);
+	// }	
+	// bDragging = True;
+	// Root.CaptureMouse();
+
 	Super.LMouseDown(X, Y);
 
 	if(bDisabled) return;
 
-	// Fuck this shit, just start dragging
-	/*
 	if(Y < ThumbStart)
 	{
 		Scroll(-(MaxVisible-1));
@@ -141,20 +182,10 @@ function LMouseDown(float X, float Y)
 		Root.CaptureMouse();
 		return;
 	}
-	*/
-	
-	DragY = Y;
-	while(Y < (ThumbStart+DragY) && Pos > MinPos)
-	{
-		Scroll(-1);
-	}
 
-	while(Y > (ThumbStart+DragY) && Pos < MaxPos)
-	{
-		Scroll(1);
-	}	
 	bDragging = True;
 	Root.CaptureMouse();
+	// End
 }
 
 function Tick(float Delta)

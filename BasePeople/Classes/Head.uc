@@ -106,7 +106,11 @@ const METERS_FOR_ACHIEVEMENT = 30.000000;
 
 var() class<BodyEffects> HeadExplosionEffect;	// Class of emitter to spawn when exploded
 
-var bool bTakeDamageTimer;
+// Change by NickP: fix
+//var bool bTakeDamageTimer;
+var float fTakeDamageDelay;
+const DAMAGE_DELAY = 0.1;
+// End
 
 ///////////////////////////////////////////////////////////////////////////////
 // Get ready
@@ -245,6 +249,9 @@ function PinataStyleExplodeEffects(vector HitLocation, vector Momentum)
 	headeffects.SetRelativeMotion(Momentum, Velocity);
 
 	headeffects.PlaySound(ExplodeHeadSound,,,,100,GetRandPitch());
+
+	if (Level.NetMode != NM_StandAlone)
+		bHidden = true;
 
 	// Have the head wait just a moment
 	GotoState('Exploding');
@@ -523,7 +530,7 @@ function TakeDamage( int Dam, Pawn instigatedBy, Vector hitlocation,
 	}
 
 	// Only allow free movement if we're not still attached to a body
-	if(myBody == None && !bTakeDamageTimer)
+	if(myBody == None && Level.TimeSeconds > fTakeDamageDelay) //!bTakeDamageTimer)
 	{
 		// Save who last hit us
 		Instigator = InstigatedBy;
@@ -584,8 +591,11 @@ function TakeDamage( int Dam, Pawn instigatedBy, Vector hitlocation,
 				spawn(class'BloodImpactMaker',self,,HitLocation,Rotator(-momentum));
 			}
 		}
-		bTakeDamageTimer = true;
-		SetTimer(0.1, false);
+		// Change by NickP: fix
+		//bTakeDamageTimer = true;
+		//SetTimer(0.1, false);
+		fTakeDamageDelay = Level.TimeSeconds + DAMAGE_DELAY;
+		// End
 	}
 }
 
@@ -784,6 +794,15 @@ function SetupAnims()
 	// Use timer to blink eyes every so often
 	bKillTalk = false;
 	SetTimer(BLINK_TIME, false);
+
+	// Change by NickP: MP fix
+	if (bReplicateAnimations)
+	{
+		if (MyMood != MOOD_Normal)
+			SimAnimChannel = 1;
+		else SimAnimChannel = 0;
+	}
+	// End
 	}
 
 
@@ -879,6 +898,13 @@ function Talk(float fDuration)
 	// eventually switch to full lip-sync, so this is a temporary hack.
 	SetTimer(fDuration, false);
 	bKillTalk = true;
+
+	// Change by NickP: MP fix
+	if (bReplicateAnimations)
+	{
+		SimAnimChannel = 2;
+	}
+	// End
 	}
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -924,6 +950,13 @@ function Yell(float fDuration)
 	// eventually switch to full lip-sync, so this is a temporary hack.
 	SetTimer(fDuration, false);
 	bKillTalk = true;
+
+	// Change by NickP: MP fix
+	if (bReplicateAnimations)
+	{
+		SimAnimChannel = 2;
+	}
+	// End
 	}
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -942,6 +975,13 @@ function DisgustedSpitting(float fDuration)
 	// eventually switch to full lip-sync, so this is a temporary hack.
 	SetTimer(fDuration, false);
 	bKillTalk = true;
+
+	// Change by NickP: MP fix
+	if (bReplicateAnimations)
+	{
+		SimAnimChannel = 2;
+	}
+	// End
 	}
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -961,6 +1001,15 @@ function Timer()
 		// I'm not sure how to do that.
 		AnimBlendParams(CHANNEL_MOUTH, 0, 0.1);
 		bKillTalk = false;
+
+		// Change by NickP: MP fix
+		if (bReplicateAnimations)
+		{
+			if (MyMood != MOOD_Normal)
+				SimAnimChannel = 1;
+			else SimAnimChannel = 0;
+		}
+		// End
 	}
 	
 	// For the moment, wait until the eyes come off a seperate parent bone 'NODE_Eyes' so that
@@ -1128,8 +1177,10 @@ state Dead
 	///////////////////////////////////////////////////////////////////////////////
 	simulated function Timer()
 	{
-		if (bTakeDamageTimer)
-			bTakeDamageTimer = false;
+		// Change by NickP: fix
+		//if (bTakeDamageTimer)
+		//	bTakeDamageTimer = false;
+		// End
 
 		if(Level.NetMode == NM_Client
 			|| Level.NetMode == NM_ListenServer)
@@ -1246,6 +1297,12 @@ state KnockedOutState
 ///////////////////////////////////////////////////////////////////////////////
 defaultproperties
 	{
+	// Change by NickP: fix
+	LODBias=2.0
+	bReplicateAnimations=true
+	bReplicateSkin=true
+	// End
+
 	SpinStartRate=100000
 	MaxSpeed = 800
 	CollisionRadius=10

@@ -23,6 +23,13 @@ function ProcessTraceHit(Weapon W, Actor Other, Vector HitLocation, Vector HitNo
 	if ( Other == None )
 		return;
 
+	// Change by NickP: MP fix
+	if(Level.Game == None
+		|| !FPSGameInfo(Level.Game).bIsSinglePlayer)
+		DamageAmount = DamageAmountMP;
+	else DamageAmount = default.DamageAmount;
+	// End
+
 	// Check if they're allowed to hit the person they did, if not, None out Other
 	// so it's like a wall hit
 	if(PersonPawn(Other) != None)
@@ -82,6 +89,7 @@ function ProcessTraceHit(Weapon W, Actor Other, Vector HitLocation, Vector HitNo
 			|| PeoplePart(Other) != None)
 		{
 			Instigator.PlayOwnedSound(ScytheHitBody, SLOT_None, 1.0,,TransientSoundRadius,GetRandPitch());
+			Instigator.PlaySound(ScytheHitBody, SLOT_Misc, 1.0,,TransientSoundRadius,GetRandPitch()); // Change by NickP: MP fix
 		}
 		else
 		{
@@ -90,7 +98,10 @@ function ProcessTraceHit(Weapon W, Actor Other, Vector HitLocation, Vector HitNo
 				&& FPSGameInfo(Level.Game).bIsSinglePlayer)
 				smoke1.PlaySound(ScytheHitWall, SLOT_None, 1.0,,TransientSoundRadius,GetRandPitch());
 			else
+			{
 				Instigator.PlayOwnedSound(ScytheHitWall, SLOT_None, 1.0,,TransientSoundRadius,GetRandPitch());
+				Instigator.PlaySound(ScytheHitWall, SLOT_Misc, 1.0,,TransientSoundRadius,GetRandPitch()); // Change by NickP: MP fix
+			}
 		}
 	}
 }
@@ -104,6 +115,13 @@ function ProcessSeverHit(Weapon W, FPSPawn Other, Vector HitLocation, Vector Hit
 
 	if(Other == None)
 		return;
+
+	// Change by NickP: MP fix
+	if(Level.Game == None
+		|| !FPSGameInfo(Level.Game).bIsSinglePlayer)
+		DamageAmount = DamageAmountMP;
+	else DamageAmount = default.DamageAmount;
+	// End
 
 	if(AnimalPawn(Other) != None)
 		Instigator.PlayOwnedSound(ScytheHitBody, SLOT_None, 1.0,,TransientSoundRadius,GetRandPitch());
@@ -124,6 +142,7 @@ defaultproperties
      BodyDamage=Class'BaseFX.CuttingDamage'
      SeverMag=40000.000000
      DamageAmount=70.000000
+	 DamageAmountMP=140.000000
      MomentumHitMag=50000.000000
      DamageTypeInflicted=Class'ScytheDamage'
      AltDamageTypeInflicted=Class'AWEffects.FlyingScytheDamage'

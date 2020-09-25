@@ -74,25 +74,25 @@ function ProcessTraceHit(Weapon W, Actor Other, Vector HitLocation, Vector HitNo
 				if (P2MocapPawn(Other) != None)
 				{
 					if (P2MocapPawn(Other).MyRace < RACE_Automaton)
-						Instigator.PlaySound(ShovelStab, SLOT_None, 1.0,,TransientSoundRadius,GetRandPitch());
+						Instigator.PlaySound(ShovelStab, SLOT_Misc, 1.0,,TransientSoundRadius,GetRandPitch());  // Change by NickP: MP fix
 					else if (P2MocapPawn(Other).MyRace == RACE_Automaton)
-						Instigator.PlaySound(ShovelHitBot, SLOT_None, 1.0,,TransientSoundRadius,GetRandPitch());
+						Instigator.PlaySound(ShovelHitBot, SLOT_Misc, 1.0,,TransientSoundRadius,GetRandPitch()); // Change by NickP: MP fix
 					else if (P2MocapPawn(Other).MyRace == RACE_Skeleton)
-						Instigator.PlaySound(ShovelHitSkel, SLOT_None, 1.0,,TransientSoundRadius,GetRandPitch());
+						Instigator.PlaySound(ShovelHitSkel, SLOT_Misc, 1.0,,TransientSoundRadius,GetRandPitch()); // Change by NickP: MP fix
 				}
 			}
 			else if (P2MocapPawn(Other) != None)
 			{
 				if (P2MocapPawn(Other).MyRace < RACE_Automaton)
-					Instigator.PlaySound(ShovelHitBody, SLOT_None, 1.0,,TransientSoundRadius,GetRandPitch());
+					Instigator.PlaySound(ShovelHitBody, SLOT_Misc, 1.0,,TransientSoundRadius,GetRandPitch()); // Change by NickP: MP fix
 				else if (P2MocapPawn(Other).MyRace == RACE_Automaton)
-					Instigator.PlaySound(ShovelHitBot, SLOT_None, 1.0,,TransientSoundRadius,GetRandPitch());
+					Instigator.PlaySound(ShovelHitBot, SLOT_Misc, 1.0,,TransientSoundRadius,GetRandPitch()); // Change by NickP: MP fix
 				else if (P2MocapPawn(Other).MyRace == RACE_Skeleton)
-					Instigator.PlaySound(ShovelHitSkel, SLOT_None, 1.0,,TransientSoundRadius,GetRandPitch());
+					Instigator.PlaySound(ShovelHitSkel, SLOT_Misc, 1.0,,TransientSoundRadius,GetRandPitch()); // Change by NickP: MP fix
 			}
 			else if(AnimalPawn(Other) != None
 				|| FPSPawn(Other).Health <= 0)
-				Instigator.PlaySound(ShovelHitBody, SLOT_None, 1.0,,TransientSoundRadius,GetRandPitch());
+				Instigator.PlaySound(ShovelHitBody, SLOT_Misc, 1.0,,TransientSoundRadius,GetRandPitch()); // Change by NickP: MP fix
 				//Instigator.PlayOwnedSound(ShovelHitBody, SLOT_None, 1.0,,TransientSoundRadius,GetRandPitch());
 		}
 		else
@@ -102,7 +102,7 @@ function ProcessTraceHit(Weapon W, Actor Other, Vector HitLocation, Vector HitNo
 				&& FPSGameInfo(Level.Game).bIsSinglePlayer)
 				smoke1.PlaySound(ShovelHitWall, SLOT_None, 1.0,,TransientSoundRadius,GetRandPitch());
 			else
-			    Instigator.PlaySound(ShovelHitWall, SLOT_None, 1.0,,TransientSoundRadius,GetRandPitch());
+			    Instigator.PlaySound(ShovelHitWall, SLOT_Misc, 1.0,,TransientSoundRadius,GetRandPitch()); // Change by NickP: MP fix
 				//Instigator.PlayOwnedSound(ShovelHitWall, SLOT_None, 1.0,,TransientSoundRadius,GetRandPitch());
 		}
 	}

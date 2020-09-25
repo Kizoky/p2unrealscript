@@ -7,6 +7,11 @@ class RocketPlagueTrail extends P2Emitter;
 
 defaultproperties
 {
+	// Change by NickP: MP fix
+	bReplicateMovement=true
+	bUpdateSimulatedPosition=true
+	// End
+
     Begin Object Class=SpriteEmitter Name=SpriteEmitter22
 		SecondsBeforeInactive=0.0
         MaxParticles=8

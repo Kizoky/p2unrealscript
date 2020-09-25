@@ -32,7 +32,8 @@ defaultproperties
 	AllowedTeamMembers(22)=class'MultiStuff.MpRWSGeoff'
 	AllowedTeamMembers(23)=class'MultiStuff.MpRWSJosh'
 	AllowedTeamMembers(24)=class'MultiStuff.MpRWSTimb'
-	AllowedTeamMembers(25)=None
+	AllowedTeamMembers(25)=class'MultiStuff.MpFemale' // Change by NickP: MP fix
+	AllowedTeamMembers(26)=None
 
     Begin Object Class=RosterEntry Name=DMRosterEntryDefault
 		PawnClass=class'MultiStuff.MpDude'

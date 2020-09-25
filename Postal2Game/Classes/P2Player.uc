@@ -505,6 +505,10 @@ var bool bAllowSubs;
 // Cutscenes seen list
 var globalconfig array<String> CutscenesSeen;
 
+// Change by NickP: MP fix
+var bool bPlayerIsValid;
+// End
+
 ///////////////////////////////////////////////////////////////////////////////
 // Replication
 ///////////////////////////////////////////////////////////////////////////////
@@ -526,6 +530,11 @@ replication
 		ServerPerformSuicide, ServerCancelSuicide, HandleStuckPlayer, NextInvItem,
 		QuickHealth, ServerThrowPowerup,
 		ServerGetDown, ServerAneurism;
+
+	// Change by NickP: MP fix
+	reliable if( Role == ROLE_Authority )
+		ClientSwitchToHands;
+	// End
 }
 
 // For testing
@@ -4009,6 +4018,7 @@ function HandlePickupClass(class<Pickup> pclass)
 function ChangeAllWeaponHandTextures(Texture NewHandsTexture, Texture NewFootTexture)
 {
 	local Inventory inv;
+	local int Count; // Change by NickP: bail out fix
 
 	//Mypawnfix
 	inv = Pawn.Inventory;
@@ -4021,6 +4031,12 @@ function ChangeAllWeaponHandTextures(Texture NewHandsTexture, Texture NewFootTex
 			P2Weapon(inv).ChangeHandTexture(NewHandsTexture, DefaultHandsTexture, NewFootTexture);
 		}
 		inv = inv.Inventory;
+
+		// Change by NickP: bail out fix
+		Count++;
+		if ( Count > 5000 )
+			break;
+		// End
 	}
 	if(P2Pawn(Pawn) != None
 		&& P2Pawn(Pawn).MyFoot != None)
@@ -4881,6 +4897,10 @@ function PlayerTick(float DeltaTime)
 {
 	local int Yaw;
 
+	// Change by NickP: MP fix
+	CheckPlayerValid();
+	// End
+
 	Super.PlayerTick(DeltaTime);
 
 	// Only do this for single player games
@@ -5322,6 +5342,13 @@ exec function SwitchToHands(optional bool bForce)
 	// STUB.
 	// Defined in dudeplayer where it has access to the hands weapon type
 }
+
+// Change by NickP: MP fix
+simulated function ClientSwitchToHands(optional bool bForceReady)
+{
+	SwitchToHands(bForceReady);
+}
+// End
 
 ///////////////////////////////////////////////////////////////////////////////
 // Switch directly to your hands weapon, or back to what you had before hands
@@ -7684,6 +7711,40 @@ simulated function RecordCutscene(SceneManager InCutscene)
 	CutscenesSeen[0] = CutsceneName;
 	//SaveConfig();
 }
+
+// Change by NickP: MP fix
+simulated function CheckPlayerValid()
+{
+	if(!bPlayerIsValid && Player != None)
+	{
+		NotifyPlayerValid();
+		bPlayerIsValid = true;
+	}
+}
+
+simulated function NotifyPlayerValid()
+{
+	SetupInteractions();
+	ClientSetupSubtitles();
+}
+
+simulated function ClientSetupSubtitles()
+{
+	if( Level.NetMode != NM_Client )
+		return;
+
+	if( SubtitleManager == None )
+		SubtitleManager = spawn(class'SubtitleManager',,,location,rotation);
+	if( SubtitleManager != None && SubtitleManager.SubSound.length > 0 )
+		bAllowSubs = true;
+}
+
+exec function ShowMP()
+{
+	ConsoleCommand("set MenuMain bShowMP true");
+	ClientMessage("Multiplayer option added! Now restart the game.");
+}
+// End
 
 defaultproperties
 {

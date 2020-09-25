@@ -509,24 +509,28 @@ simulated function SetAnimStanding()
 
 simulated function SetAnimWalking()
 {
+	Super.SetAnimWalking();
 	AnimBlendParams(MOVEMENTCHANNEL,1.0);
 	LoopAnim('walk', 1.0, 0.2, MOVEMENTCHANNEL);
 }
 
 simulated function SetAnimRunning()
 {
+	Super.SetAnimRunning();
 	AnimBlendParams(MOVEMENTCHANNEL,1.0);
 	LoopAnim('run', 2.5, 0.2, MOVEMENTCHANNEL);
 }
 
 simulated function SetAnimRunningScared()
 {
+	Super.SetAnimRunningScared();
 	AnimBlendParams(MOVEMENTCHANNEL,1.0);
 	LoopAnim('run_scared', 2.5, 0.2, MOVEMENTCHANNEL);
 }
 
 simulated function SetAnimTrotting()
 {
+	Super.SetAnimTrotting();
 	AnimBlendParams(MOVEMENTCHANNEL,1.0);
 	LoopAnim('walk', 4.0, 0.2, MOVEMENTCHANNEL);// + FRand()*0.4);
 }
@@ -565,6 +569,12 @@ function PlayTakeHit(vector HitLoc, int Damage, class<DamageType> damageType)
 // PLAY THESE on the default channel
 function PlayAnimStanding()
 {
+	// Change by NickP: MP fix
+	if (bReplicateAnimations)
+	{
+		SimAnimChannel = RESTINGPOSECHANNEL;
+	}
+	// End
 	// turn off 
 	AnimBlendParams(MOVEMENTCHANNEL,0.0);
 	PlayAnim(GetAnimStanding(), 1.0, 0.2);

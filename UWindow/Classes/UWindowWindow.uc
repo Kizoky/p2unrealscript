@@ -1292,7 +1292,11 @@ final function ClipText(Canvas C, float X, float Y, coerce string S, optional bo
 
 	C.SetPos((X - ClippingRegion.X)*Root.GUIScale, (Y - ClippingRegion.Y)*Root.GUIScale);
 	//C.DrawTextClipped(S, bCheckHotKey);
-	Root.ViewportOwner.Actor.MyHud.ClipText(C, S, bCheckHotkey);
+
+	// Change by NickP: MP fix
+	//Root.ViewportOwner.Actor.MyHud.ClipText(C, S, bCheckHotkey);
+	C.DrawTextClipped(Root.ViewportOwner.Actor.MyHud.GetButtonParsedText(C, S), bCheckHotkey);
+	// End
 
 	C.SetClip(ClipX, ClipY);
 	C.SetOrigin(OrgX, OrgY);

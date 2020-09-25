@@ -36,6 +36,15 @@ replication
 	// Functions called by server on client
 	reliable if(Role == ROLE_Authority)
 		ClientScytheShake;
+
+	// Change by NickP: MP fix
+	// functions client sends to server
+	reliable if (Role < ROLE_Authority)
+		CoopSwingIt;
+	// Functions called by server on client
+	reliable if(Role == ROLE_Authority)
+		ClientThrownEmpty;
+	// End
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -155,15 +164,34 @@ function ThrowScythe()
 		&& !macproj.bDeleteMe
 		&& !bReaper)
 		// Wait to catch it
+	{
 		GotoState('DownWeaponEmpty');
+		// Change by NickP: MP fix
+		ClientThrownEmpty(false);
+		// End
+	}
 	else // If not, go back to ready to throw/hack again
+	{
 		GotoState('Idle');
+		// Change by NickP: MP fix
+		ClientThrownEmpty(true);
+		// End
+	}
 
 	// Turn off the thing in his hand as it leaves
 	if(ThirdPersonActor != None
 		&& !bReaper)
 		ThirdPersonActor.bHidden=true;
 }
+
+// Change by NickP: MP fix
+simulated function ClientThrownEmpty(bool bIdle)
+{
+	if(!bIdle)
+		GotoState('DownWeaponEmpty');
+	else GotoState('Idle');
+}
+// End
 
 ///////////////////////////////////////////////////////////////////////////////
 // We didn't hit anything when we fired/swung our weapon
@@ -227,7 +255,18 @@ function ThrowIt()
 	GotoState('NormalFire');
 
 //	PlayAltFiring();
+
+	PlayAltFiring(); // Change by NickP: MP fix
 }
+
+// Change by NickP: MP fix
+function CoopSwingIt()
+{
+	GotoState('NormalFire');
+
+	PlayFiring();
+}
+// End
 
 ///////////////////////////////////////////////////////////////////////////////
 // Actually swing the scythe
@@ -555,9 +594,10 @@ function DoHit( float Accuracy, float YOffset, float ZOffset )
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-function RemoveMe()
+simulated function RemoveMe()
 {
-	if(!bRemoved)
+	// Change by NickP: MP fix
+	/*if(!bRemoved)
 	{
 		Instigator.Weapon = None;
 		if(P2Player(Instigator.Controller) != None)
@@ -567,9 +607,36 @@ function RemoveMe()
 		Instigator.DeleteInventory(self);
 		bRemoved=true;
 		Destroy();
+	}*/
+	if(!bRemoved)
+	{
+		Instigator.Weapon = None;
+		if(P2Player(Instigator.Controller) != None)
+			P2Player(Instigator.Controller).SwitchToThisWeapon(P2Pawn(Instigator).HandsClass.default.InventoryGroup, 
+						P2Pawn(Instigator).HandsClass.default.GroupOffset, true);
+		bRemoved=true;
+
+		if(Level.NetMode == NM_Standalone)
+		{
+			Instigator.DeleteInventory(self);
+			Destroy();
+		}
+		else if(Role == ROLE_Authority)
+		{
+			Instigator.DeleteInventory(self);
+			SetOwner(Instigator);
+			LifeSpan = 1.1;
+		}
 	}
+	// End
 }
 
+// Change by NickP: MP fix
+simulated function bool HasAmmo()
+{
+	return ( Super.HasAmmo() && !bRemoved );
+}
+// End
 
 ///////////////////////////////////////////////////////////////////////////////
 // Finish a sequence
@@ -727,7 +794,10 @@ state PullBackSwing extends PullBackThrow
 		{
 			if(!Instigator.PressingFire())
 			{
-				SwingIt();
+				// Change by NickP: MP fix
+				//SwingIt();
+				CoopSwingIt();
+				// End
 				ClientSwingIt();
 				return;
 			}
@@ -798,7 +868,10 @@ state WaitToSwing extends WaitToThrow
 		{
 			if(!Instigator.PressingFire())
 			{
-				SwingIt();
+				// Change by NickP: MP fix
+				//SwingIt();
+				CoopSwingIt();
+				// End
 				ClientSwingIt();
 			}
 		}
@@ -885,7 +958,7 @@ defaultproperties
      WeaponSpeedHolster=1.500000
      WeaponSpeedShoot1Rand=0.100000
      AltFireSound=Sound'AWSoundFX.Scythe.scythethrowin'
-     bCanThrowMP=False
+     bCanThrowMP=true
      AmmoName=Class'AWInventory.ScytheAmmoInv'
      FireOffset=(X=0.000000,Z=0.000000)
      ShakeRotTime=6.000000

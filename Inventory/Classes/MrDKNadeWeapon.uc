@@ -1,7 +1,9 @@
 //TNade 2010 - MrD
 class MrDKNadeWeapon extends GrenadeWeapon;
 
-
+// Change by NickP: MP fix
+var Texture InvisSkinTex;
+// End
 
 ///////////////////////////////////////////////////////////////////////////////
 // Vars, structs, consts
@@ -10,7 +12,8 @@ var MrDKNade Krotch;
 
 simulated function PostNetBeginPlay()
 {
-    local PlayerController PC;
+	// Change by NickP: MP fix
+    /*local PlayerController PC;
 	local Pawn P;
 
     Super.PostNetBeginPlay();
@@ -32,9 +35,38 @@ simulated function PostNetBeginPlay()
              Krotch.Destroyed();
              Krotch = None;
 	   }
+	}*/
+	Super.PostNetBeginPlay();
+	AttachFPPart();
+	// End
+}
+
+// Change by NickP: MP fix
+simulated function AttachFPPart()
+{
+    local PlayerController PC;
+	local Pawn P;
+
+    P  = Pawn(Owner);
+	PC = PlayerController(P.Controller);
+
+	if( P.IsLocallyControlled() && PC != None && !PC.bBehindView )
+	{
+		if( Krotch == None )
+			Krotch = Spawn(class'MrDKNade',self);
+		AttachToBone(Krotch, 'k');
 	}
 
+	if( Krotch != None && Krotch.AttachmentBone == '' )
+		Krotch.Skins[0] = InvisSkinTex;
 }
+
+simulated function BringUp()
+{
+    Super.BringUp();
+	AttachFPPart();
+}
+// End
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -159,7 +191,15 @@ function Notify_ThrowGrenade()
 ///////////////////////////////////////////////////////////////////////////////
 function DropFrom(vector StartLocation)
 {
-    Krotch.Destroyed();
+	// Change by NickP: MP fix
+    //Krotch.Destroyed();
+	if( Krotch != None )
+	{
+		DetachFromBone(Krotch);
+		Krotch.Destroy();
+		Krotch = None;
+	}
+	// End
 
 	// If you were charging, throw out a live one now
 	if(IsInState('BeforeCharging')
@@ -179,6 +219,10 @@ function DropFrom(vector StartLocation)
 
 defaultproperties
 {
+	// Change by NickP: MP fix
+	InvisSkinTex=Shader'P2R_Tex_D.Weapons.fake'
+	// End
+
      ChargeDistRatio=3200.000000
      ChargeTimeMinAI=1.700000
      WeaponSpeedCharge=1.500000

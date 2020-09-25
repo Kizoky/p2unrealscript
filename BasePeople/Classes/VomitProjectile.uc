@@ -41,7 +41,10 @@ function MakeSpitTrail()
 			SpitTrail.SetBase(self);
 		}
 		else
-			SpitTrail = spawn(trailclass,self,,Location); 
+		{
+			SpitTrail = spawn(trailclass,self,,Location);
+			SpitTrail.SetBase(self);
+		}
 	}
 }
 function KillSpitTrail()
@@ -49,6 +52,10 @@ function KillSpitTrail()
 	if(SpitTrail != None)
 	{
 		SpitTrail.SelfDestroy();
+		// Change by NickP: MP fix
+		if (Level.NetMode != NM_StandAlone)
+			SpitTrail.Destroy();
+		// End
 		SpitTrail = None;
 	}
 }
