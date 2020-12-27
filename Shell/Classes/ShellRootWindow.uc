@@ -1449,7 +1449,7 @@ defaultproperties
 	ConnectingMessage="JOINING"
 	LoadingMessage="LOADING"
 //	StartupMapName="Startup"
-	EngineVersion="5024"
+	EngineVersion="5025"
 	HotfixText=""
 	bBuildDateAsHotfixText=false
 	WorkshopStatus="Workshop Status:"
