@@ -1,0 +1,51 @@
+//=============================================================================
+// Copyright 2014 Running With Scissors, Inc.  All Rights Reserved.
+//=============================================================================
+class Yeeland extends Bystander
+	placeable;
+
+defaultproperties
+{
+	ActorID="Yeeland"
+
+	HeadSkin=Texture'AW_Characters.Special.Phred'
+	HeadMesh=SkeletalMesh'AW_Heads.AW_Fraud'
+	bRandomizeHeadScale=False
+	bStartupRandomization=False
+	ViolenceRankTolerance=10
+	PainThreshold=0.95
+	Rebel=1.0
+	Cajones=1.0
+	Stomach=1.0
+	Armor=100
+	ArmorMax=100
+	Champ=0.400000
+	Temper=0.350000
+	Glaucoma=0.450000
+	Rat=1.000000
+	Compassion=0.000000
+	WarnPeople=0.000000
+	Conscience=0.000000
+	Beg=0.000000
+	Reactivity=0.750000
+	WillDodge=0.400000
+	WillKneel=0.200000
+	WillUseCover=0.800000
+	TalkWhileFighting=0.250000
+	TalkBeforeFighting=1.000000
+	Fitness=0.900000
+	WeapChangeDist=500.000000
+	bAdvancedFiring=True
+	dialogclass=Class'DialogMale'
+	BaseEquipment(0)=(WeaponClass=Class'Inventory.ShotgunWeapon')
+	BaseEquipment(1)=(WeaponClass=Class'Inventory.LauncherWeapon')
+	TakesChemDamage=0.300000
+	HealthMax=150.000000
+	Mesh=SkeletalMesh'Characters.Avg_M_LS_Pants'
+	Skins(0)=Texture'AW_Characters.Special.Phred_Suit'
+	bNoChamelBoltons=True
+	Gang="FunlandGang"
+	ControllerClass=class'YeelandController'
+	AmbientGlow=30
+	bCellUser=false
+}

@@ -1,0 +1,5 @@
+[Public]
+Object=(Name=WorkshopSample-PL.SandboxGamePL,Class=Class,MetaClass=Postal2Game.P2GameInfoSingle)
+Object=(Name=WorkshopSample-PL.UltimateSandboxGamePL,Class=Class,MetaClass=Postal2Game.P2GameInfoSingle)
+Object=(Name=WorkshopSample-PL.CatModePL,Class=Class,MetaClass=Postal2Game.P2GameMod)
+Object=(Name=WorkshopSample-PL.TimeMachine,Class=Class,MetaClass=Postal2Game.P2GameMod)

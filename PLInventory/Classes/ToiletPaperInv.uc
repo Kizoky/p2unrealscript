@@ -1,0 +1,21 @@
+///////////////////////////////////////////////////////////////////////////////
+// ToiletPaperInv
+// Copyright 2014 Running With Scissors, Inc.  All Rights Reserved.
+//
+// Toilet paper, a valuable and rare commodity after the apocalypse.
+///////////////////////////////////////////////////////////////////////////////
+class ToiletPaperInv extends OwnedInv;
+
+///////////////////////////////////////////////////////////////////////////////
+// Default properties
+///////////////////////////////////////////////////////////////////////////////
+defaultproperties
+{
+	PickupClass=class'ToiletPaperPickup'
+	Icon=Texture'MrD_PL_Tex.HUD.TP_HUD'
+	bCanThrow=false
+	InventoryGroup=102
+	GroupOffset=15
+	PowerupName="Toilet Paper"
+	PowerupDesc="A rare commodity in the post-apocalypse."
+}

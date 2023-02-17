@@ -1,0 +1,32 @@
+///////////////////////////////////////////////////////////////////////////////
+// PLHandsWeapon
+// Copyright 2014, Running With Scissors, Inc.
+//
+// "Hands" weapon for PL dude, now with "fuck you" action!
+///////////////////////////////////////////////////////////////////////////////
+class PLHandsWeapon extends HandsWeapon;
+
+///////////////////////////////////////////////////////////////////////////////
+// Play firing animation/sound/etc
+///////////////////////////////////////////////////////////////////////////////
+simulated function PlayFiring()
+{
+	// the single deuce
+	PlayAnim('pl_fuckyou', WeaponSpeedShoot1 + (WeaponSpeedShoot1Rand*FRand()), 0.05);
+}
+simulated function PlayAltFiring()
+{
+	// pwooosh! double deuce
+	PlayAnim('pl_fuckyoutwice', WeaponSpeedShoot2 + (WeaponSpeedShoot1Rand*FRand()), 0.05);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Default properties
+///////////////////////////////////////////////////////////////////////////////
+defaultproperties
+{
+	Mesh=SkeletalMesh'PLFUArms.pl_fuckyou_arms'
+	Skins[0]=Texture'MP_FPArms.LS_arms.LS_hands_dude'
+	FirstPersonMeshSuffix="pl_fuckyou_arms"
+	WeaponsPackageStr="PLFUArms"
+}

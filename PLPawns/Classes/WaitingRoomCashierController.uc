@@ -1,0 +1,307 @@
+///////////////////////////////////////////////////////////////////////////////
+// WaitingRoomCashierController
+// Copyright 2014, Running With Scissors, Inc.
+//
+// Controller for cashiers in a "waiting room" where players must take a number
+// and wait for it to be called.
+//
+// LD must place and configure a NowServingBoard or this cashier will not
+// function properly.
+//
+// This is a generic version of the controller, I recommend modders make a
+// subclass and personalize it to their needs. - Rick
+///////////////////////////////////////////////////////////////////////////////
+class WaitingRoomCashierController extends FFCashierController;
+
+///////////////////////////////////////////////////////////////////////////////
+// Vars, consts, enums, etc.
+///////////////////////////////////////////////////////////////////////////////
+var NowServingBoard MyBoard;		// Pointer to our Now Serving Board
+var int pricecount;					// Temp var for dynamic price readout dialog voice code thingy
+var int bucks;						// ""
+var bool bAnnouncedNumber;			// True if we've already announced that it's your turn
+
+///////////////////////////////////////////////////////////////////////////////
+// PostBeginPlay
+// Find the nearest PriceBoard
+///////////////////////////////////////////////////////////////////////////////
+event PostBeginPlay()
+{
+	local NowServingBoard UseBoard;
+	local float UseDist;
+	
+	UseDist = 999999.999999;
+	
+	foreach DynamicActors(class'NowServingBoard', UseBoard)
+	{
+		if (VSize(Pawn.Location - UseBoard.Location) < UseDist)
+		{
+			UseDist = VSize(Pawn.Location - UseBoard.Location);
+			MyBoard = UseBoard;
+		}
+	}
+
+	if (MyBoard == None)
+		warn(self@"HAS NO WAITING ROOM BOARD!!!!!===================================================");
+	else
+		log(self@"initialized using waiting room board"@MyBoard);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// HasProperTicket
+// Checks pawn's inventory for the required inventory class.
+///////////////////////////////////////////////////////////////////////////////
+function bool HasProperTicket(Pawn CheckP)
+{
+	if (MyBoard != None)
+		return (CheckP.FindInventoryType(MyBoard.RequiredInventoryClass) != None);
+	else
+		warn(self@"called HasProperTicket with no Waiting Room Board!");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// YourTurn
+// Checks to see if the current number is the Dude's number.
+///////////////////////////////////////////////////////////////////////////////
+function bool YourTurn()
+{
+	if (MyBoard != None)
+		return (MyBoard.GetValue() == MyBoard.DudeNumber);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+// ExchangeWithDude
+// Turn away the dude if he hasn't pulled a ticket yet.
+// Also turn him away if it's not his turn yet.
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+state ExchangeWithDude
+{
+Begin:
+	SetupCustomer();
+
+	// if he doesn't have your product, turn him away
+	if (!HasProperTicket(InterestPawn))
+	{
+		bResetInterests = false;
+		GotoState('DudeHasNoTicket');
+	}
+	// if it's not his turn yet, turn him away
+	else if (!YourTurn())
+	{
+		bResetInterests = false;
+		GotoState('NotTheDudesTurn');
+	}
+	else
+	{
+		bResetInterests=false;
+		// Check if you have enough money or not
+		if(P2Pawn(InterestPawn).HowMuchInventory(class'MoneyInv') <= 0)
+		{
+			GotoState('DudeHasNoFunds');
+		}
+		else
+		{
+			GotoState('WaitOnDudeToPay');
+		}
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+// DudeHasNoTicket
+// Wave them over to the ticket machine
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+state DudeHasNoTicket extends TalkingToDudeMaster
+{
+	ignores AcceptItem;
+	
+Begin:
+	// Gesture angry
+	MyPawn.PlayPointThatWayAnim();
+
+	if(FPSPawn(Focus).bPlayer)
+		bImportantDialog=true;
+	PrintDialogue("You don't have a ticket, go away"$Focus);
+	SayTime = Say(MyPawn.myDialog.lCashier_PleaseTakeATicket, bImportantDialog);
+	Sleep(SayTime + FRand());
+	
+	// return to handling the cash register
+	GotoState('WaitForCustomers');
+}
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+// NotTheDudesTurn
+// Reject them
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+state NotTheDudesTurn extends TalkingToDudeMaster
+{
+	ignores AcceptItem;
+	
+Begin:
+	// Gesture angry
+	MyPawn.PlayPointThatWayAnim();
+
+	if(FPSPawn(Focus).bPlayer)
+		bImportantDialog=true;
+	PrintDialogue("It's not your turn, go away"$Focus);
+	SayTime = Say(MyPawn.myDialog.lCashier_PleaseWaitYourTurn, bImportantDialog);
+	Sleep(SayTime + FRand());
+	
+	// return to handling the cash register
+	GotoState('WaitForCustomers');
+}
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+// WaitOnDudeToPay
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+state WaitOnDudeToPay
+{
+Begin:
+	if(CheckToGiggle())
+		Sleep(SayTime);
+		
+	// Trigger events
+	if (MyCashReg != None)
+		TriggerEvent(MyCashReg.TriggerBeforeDudeUse, MyPawn, InterestPawn);
+
+	// cashier says hi
+	TalkSome(MyPawn.myDialog.lGreeting,,true);
+	PrintDialogue("Greeting");
+	Sleep(SayTime);
+
+	// dude says hi
+	PrintDialogue(InterestPawn$" greeting ");
+	TalkSome(CustomerPawn.myDialog.lGreeting, CustomerPawn,true);
+	Sleep(SayTime);
+
+	// cashier states how much it will be
+	statecount = GetTotalCostOfYourProducts(CustomerPawn, MyPawn);
+	PrintDialogue("that'll be...");
+	SayTime = Say(MyPawn.myDialog.lNumbers_Thatllbe, bImportantDialog);
+	Sleep(SayTime);
+	// BEGIN Expanded number support
+	bucks = 0;
+	// Hundreds
+	if (statecount >= 100)
+	{
+		pricecount = statecount / 100;	// integer division
+		pricecount *= 100;
+		SayTime = SayThisNumber(MyPawn.MyDialog.GetValidNumber(pricecount, pricecount),,bImportantDialog);
+		Sleep(SayTime);
+		statecount -= pricecount;
+		bucks = 2;
+	}
+	// Teens
+	if (statecount >= 11 && statecount <= 19)
+	{
+		SayTime = SayThisNumber(MyPawn.MyDialog.GetValidNumber(statecount, statecount),,bImportantDialog);
+		Sleep(SayTime);
+		statecount = 0;
+		bucks = 2;
+	}
+	// Tens
+	if (statecount >= 10)
+	{
+		pricecount = statecount / 10;	// integer division
+		pricecount *= 10;
+		SayTime = SayThisNumber(MyPawn.Mydialog.GetValidNumber(pricecount, pricecount),,bImportantDialog);
+		Sleep(SayTime);
+		statecount -= pricecount;
+		bucks = 2;
+	}
+	// Ones
+	if (statecount >= 1)
+	{
+		SayTime = SayThisNumber(MyPawn.Mydialog.GetValidNumber(statecount, statecount),,bImportantDialog);
+		Sleep(SayTime);
+		if (bucks == 0)
+			bucks = statecount;
+	}
+	PrintDialogue(statecount$" bucks");
+	Sleep(0.1);
+	if(bucks > 1)
+		SayTime = Say(MyPawn.myDialog.lNumbers_Dollars, bImportantDialog);
+	else
+		SayTime = Say(MyPawn.myDialog.lNumbers_SingleDollar, bImportantDialog);
+	Sleep(SayTime + Frand());
+	// END expanded number support
+}
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+// TakePaymentFromDude
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+state TakePaymentFromDude
+{
+	///////////////////////////////////////////////////////////////////////////////
+	// Take the dude's ticket, too, so he's not stuck carrying it around.
+	///////////////////////////////////////////////////////////////////////////////
+	event BeginState()
+	{
+		Super.BeginState();
+		if (MyBoard != None)
+			CustomerPawn.DeleteInventory(CustomerPawn.FindInventoryType(MyBoard.RequiredInventoryClass));
+		else
+			warn(self@"tried to delete the dude's ticket without Waiting Board being set!!!");
+	}	
+}
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+// Check out people in line
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+state WaitForCustomers
+{
+	event Tick(float Delta)
+	{
+		Super.Tick(Delta);
+		if (!bAnnouncedNumber && YourTurn())
+			GotoState('NowServing');	// Announce serving number
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+// Now Serving - Announce that it's the dude's turn to pay
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+state NowServing
+{
+Begin:
+	// Gesture for them to come forward
+	MyPawn.PlayHelloGesture(1.0);
+	SayTime = Say(MyPawn.myDialog.lHelpYouOverHere, bImportantDialog);
+	PrintDialogue("I can help you over here..."$InterestPawn);
+	Sleep(SayTime + FRand()*4*SayTime + 1.0);
+	GotoState('WaitForCustomers', 'WaitForNextPerson');
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// bravely defaults
+///////////////////////////////////////////////////////////////////////////////
+defaultproperties
+{
+}

@@ -1,1 +1,0 @@
-class CuttingDamageShovel extends CuttingDamage;

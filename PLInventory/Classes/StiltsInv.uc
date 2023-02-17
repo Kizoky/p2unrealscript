@@ -1,0 +1,23 @@
+///////////////////////////////////////////////////////////////////////////////
+// Stilts Inv
+// Copyright 2014 Running With Scissors, Inc.  All Rights Reserved.
+//
+// Stilts errand item
+///////////////////////////////////////////////////////////////////////////////
+class StiltsInv extends OwnedInv;
+
+///////////////////////////////////////////////////////////////////////////////
+// Default properties
+///////////////////////////////////////////////////////////////////////////////
+defaultproperties
+{
+	PickupClass=class'StiltsPickup'
+	Icon=Texture'PLHud.Icons.Icon_Inv_Stilts'
+	UseForErrands=1
+	bCanThrow=false
+	bAllowHints=false
+	InventoryGroup=102
+	GroupOffset=20
+	PowerupName="Mechanical Stilts"
+	PowerupDesc="Great for making a towering appearance on the battlefield."
+}

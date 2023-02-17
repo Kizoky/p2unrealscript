@@ -1,1 +1,0 @@
-class DudeSuicideDamage extends ExplodedDamage;

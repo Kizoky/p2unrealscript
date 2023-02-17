@@ -1,0 +1,23 @@
+///////////////////////////////////////////////////////////////////////////////
+// Blasting Cap Inv
+// Copyright 2014 Running With Scissors, Inc.  All Rights Reserved.
+//
+// Blasting cap errand item
+///////////////////////////////////////////////////////////////////////////////
+class BlastingCapInv extends OwnedInv;
+
+///////////////////////////////////////////////////////////////////////////////
+// Default properties
+///////////////////////////////////////////////////////////////////////////////
+defaultproperties
+{
+	PickupClass=class'BlastingCapPickup'
+	Icon=Texture'PLHud.Icons.Icon_Inv_BlastingCap'
+	UseForErrands=1
+	bCanThrow=false
+	bAllowHints=false
+	InventoryGroup=102
+	GroupOffset=21
+	PowerupName="Blasting Cap"
+	PowerupDesc="A component for making a bomb to blow up the Hell Hole seal."
+}

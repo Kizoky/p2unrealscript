@@ -1,0 +1,61 @@
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+class PLBystanders_AridDesert extends PLBystanders;
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+defaultproperties
+{
+	// Default to chameleon skin and associated mesh
+	Skins[0]=Texture'PLBystanderSkins.Female.XX__801__Fem_SS_Shorts'
+	Mesh=Mesh'Characters.Fem_SS_Shorts'
+	
+	ChameleonSkins(00)="PLBystanderSkins.Female.FB__800__Fat_F_SS_Pants"
+	ChameleonSkins(01)="PLBystanderSkins.Female.FB__808__Fem_SS_Shorts"
+	ChameleonSkins(02)="PLBystanderSkins.Female.FM__809__Fem_SS_Shorts"
+	ChameleonSkins(03)="PLBystanderSkins.Female.FM__812__Fem_LS_Skirt"
+	ChameleonSkins(04)="PLBystanderSkins.Female.FW__805__Fat_F_SS_Pants"
+	ChameleonSkins(05)="PLBystanderSkins.Female.FW__810__Fem_SS_Shorts"
+	ChameleonSkins(06)="PLBystanderSkins.Female.FW__813__Fem_LS_Skirt"
+	ChameleonSkins(07)="PLBystanderSkins.Female.FW__814__Fem_LS_Skirt"
+	ChameleonSkins(08)="PLBystanderSkins.Female.FW__815__Fem_LS_Skirt"
+	ChameleonSkins(09)="PLBystanderSkins.Female.FW__817__Fem_LS_Skirt"
+	ChameleonSkins(10)="PLBystanderSkins.Male.MB__825__Avg_M_SS_Pants"
+	ChameleonSkins(11)="PLBystanderSkins.Male.MB__826__Avg_M_SS_Pants"
+	ChameleonSkins(12)="PLBystanderSkins.Male.MB__833__Avg_M_SS_Shorts"
+	ChameleonSkins(13)="PLBystanderSkins.Male.MB__837__Fat_M_SS_Pants"
+	ChameleonSkins(14)="PLBystanderSkins.Male.MB__858__Fat_M_SS_Pants"
+	ChameleonSkins(15)="PLBystanderSkins.Male.MM__827__Avg_M_SS_Pants"
+	ChameleonSkins(16)="PLBystanderSkins.Male.MM__834__Avg_M_SS_Shorts"
+	ChameleonSkins(17)="PLBystanderSkins.Male.MM__836__Fat_M_SS_Pants"
+	ChameleonSkins(18)="PLBystanderSkins.Male.MM__838__Fat_M_SS_Pants"
+	ChameleonSkins(19)="PLBystanderSkins.Male.MM__839__Fat_M_SS_Pants"
+	ChameleonSkins(20)="PLBystanderSkins.Male.MW__062__Avg_M_SS_Shorts"
+	ChameleonSkins(21)="PLBystanderSkins.Male.MW__160__Avg_M_SS_Pants"
+	ChameleonSkins(22)="PLBystanderSkins.Male.MW__828__Avg_M_SS_Pants"
+	ChameleonSkins(23)="PLBystanderSkins.Male.MW__829__Avg_M_SS_Pants"
+	ChameleonSkins(24)="PLBystanderSkins.Male.MW__830__Avg_M_SS_Pants"
+	ChameleonSkins(25)="PLBystanderSkins.Male.MW__831__Avg_M_SS_Pants"
+	ChameleonSkins(26)="PLBystanderSkins.Male.MW__832__Avg_M_SS_Pants"
+	ChameleonSkins(27)="PLBystanderSkins.Male.MW__835__Avg_M_SS_Shorts"
+	ChameleonSkins(28)="PLBystanderSkins.Male.MW__840__Fat_M_SS_Pants"
+	ChameleonSkins(29)="End"
+
+	RandomizedBoltons(0)=BoltonDef'Postal2Game.BoltonDefAfro'
+	RandomizedBoltons(1)=BoltonDef'Postal2Game.BoltonDefFedora'
+	RandomizedBoltons(2)=BoltonDef'Postal2Game.BoltonDefCowboyHat'
+	RandomizedBoltons(3)=BoltonDef'Postal2Game.BoltonDefBallcap_Backwards'
+	RandomizedBoltons(4)=BoltonDef'Postal2Game.BoltonDefBriefcase'
+	RandomizedBoltons(5)=BoltonDef'Postal2Game.BoltonDefShades1'
+	RandomizedBoltons(6)=BoltonDef'Postal2Game.BoltonDefShades2'
+	RandomizedBoltons(7)=BoltonDef'Postal2Game.BoltonDefShades3'
+	RandomizedBoltons(8)=BoltonDef'Postal2Game.BoltonDefBallcap'
+	RandomizedBoltons(9)=BoltonDef'Postal2Game.BoltonDefBallcap_Fem'
+	RandomizedBoltons(10)=BoltonDef'Postal2Game.BoltonDefPurse'
+	RandomizedBoltons(11)=BoltonDef'Postal2Game.BoltonDefPurseGay'
+	RandomizedBoltons(12)=BoltonDef'Postal2Game.BoltonDefCigarette_M'
+	RandomizedBoltons(13)=BoltonDef'Postal2Game.BoltonDefCigarette_F'
+	RandomizedBoltons(14)=BoltonDef'Postal2Game.BoltonDefEarring_M'
+	RandomizedBoltons(15)=BoltonDef'Postal2Game.BoltonDefPornBag'
+	RandomizedBoltons(16)=None
+}
