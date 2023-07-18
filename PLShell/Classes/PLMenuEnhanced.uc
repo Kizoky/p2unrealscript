@@ -21,8 +21,11 @@ function Notify(UWindowDialogControl C, byte E)
 					GoBack();
 					break;
 				case StartChoice:
-					// Pick the difficulty
-					GotoMenu(class'PLMenuStart');
+					// xPatch: Go to the previously selected start menu
+					if(PickStartMenu != None)
+						JumpToMenu(PickStartMenu);
+					else // This should not happen but if it somehow does go to the old start menu.
+						JumpToMenu(class'PLMenuStart');
 					break;
 			}
 			break;

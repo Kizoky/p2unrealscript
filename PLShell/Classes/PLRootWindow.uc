@@ -12,6 +12,32 @@ const MUSIC_TEXT_X				= 0.98;
 const MUSIC_TEXT_Y				= 0.96;
 
 ///////////////////////////////////////////////////////////////////////////////
+// function to get the main menu class as defined by either the gametype
+// or the default main menu
+///////////////////////////////////////////////////////////////////////////////
+function class<BaseMenuBig> GetMainMenuClass()
+{
+	local class<BaseMenuBig> MainMenuClass;
+	
+	if (GetGameSingle() == None)
+		return None;
+
+	// Allow workshop games to define their own menus.
+	if (IsInState('MainMenuShowingVirgin'))
+		// If in the 'virgin' main menu, bring up the game's StartMenuClass if it has one.		
+		MainMenuClass = class<BaseMenuBig>(DynamicLoadObject(String(GetGameSingle().StartMenuName), class'Class'));
+	else
+		MainMenuClass = class<BaseMenuBig>(DynamicLoadObject(String(GetGameSingle().MainMenuName), class'Class'));
+
+	// Most of the time when leaving Workshop game palyer returns to POSTAL 2's main menu. 
+	// We want to prevent that in Paradise Lost so return PLMenuMain when it wants to go to MenuMain.
+	if (MainMenuClass != None && MainMenuClass != class'MenuMain')
+		return MainMenuClass;
+	else
+		return class'PLMenuMain'; 
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Call this to quit the current game.
 // This only works in game menu mode.
 ///////////////////////////////////////////////////////////////////////////////
@@ -117,7 +143,7 @@ function PostRender(canvas Canvas)
 //		DrawPreMsg(Canvas);
 
 		// Display info about installed game
-		if (MyMenu.class == GetMainMenuClass() || MyMenu.class == class'MenuGame')
+		if (MyMenu.class == GetMainMenuClass() /*|| MyMenu.class == class'PLMenuGame'*/)
 			{
 			MyFont.DrawTextEx(
 				Canvas,
@@ -168,13 +194,18 @@ function PostRender(canvas Canvas)
 		}
 	}
 
+// xPatch: returns to xPatch Menu
+function bool IsParadiseLost()
+{
+	return true;
+}
 	
 ///////////////////////////////////////////////////////////////////////////////
 // Default properties
 ///////////////////////////////////////////////////////////////////////////////
 defaultproperties
 {
-	EngineVersion="5025"
+	EngineVersion="5100"
 	HotfixText=""
 	bBuildDateAsHotfixText=false
 }

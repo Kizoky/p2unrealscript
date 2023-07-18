@@ -50,7 +50,7 @@ function CreateMenuContents()
 	//ProjectorsCheckbox = AddCheckbox(ProjectorsText, ProjectorsHelp, ItemFont);
 	//PawnSlider = AddSlider(PawnText, PawnHelp, ItemFont, 0, 30);
 	bChangedPawnSlider = false;
-	BodiesSlider = AddSlider(BodiesSliderText, BodiesSliderHelp, ItemFont, 0, 200);
+	BodiesSlider = AddSlider(BodiesSliderText, BodiesSliderHelp, ItemFont, 0, 30);
 	RagdollSlider = AddSlider(RagdollText, RagdollHelp, ItemFont, 0, 10);
 	AnisotropyCombo = AddComboBox(AnisotropyText, AnisotropyHelp, ItemFont);
     FOVSlider = AddSlider(FOVText, FOVHelp, ItemFont, 80, 110);

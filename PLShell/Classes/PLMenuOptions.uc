@@ -20,22 +20,35 @@ function CreateMenuContents()
 	AddTitle(OptionsText, TitleFont, TitleAlign);
 
 	GameChoice			= AddChoice(GameOptionsText,	GameOptionsHelp,	ItemFont, ItemAlign);
+	ClassicChoice		= AddChoice(ClassicText,		ClassicHelp,	ItemFont, ItemAlign);
 	ControlsChoice		= AddChoice(ControlOptionsText, ControlOptionsHelp,	ItemFont, ItemAlign);
 	VideoChoice			= AddChoice(VideoOptionsText,	VideoOptionsHelp,	ItemFont, ItemAlign);
 	AudioChoice			= AddChoice(AudioOptionsText,	AudioOptionsHelp,	ItemFont, ItemAlign);
 	PerformanceChoice	= AddChoice(PerformanceText,	PerformanceHelp,	ItemFont, ItemAlign);
+
 		
-	/*
 	// Holiday stuff.
-	if (GetPlayerOwner().GetEntryLevel().GetAchievementManager().GetAchievement(UNLOCK_ACHIEVEMENT))
+	/*
+	if (GetPlayerOwner().GetEntryLevel().GetAchievementManager().GetAchievement(UNLOCK_ACHIEVEMENT) || FPSPlayer(GetPlayerOwner()).bEnableDebugMenu)
 	{
 		UnlockedChoice	= AddChoice(UnlockedText,		UnlockedHelp,		ItemFont, ItemAlign);
 	}
 	else
 	{
 		LockedChoice	= AddChoice(LockedText,			LockedHelp,			ItemFont, ItemAlign);
+		//UnlockedChoice	= AddChoice(UnlockedText,		UnlockedHelp,		ItemFont, ItemAlign);
 	}
 	*/
+	
+	if (!IsGameMenu() || GetGameSingle().xManager.bMoveAchevements)	// Show if we are in main menu or if the setting to move it here is on
+		AchChoice		= AddChoice(AchText,	        AchHelp,        	ItemFont, ItemAlign);
+		
+	//	xPatchChoice         = AddChoice(xPatchText,	        xPatchHelp,        	ItemFont, ItemAlign);
+	//if(!bShowedXPatch) {
+	//	xPatchChoice.SetTextColor(MyTextColor);
+	//	xPatchChoice.SetHighlightTextColor(MyHighlightColor);
+	//}
+	// End
 	
 	if (GetLevel().IsSteamBuild())
 		PurgeChoice			= AddChoice(PurgeText,			PurgeHelp,			ItemFont, ItemAlign);
@@ -69,10 +82,12 @@ function Notify(UWindowDialogControl C, byte E)
 						GoToMenu(class'PLMenuAudio');
 						bUseSuper = false;
 						break;
+					/*
 					case PerformanceChoice:
 						GoToMenu(class'PLMenuPerformanceAdvanced');
 						bUseSuper = false;
 						break;
+					*/
 					case CreditsChoice:
 						RollCredits();
 						bUseSuper = false;

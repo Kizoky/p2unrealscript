@@ -11,13 +11,14 @@ var localized string	DebugText;
 var localized string	DebugHelp;
 var int					CustomMapWidth;
 var int					CustomMapHeight;
-
+var texture 			PLTitleTex;
 ///////////////////////////////////////////////////////////////////////////////
 // Create menu contents
 ///////////////////////////////////////////////////////////////////////////////
 function CreateMenuContents()
 {
 	Super(BaseMenuBig).CreateMenuContents();
+	TitleTexture = PLTitleTex; // Always PL Logo in this menu
 	AddTitleBitmap(TitleTexture);
 	NewChoice     = AddChoice(NewGameText,		"",									ItemFont, ItemAlign);
 
@@ -72,13 +73,16 @@ function Notify(UWindowDialogControl C, byte E)
 						// Start new game
 						SetSingleplayer();
 						ShellRootWindow(Root).bVerifiedPicked=false;
-						bShowEnhanced = bool(GetPlayerOwner().ConsoleCommand("get"@EnhancedPath));
+// xPatch: We use Game Mode menu now.						
+/*						bShowEnhanced = bool(GetPlayerOwner().ConsoleCommand("get"@EnhancedPath));
 						if (!bShowEnhanced
 							&& GetGameSingle().SeqTimeVerified())
 							GotoMenu(class'PLMenuEnhanced');
 						else
 							// Allow them to pick the difficulty
 							GotoMenu(class'PLMenuStart');
+*/
+						GotoMenu(class'PLMenuGameMode');
 						bUseSuper = false;
 						break;
 					case OptionsChoice:
@@ -107,4 +111,5 @@ defaultproperties
 	DebugHelp = "(DEBUG) Starts new game on specified map on Monday. Skips difficulty, intro etc"
 	CustomMapWidth	= 350
 	CustomMapHeight	= 250
+	PLTitleTex=Texture'PL_Product.PL_title'
 }

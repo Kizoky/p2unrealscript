@@ -1,11 +1,11 @@
 ///////////////////////////////////////////////////////////////////////////////
 // MenuCheats.uc
-// Copyright 2023 Running With Scissors Studios LLC.  All Rights Reserved.
+// Copyright 2003 Running With Scissors, Inc.  All Rights Reserved.
 //
 // The Cheats menu.
 //
 ///////////////////////////////////////////////////////////////////////////////
-class PLDebugMenu extends ShellMenuCW;
+class PLDebugMenu_TwoWeeks extends ShellMenuCW;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Vars, structs, consts, enums...
@@ -18,9 +18,10 @@ var localized string ResetCopsText, ResetCopsHelp;
 var ShellMenuChoice WarpChoice;
 var localized string WarpText, WarpHelp;
 
-var ShellMenuChoice MondayChoice, TuesdayChoice, WednesdayChoice, ThursdayChoice, FridayChoice, ApocalypseChoice, ShowdownChoice, DisableDebugChoice;
-var localized string MondayText, TuesdayText, WednesdayText, ThursdayText, FridayText, ApocalypseText, ShowdownText, DisableDebugText;
-var localized string MondayHelp, TuesdayHelp, WednesdayHelp, ThursdayHelp, FridayHelp, ApocalypseHelp, ShowdownHelp, DisableDebugHelp;
+var ShellMenuChoice MondayChoice, TuesdayChoice, WednesdayChoice, ThursdayChoice, FridayChoice, SaturdayChoice, SundayChoice, DisableDebugChoice;
+var localized string MondayText, TuesdayText, WednesdayText, ThursdayText, FridayText, SaturdayText, SundayText, DisableDebugText;
+var localized string MondayHelp, TuesdayHelp, WednesdayHelp, ThursdayHelp, FridayHelp, SaturdayHelp, SundayHelp, DisableDebugHelp;
+
 var ShellMenuChoice MondayChoice2, TuesdayChoice2, WednesdayChoice2, ThursdayChoice2, FridayChoice2, ApocalypseChoice2, ShowdownChoice2;
 var localized string MondayText2, TuesdayText2, WednesdayText2, ThursdayText2, FridayText2, ApocalypseText2, ShowdownText2;
 var localized string MondayHelp2, TuesdayHelp2, WednesdayHelp2, ThursdayHelp2, FridayHelp2, ApocalypseHelp2, ShowdownHelp2;
@@ -55,8 +56,8 @@ function CreateMenuContents()
 	WednesdayChoice=AddChoice(WednesdayText, WednesdayHelp, ItemFont, ItemAlign);
 	ThursdayChoice=AddChoice(ThursdayText, ThursdayHelp, ItemFont, ItemAlign);
 	FridayChoice=AddChoice(FridayText, FridayHelp, ItemFont, ItemAlign);
-	ShowdownChoice=AddChoice(ShowdownText, ShowdownHelp, ItemFont, ItemAlign);
-	ApocalypseChoice=AddChoice(ApocalypseText, ApocalypseHelp, ItemFont, ItemAlign);
+	SaturdayChoice=AddChoice(SaturdayText, SaturdayHelp, ItemFont, ItemAlign);
+	SundayChoice=AddChoice(SundayText, SundayHelp, ItemFont, ItemAlign);
 	MondayChoice2=AddChoice(MondayText2, MondayHelp2, ItemFont, ItemAlign);
 	TuesdayChoice2=AddChoice(TuesdayText2, TuesdayHelp2, ItemFont, ItemAlign);
 	WednesdayChoice2=AddChoice(WednesdayText2, WednesdayHelp2, ItemFont, ItemAlign);
@@ -64,6 +65,7 @@ function CreateMenuContents()
 	FridayChoice2=AddChoice(FridayText2, FridayHelp2, ItemFont, ItemAlign);
 	ShowdownChoice2=AddChoice(ShowdownText2, ShowdownHelp2, ItemFont, ItemAlign);
 	ApocalypseChoice2=AddChoice(ApocalypseText2, ApocalypseHelp2, ItemFont, ItemAlign);
+	
 	WarpChoice = AddChoice(WarpText, WarpHelp, ItemFont, ItemAlign);
 	CompleteTodaysErrandsChoice = AddChoice(CompleteTodaysErrandsText, CompleteTodaysErrandsHelp, ItemFont, ItemAlign);
 	ResetCopsChoice = AddChoice(ResetCopsText, ResetCopsHelp, ItemFont, ItemAlign);
@@ -100,77 +102,77 @@ function Notify(UWindowDialogControl C, byte E)
 					case MondayChoice:
 						GoBack();
 						HideMenu();
-						GetPlayerOwner().ConsoleCommand("setday 1");
+						StartDay(0);
 						break;
 					case TuesdayChoice:
 						GoBack();
 						HideMenu();
-						GetPlayerOwner().ConsoleCommand("setday 2");
+						StartDay(1);
 						break;
 					case WednesdayChoice:
 						GoBack();
 						HideMenu();
-						GetPlayerOwner().ConsoleCommand("setday 3");
+						StartDay(2);
 						break;
 					case ThursdayChoice:
 						GoBack();
 						HideMenu();
-						GetPlayerOwner().ConsoleCommand("setday 4");
+						StartDay(3);
 						break;
 					case FridayChoice:
 						GoBack();
 						HideMenu();
-						GetPlayerOwner().ConsoleCommand("setday 5");
+						StartDay(4);
 						break;
-					case ShowdownChoice:
+					case SaturdayChoice:
 						GoBack();
 						HideMenu();
-						GetPlayerOwner().ConsoleCommand("setday 6");
+						StartDay(5);
 						break;
-					case ApocalypseChoice:
+					case SundayChoice:
 						GoBack();
 						HideMenu();
-						GetPlayerOwner().ConsoleCommand("setday 7");
+						StartDay(6);
+						break;
+					case MondayChoice2:
+						GoBack();
+						HideMenu();
+						StartDay(7);
+						break;
+					case TuesdayChoice2:
+						GoBack();
+						HideMenu();
+						StartDay(8);
+						break;
+					case WednesdayChoice2:
+						GoBack();
+						HideMenu();
+						StartDay(9);
+						break;
+					case ThursdayChoice2:
+						GoBack();
+						HideMenu();
+						StartDay(10);
+						break;
+					case FridayChoice2:
+						GoBack();
+						HideMenu();
+						StartDay(11);
+						break;
+					case ShowdownChoice2:
+						GoBack();
+						HideMenu();
+						StartDay(12);
+						break;
+					case ApocalypseChoice2:
+						GoBack();
+						HideMenu();
+						StartDay(13);
 						break;
 					case LoadoutChoice:
 						GoBack();
 						HideMenu();
 						GetPlayerOwner().ConsoleCommand("loadout");
-						break;
-					case MondayChoice2:
-						GoBack();
-						HideMenu();
-						StartDay(0);
-						break;
-					case TuesdayChoice2:
-						GoBack();
-						HideMenu();
-						StartDay(1);
-						break;
-					case WednesdayChoice2:
-						GoBack();
-						HideMenu();
-						StartDay(2);
-						break;
-					case ThursdayChoice2:
-						GoBack();
-						HideMenu();
-						StartDay(3);
-						break;
-					case FridayChoice2:
-						GoBack();
-						HideMenu();
-						StartDay(4);
-						break;
-					case ShowdownChoice2:
-						GoBack();
-						HideMenu();
-						StartDay(5);
-						break;
-					case ApocalypseChoice2:
-						GoBack();
-						HideMenu();
-						StartDay(6);
 						break;
 					case WarpChoice:
 						Root.ShowModal(Root.CreateWindow(class'PLShellMapListFrame',
@@ -244,28 +246,28 @@ defaultproperties
 	RestartText = "Restart Current Map"
 	RestartHelp = "Reloads current map."
 	
-	MondayText = "Set Day to Monday"
-	TuesdayText = "Set Day to Tuesday"
-	WednesdayText = "Set Day to Wednesday"
-	ThursdayText = "Set Day to Thursday"
-	FridayText = "Set Day to Friday"
-	ShowdownText = "Set Day to Showdown"
-	ApocalypseText = "Set Day to Apocalypse"
-	MondayText2 = "Start Monday"
-	TuesdayText2 = "Start Tuesday"
-	WednesdayText2 = "Start Wednesday"
-	ThursdayText2 = "Start Thursday"
-	FridayText2 = "Start Friday"
-	ShowdownText2 = "Start Showdown"
-	ApocalypseText2 = "Start Apocalypse"
+	MondayText = "Start Monday"
+	TuesdayText = "Start Tuesday"
+	WednesdayText = "Start Wednesday"
+	ThursdayText = "Start Thursday"
+	FridayText = "Start Friday"
+	SaturdayText = "Start Saturday"
+	SundayText = "Start Sunday"
+	MondayText2 = "Start Monday (PL)"
+	TuesdayText2 = "Start Tuesday (PL)"
+	WednesdayText2 = "Start Wednesday (PL)"
+	ThursdayText2 = "Start Thursday (PL)"
+	FridayText2 = "Start Friday (PL)"
+	ShowdownText2 = "Start Showdown (PL)"
+	ApocalypseText2 = "Start Apocalypse (PL)"
 	
-	MondayHelp = "Sets current day to Monday but does not change map."
-	TuesdayHelp = "Sets current day to Tuesday but does not change map."
-	WednesdayHelp = "Sets current day to Wednesday but does not change map."
-	ThursdayHelp = "Sets current day to Thursday but does not change map."
-	FridayHelp = "Sets current day to Friday but does not change map."
-	ShowdownHelp = "Sets current day to the Showdown but does not change map."
-	ApocalypseHelp = "Sets current day to the Apocalypse but does not change map."
+	MondayHelp = "Starts Monday from the beginning of the day, including intro movie."
+	TuesdayHelp = "Starts Tuesday from the beginning of the day, including intro movie."
+	WednesdayHelp = "Starts Wednesday from the beginning of the day, including intro movie."
+	ThursdayHelp = "Starts Thursday from the beginning of the day, including intro movie."
+	FridayHelp = "Starts Friday from the beginning of the day, including intro movie."
+	SaturdayHelp = "Starts Saturday from the beginning, including intro movie."
+	SundayHelp = "Starts Sunday from the beginning, including intro movie."
 
 	MondayHelp2 = "Starts Monday from the beginning of the day, including intro movie."
 	TuesdayHelp2 = "Starts Tuesday from the beginning of the day, including intro movie."

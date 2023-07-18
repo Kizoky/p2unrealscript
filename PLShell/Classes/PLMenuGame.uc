@@ -62,6 +62,7 @@ function CreateMenuContents()
 	OptionsChoice	= AddChoice(OptionsText,	OptionsHelpText,	ItemFont, ItemAlign);
 	AchChoice		= AddChoice(AchText,		AchHelpText,		ItemFont, ItemAlign);
 	QuitChoice		= AddChoice(QuitText,		"",					ItemFont, ItemAlign);
+	DesktopQuitChoice = AddChoice(DesktopQuitText,	"",				ItemFont, ItemAlign);	// Added by Man Chrzan: xPatch 2.0 
 	ResumeChoice	= AddChoice(ResumeText,		"",					ItemFont, ItemAlign);
 
 	// Enable/disable various options (only works with MenuChoice)
@@ -93,7 +94,8 @@ function Notify(UWindowDialogControl C, byte E)
 					bUseSuper = false;
 					break;
 				case DebugChoice:
-					GotoMenu(class'PLDebugMenu');
+					//GotoMenu(class'PLDebugMenu');
+					LaunchDebugMenu();
 					bUseSuper = false;
 					break;
 			}
@@ -104,6 +106,16 @@ function Notify(UWindowDialogControl C, byte E)
 		Super.Notify(C, E);
 	else
 		Super(BaseMenuBig).Notify(C, E);
+}
+
+function LaunchDebugMenu()
+{
+	local GameInfo GameInfo;
+	GameInfo = GetPlayerOwner().Level.Game;
+	if (TWPGameInfo(GameInfo) != None)
+		GotoMenu(class'PLDebugMenu_TwoWeeks');
+	else 
+		GotoMenu(class'PLDebugMenu');
 }
 
 defaultproperties

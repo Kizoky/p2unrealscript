@@ -108,7 +108,7 @@ defaultproperties
 	GameMenuName="Shell.MenuGame"
 
 	// Game logo to be displayed in game menus
-	MenuTitleTex="RWSProductTex.Postal2Complete"
+	MenuTitleTex="P2Misc.Logos.postal2underlined"
 	
 	// Game Name displayed in the Workshop Browser.
 	GameName="Sample Workshop GameInfo"

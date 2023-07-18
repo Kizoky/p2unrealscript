@@ -1,4 +1,4 @@
-# Postal 2 Paradise Lost UnrealScript source (2020.12.05)
+# Postal 2 Paradise Lost UnrealScript source (2023.04.22)
 
 Note, these are the same files you can find in PostED's root directory, I only uploaded this as a repo to search for specific
 interests that otherwise would be pain if done through Windows' Explorer, and so on...

@@ -6,6 +6,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 class PLBaseGameInfo extends P2GameInfoSingle;
 
+var() array<string> DynamicMainMenuURL;	
 const MONKEYS_FOR_ACHIEVEMENT = 6;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -16,6 +17,7 @@ event PostTravel(P2Pawn PlayerPawn)
 	local Inventory InvAdd;
 	local P2PowerupInv ppinv;
 	local ClothesPickup clothes;
+	local RadarTargetPickup chompy;
 
 	const NIGHTMARE_RADAR_MIN = 2000;
 	
@@ -24,26 +26,44 @@ event PostTravel(P2Pawn PlayerPawn)
 	// In nightmare mode, give him a radar with a long battery life
 	if (InNightmareMode())
 	{
-		invadd = PlayerPawn.CreateInventoryByClass(class'RadarInv');
-		//log(Self$" invadd "$invadd);
-		// Make sure they have enough--if you have more than this, that's fine.
-		ppinv = P2PowerupInv(invadd);
-		if(ppinv != None
-			&& ppinv.Amount < NIGHTMARE_RADAR_MIN)
-			ppinv.SetAmount(NIGHTMARE_RADAR_MIN);
-			
-		// Force it to activate immediately if not already active.
-		if (ppinv != None
-			&& !ppinv.IsInState('Operating'))
-			ppinv.Activate();
-
-		// Delete clothes pickups the dude could use to sneak around town.
+		// xPatch: no infinite radar in super-hard Masochist Mode :)
+		if(!InVeteranMode())
+		{
+			invadd = PlayerPawn.CreateInventoryByClass(class'RadarInv');
+			//log(Self$" invadd "$invadd);
+			// Make sure they have enough--if you have more than this, that's fine.
+			ppinv = P2PowerupInv(invadd);
+			if(ppinv != None
+				&& ppinv.Amount < NIGHTMARE_RADAR_MIN)
+				ppinv.SetAmount(NIGHTMARE_RADAR_MIN);
+				
+			// Force it to activate immediately if not already active.
+			if (ppinv != None
+				&& !ppinv.IsInState('Operating'))
+			{
+				ppinv.bDisplayAmount = False;	// xPatch: No need to show amount in nightmare mode (it's infinite)
+				ppinv.Activate();
+			}
+		}
+		
+		// xPatch: Instead of deleting clothes I modified 
+		// DudeDressedAsCop and DudeDressedAsGimp in LambController.uc
+		// to make sure they attack the player. Seems like a more reasonable solution.
+/*		// Delete clothes pickups the dude could use to sneak around town.
 		foreach DynamicActors(class'ClothesPickup', clothes)
 		{
 			if (!clothes.bUseForErrands
 				&& DudeClothesPickup(Clothes) == None
 				&& GimpClothesPickupErrand(Clothes) == None)
 				clothes.Destroy();
+		}
+*/
+		
+		// xPatch: Delete chompy plug-in, it's kinda overpowered.
+		if(InVeteranMode())
+		{
+			foreach DynamicActors(class'RadarTargetPickup', chompy)
+				chompy.Destroy();
 		}
 	}
 }
@@ -133,4 +153,7 @@ defaultproperties
 	GameSpeed=1.000000
 	MaxSpectators=2
 	KissEmitterClass=class'FX2.KissEmitter'
+	DynamicMainMenuURL[0]="Startup"
+	DynamicMainMenuURL[1]="Startup-Apocalypse"
+	bAllowClassicGame=False
 }
