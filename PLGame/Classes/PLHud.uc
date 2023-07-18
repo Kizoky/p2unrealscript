@@ -32,7 +32,11 @@ simulated event PostRender( canvas Canvas )
 {
 	local SceneManager SM;
 	
-	Super.PostRender(Canvas);
+	//Super.PostRender(Canvas);
+	
+	// Added by Man Chrzan: Fix for arms visible behind Mounted Minigun 
+	if(PLDudePlayer(Owner).bUsingMountedWeapon)
+		return;
 
 	// If there's an active screen, check to see if it wants the hud
 	// If there's a root window running then never show the hud
@@ -58,6 +62,10 @@ simulated event PostRender( canvas Canvas )
 	SM = OurPlayer.GetCurrentSceneManager();
 	if (SM != None && !SM.bLetPlayerSkip && SM.bLetPlayerFastForward && OurPlayer.bWantsToSkip == 1)
 		DrawFastForwardFX(Canvas);
+	
+	// Change by Man Chrzan:
+	// Super needs to be called after LeftHandBird so it (left hand) won't cover subtitles.
+	Super.PostRender(Canvas);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

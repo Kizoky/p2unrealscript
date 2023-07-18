@@ -4,12 +4,13 @@
 //
 // Hammer "weapon" for third-person display purposes only
 ///////////////////////////////////////////////////////////////////////////////
-class HammerPickup extends P2WeaponPickup
-	notplaceable;
+class HammerPickup extends P2WeaponPickup;
+//	notplaceable;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Make sure the amount we had carries over
 ///////////////////////////////////////////////////////////////////////////////
+/*
 function InitDroppedPickupFor(Inventory Inv)
 {
 	// Mark the pickup as persistent if the player dropped it
@@ -22,7 +23,7 @@ function InitDroppedPickupFor(Inventory Inv)
 	// THIS GUN SHOULD NEVER DROP
 		Destroy();
 }
-
+*/
 defaultproperties
 {
      BounceSound=Sound'MiscSounds.Props.woodhitsground1'

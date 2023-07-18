@@ -15,5 +15,5 @@ defaultproperties
 	PickupMessage="You picked up a pair of mechanical stilts."
 	DrawType=DT_StaticMesh
 	StaticMesh=StaticMesh'PL_tylermesh2.RoboFact.WoodStilt_A'
-	UseForErrands=1
+//	UseForErrands=1
 }

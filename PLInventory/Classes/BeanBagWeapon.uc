@@ -165,8 +165,6 @@ state Idle
 	}
 }
 
-
-
 defaultproperties
 {
      ViolenceRank=9
@@ -184,19 +182,26 @@ defaultproperties
      MaxRange=900.000000
      FireSound=Sound'PL_BeanBagSounds.BeanBag_Fire'
      //SelectSound=Sound'WeaponSounds.weapon_pickup'
-	 InventoryGroup=9
-     GroupOffset=87
+	 InventoryGroup=10
+     GroupOffset=3
      PickupClass=Class'BeanBagGunPickup'
      PlayerViewOffset=(X=1.000000,Y=0.300000,Z=-1.300000)
-     BobDamping=0.975000
+     BobDamping=1.12 //0.975000
      AttachmentClass=Class'BeanBagGunAttachment'
      ItemName="Bean Bag Launcher"
      Mesh=SkeletalMesh'MrD_PL_Anims.MiniGun_D'
      Skins(0)=Texture'MrD_PL_Tex.Weapons.TestingUV'
      Skins(1)=Texture'MP_FPArms.LS_arms.LS_hands_dude'
      Skins(2)=Texture'MP_FPArms.LS_arms.LS_hands_dude'
-     AmbientGlow=128
+     //AmbientGlow=128
      SoundRadius=355.000000
-	 bHideFoot=true
+	 bHideFoot=false //true
 	 EnhancedSpeedMult=1.5
+	 
+	 // Added by Man Chrzan
+	 bSpawnMuzzleFlash=true
+	 bMFAlwaysSpawn=true
+	 MFBoneName="Motor"
+	 MFClass=class'FX2.MuzzleSmoke03' 
+	 MFRelativeLocation=(X=0,Y=58,Z=10)
 }

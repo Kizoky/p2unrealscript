@@ -8,7 +8,7 @@
  *
  * @author Gordon Cheng
  */
-class RevolverWeapon extends PLDualWieldWeapon;
+class RevolverWeapon extends DualCatableWeapon;//PLDualWieldWeapon;
 
 /** Execution level variables */
 var bool bExecuting;
@@ -66,6 +66,23 @@ var P2Emitter MuzzleSmokeEmitter;
 var() Sound TauntSound;
 
 const BONE_HEAD = 'MALE01 head';
+
+// Added by Man Chrzan: xPatch
+var() vector ThirdPersonRelativeLocationLeft;
+var() rotator ThirdPersonRelativeRotationLeft;
+var() int ExecutionDisplayMode;		// 0 - Simple bar, 1 - Original bar, 3 - Percent
+var bool bModeChecked;
+
+event PostBeginPlay()
+{
+	// Revolver has infinite ExecutionLevel in enhanced game
+	if (P2GameInfoSingle(Level.Game).VerifySeqTime()
+		&& Pawn(Owner).Controller.bIsPlayer)
+	{
+		ExecutionLevel = MaxExecutionLevel;
+	}
+}
+// End
 
 /** Returns whether or not the specified Actor is in our Pawn's FOV
  * @param Other - P2MoCapPawn object to check if it's in our field of vision
@@ -183,7 +200,10 @@ function bool HasPawnAtTopOfStack() {
 function PushTarget(P2MoCapPawn Other) {
     MarkedTargets.Insert(MarkedTargets.length, 1);
     MarkedTargets[MarkedTargets.length-1] = Other;
-    ExecutionLevel -= ExecutionCost;
+	
+	// Revolver has infinite ExecutionLevel in enhanced game
+	if (!P2GameInfoSingle(Level.Game).VerifySeqTime())
+		ExecutionLevel -= ExecutionCost;
 }
 
 /** Empties our entire marked target list of all the targets */
@@ -219,8 +239,52 @@ simulated function PlayFiring() {
 }
 
 simulated function PlayAltFiring() {
-	IncrementFlashCount();
+// Added by Man Chrzan: xPatch 2.0
+	local float UsePitch;
+	
+	SetupMuzzleFlashEmitter();
+	
+	// If the cat is on the gun and we want it to fly off, then set it up to fly off,
+	// by switching the animation
+	if(CatOnGun==1)
+		{
+		// Switch to special sound
+		AltFireSound=CatFireSound;
+		// Pitch higher with each consecutive shot
+		UsePitch = WeaponFirePitchStart + (CAT_PITCH_INCREASE*(StartShotsWithCat - CatAmmoLeft));
 
+		// xCatSilencer plays fire anim.
+		if( Cat != None )
+			Cat.PlayAnim(CatFireAnim);
+		
+		//if (CatAmmoLeft==0
+		if (CatAmmoLeft==0
+			|| !AmmoType.HasAmmo())
+			{
+			// Remove our cat and shoot him off, unless we have a cheat set to
+			// keep shooting them off
+			if(RepeatCatGun == 0)
+				{
+				SwapCatOff();
+				ShootOffCat();
+				CatOnGun=0;
+				}
+			else // Cheat
+				{
+				CatAmmoLeft=1;
+				ShootOffCat();
+				}
+			}
+		}
+	else
+		{
+		// Use normal firing sound
+		AltFireSound=Default.AltFireSound;
+		UsePitch = WeaponFirePitchStart + (FRand()*WeaponFirePitchRand);
+		}
+//end
+	IncrementFlashCount();
+	
 	if (Level.Game == none || !FPSGameInfo(Level.Game).bIsSinglePlayer)
 		PlayOwnedSound(AltFireSound,SLOT_Interact,1.0,,,WeaponFirePitchStart +
             (FRand()*WeaponFirePitchRand),false);
@@ -233,9 +297,11 @@ simulated function PlayAltFiring() {
 	bPlayTaunt = false;
 }
 
+/*
 exec function Reload() {
     PlayReloading();
 }
+*/
 
 function PlayReloading() {
     PlayAnim('Reload', WeaponSpeedReload, 0.05);
@@ -267,6 +333,11 @@ function TraceFire(float Accuracy, float YOffset, float ZOffset) {
 	local actor Other;
 
 	local bool bWasAlive;
+	
+	// Added by Man Chrzan: xPatch 2.0 
+	// Reduce the cat ammo if we're using one
+	if(CatOnGun == 1)
+		CatAmmoLeft--;
 
 	Owner.MakeNoise(1.0);
 	GetAxes(Instigator.GetViewRotation(),X,Y,Z);
@@ -281,7 +352,11 @@ function TraceFire(float Accuracy, float YOffset, float ZOffset) {
 	if (Pawn(Other) != none)
 	    bWasAlive = Pawn(Other).Health > 0;
 
-	AmmoType.ProcessTraceHit(self, Other, LastHitLocation, HitNormal, X,Y,Z);
+	// xPatch Change: Brand new ProcessExecutionTraceHit function was added to RevolverAmmoInv
+	if(bExecuting && RevolverAmmoInv(AmmoType) != None)
+		RevolverAmmoInv(AmmoType).ProcessExecutionTraceHit(self, Other, LastHitLocation, HitNormal, X,Y,Z);
+	else // End
+		AmmoType.ProcessTraceHit(self, Other, LastHitLocation, HitNormal, X,Y,Z);
 	ShotCount++;
 
 	if (Pawn(Other) != none && Pawn(Other).Health <= 0 && bWasAlive) {
@@ -291,12 +366,13 @@ function TraceFire(float Accuracy, float YOffset, float ZOffset) {
             NotifyPawnKilled();
     }
 
-    if (bExecuting && P2MoCapPawn(Other) != none && P2AmmoInv(AmmoType) != none && !IsException(Pawn(Other))) {
-        P2MoCapPawn(Other).ExplodeHead(LastHitLocation, vect(0,0,0));
-        P2MoCapPawn(Other).Died(Instigator.Controller, P2AmmoInv(AmmoType).DamageTypeInflicted, LastHitLocation);
-
-        if (PLBaseGameState(P2GameInfoSingle(Level.Game).TheGameState) != None)
-			PLBaseGameState(P2GameInfoSingle(Level.Game).TheGameState).ExecutionKills++;
+    // xPatch Change: ExecutionKills++ moved to NotifyPawnKilled() so it records IsException pawns killed with it too.
+	if (bExecuting && P2MoCapPawn(Other) != none && P2AmmoInv(AmmoType) != none) 
+	{
+		if(!IsException(Pawn(Other))) {
+			P2MoCapPawn(Other).ExplodeHead(LastHitLocation, vect(0,0,0));
+			P2MoCapPawn(Other).Died(Instigator.Controller, P2AmmoInv(AmmoType).DamageTypeInflicted, LastHitLocation);
+		}
     }
 
 	if (P2GameInfo(Level.Game).bShowTracers) {
@@ -344,41 +420,66 @@ simulated event RenderOverlays(Canvas Canvas) {
     local float ScreenX, ScreenY, Width, Height, Border, Perc;
 
     super.RenderOverlays(Canvas);
+	
+	// xPatch: new execution bar options
+	if(!bModeChecked) 
+	{
+		if(P2GameInfoSingle(Level.Game) != None && P2GameInfoSingle(Level.Game).xManager != None)
+			ExecutionDisplayMode = P2GameInfoSingle(Level.Game).xManager.iRevolverMode;
+		bModeChecked = true;
+	}
+	
+	ScreenX = Canvas.SizeX / 2;
+	if(ExecutionDisplayMode == 1) 
+		ScreenY = Canvas.SizeY * 4 / 5;
+	else
+		ScreenY = Canvas.SizeY * 4 / 4.5;
+		
+	if(ExecutionDisplayMode == 1) {
+		Width = Canvas.SizeX / 4;
+		Height = Canvas.SizeY / 20; 
+	}
+	else {
+		Width = Canvas.SizeX / 8;
+		Height = Canvas.SizeY / 40;
+	}
+		
+	Border = 2;
 
-    ScreenX = Canvas.SizeX / 2;
-    ScreenY = Canvas.SizeY * 4 / 5;
+	Perc = float(ExecutionLevel) / float(MaxExecutionLevel);
+	CanvasScale = Canvas.ClipY / 768;
 
-    Width = Canvas.SizeX / 4;
-    Height = Canvas.SizeY / 20;
+	Canvas.Style = ERenderStyle.STY_Alpha;
 
-    Border = 2;
+	// Draw the bar
+	if ( ExecutionDisplayMode != 2 && !P2GameInfoSingle(Level.Game).VerifySeqTime())
+	{
+		// Draw the badge (why?) icon.
+		if(ExecutionDisplayMode == 1) {
+			if (ExecutionBarIcon != none) {
+				Canvas.SetDrawColor(255, 255, 255, 255);
+				Canvas.SetPos(ScreenX - (Width / 2) - 64 * CanvasScale, ScreenY - 40 * CanvasScale);
+				Canvas.DrawIcon(ExecutionBarIcon, CanvasScale);
+			}
+		}
+		
+		Canvas.SetPos(ScreenX - (Width / 2), ScreenY);
+		Canvas.SetDrawColor(0, 0, 0, ExecutionBarColor.A);
 
-    Perc = float(ExecutionLevel) / float(MaxExecutionLevel);
-    CanvasScale = Canvas.ClipY / 768;
+		if (Canvas.DrawColor.A > 0)
+			Canvas.DrawRect(Texture'engine.WhiteSquareTexture', Width, Height);
 
-    Canvas.Style = ERenderStyle.STY_Alpha;
+		InnerWidth = Width - 2 * Border;
+		InnerHeight = Height - 2 * Border;
 
-    if (ExecutionBarIcon != none) {
-        Canvas.SetDrawColor(255, 255, 255, 255);
-        Canvas.SetPos(ScreenX - (Width / 2) - 64 * CanvasScale, ScreenY - 40 * CanvasScale);
-        Canvas.DrawIcon(ExecutionBarIcon, CanvasScale);
-    }
+		Canvas.SetPos(ScreenX - (InnerWidth / 2), ScreenY + Border);
+		Canvas.DrawColor = ExecutionBarColor;
 
-    Canvas.SetPos(ScreenX - (Width / 2), ScreenY);
-	Canvas.SetDrawColor(0, 0, 0, ExecutionBarColor.A);
-
-    if (Canvas.DrawColor.A > 0)
-		Canvas.DrawRect(Texture'engine.WhiteSquareTexture', Width, Height);
-
-	InnerWidth = Width - 2 * Border;
-	InnerHeight = Height - 2 * Border;
-
-	Canvas.SetPos(ScreenX - (InnerWidth / 2), ScreenY + Border);
-	Canvas.DrawColor = ExecutionBarColor;
-
-    if (Canvas.DrawColor.A > 0)
-		Canvas.DrawRect(Texture'engine.WhiteSquareTexture', InnerWidth * Perc, InnerHeight);
-
+		if (Canvas.DrawColor.A > 0)
+			Canvas.DrawRect(Texture'engine.WhiteSquareTexture', InnerWidth * Perc, InnerHeight);
+	}
+	
+	// Draw the execution mark
     if (ExecutionReticle != none) {
 
         for (i=0;i<MarkedTargets.length;i++) {
@@ -387,11 +488,27 @@ simulated event RenderOverlays(Canvas Canvas) {
                 IsInFieldOfVision(MarkedTargets[i])) {
 
                 HeadDrawPos = Canvas.WorldToScreen(MarkedTargets[i].myHead.Location);
+				Canvas.SetDrawColor(255, 255, 255, 200);
                 Canvas.SetPos(HeadDrawPos.X - 32 * CanvasScale, HeadDrawPos.Y - 32 * CanvasScale);
                 Canvas.DrawIcon(ExecutionReticle, CanvasScale);
             }
         }
     }
+}
+
+/** Render our execution level on the HUD icon above ammo*/
+simulated function string GetFiringMode()
+{
+	local float fPerc;
+	local int iPerc;
+	
+	fPerc = float(ExecutionLevel) / float(MaxExecutionLevel);
+	iPerc = fPerc * 100;
+	
+	if (ExecutionDisplayMode == 2 && !P2GameInfoSingle(Level.Game).VerifySeqTime())
+		return iPerc$"%";
+	else
+		return "";
 }
 
 /** Mark targets for execution depending on how full our bar is */
@@ -476,6 +593,9 @@ function Tick(float DeltaTime) {
 function NotifyPawnKilled() {
     if (!bExecuting)
         ExecutionLevel = Min(ExecutionLevel + ExecutionKillGain, MaxExecutionLevel);
+			
+    if (PLBaseGameState(P2GameInfoSingle(Level.Game).TheGameState) != None)
+		PLBaseGameState(P2GameInfoSingle(Level.Game).TheGameState).ExecutionKills++;
 
     if (bHintGainingExecution && ExecutionLevel == MaxExecutionLevel) {
         bHintGainingExecution = false;
@@ -498,7 +618,9 @@ function ExecutionFinished() {
     if (MuzzleSmokeEmitter != none)
         AttachToBone(MuzzleSmokeEmitter, MuzzleBoneName);
 
-    if (ExecutionCount >= MinExecutionCountForTaunt) {
+    // Change by Man Chrzan: Don't lick cat's ass lol.
+	//if (ExecutionCount >= MinExecutionCountForTaunt) {
+	 if (ExecutionCount >= MinExecutionCountForTaunt && CatOnGun==0) {
         bPlayTaunt = true;
         TauntDelayTime = ExecutionAimTime;
     }
@@ -507,6 +629,40 @@ function ExecutionFinished() {
         bHintMarkingTargets = false;
         UpdateHudHints();
     }
+	
+	// Added by Man Chrzan: Holster the Revolver when we are out of ammo.
+	if (!AmmoType.HasAmmo())
+		Finish();
+}
+
+// Added by Man Chrzan: xPatch 2.0  
+// Left Revolver location fix
+function SetupDualWielding()
+{
+	Super.SetupDualWielding();
+	
+	LeftWeapon.ThirdPersonRelativeLocation = ThirdPersonRelativeLocationLeft;
+	LeftWeapon.ThirdPersonRelativeRotation = ThirdPersonRelativeRotationLeft;
+}
+
+// Added by Man Chrzan: xPatch 2.0  
+// Fix for Catable Weapon and Revolver execution marker compability.
+state Idle
+{
+	///////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////
+	function Tick(float DeltaTime) 
+	{
+		global.Tick(DeltaTime);
+	}
+	///////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////
+	function BeginState()
+	{
+		Super.BeginState();
+
+		ResetMoanVals();
+	}
 }
 
 defaultproperties
@@ -520,9 +676,18 @@ defaultproperties
 	ExceptionClassNames(6)="PLOsama"
 	ExceptionClassNames(7)="PLRWSVince"
 	ExceptionClassNames(8)="PLUncleDave"
-
-    MuzzleFlashBone="dummy_muzzle"
-    MuzzleFlashEmitterClass=class'RevolverMuzzleFlashEmitter'
+	// added by Man Chrzan: xPatch 2.0
+	ExceptionClassNames(9)="Krotchy"
+	ExceptionClassNames(10)="Gary"	
+	ExceptionClassNames(11)="BanditLeader"
+	
+    //MuzzleFlashBone="dummy_muzzle"
+    //MuzzleFlashEmitterClass=class'RevolverMuzzleFlashEmitter'
+	MFBoneName="dummy_muzzle"
+	MFScale=(Min=0.8,Max=0.8) 
+	MFClass=class'xMuzzleFlashEmitter'
+	MFTex=texture'Timb.muzzleflash.pistol_corona'
+	bSpawnMuzzleFlash=True
 
     WeaponSpeedReload=1
     WeaponSpeedTaunt=1
@@ -540,25 +705,25 @@ defaultproperties
 
     MinExecutionCountForTaunt=3
 
-    ExecutionReticle=texture'P2Misc.Reticle.Reticle_Crosshair_Redline'
+	ExecutionReticle=texture'P2Misc.Reticle.Reticle_Crosshair_Redline'
     ExecutionBarIcon=texture'nathans.Inventory.b_Star_Shield'
     ExecutionFont=Font'P2Fonts.Fancy24'
-    ExecutionBarColor=(R=255,G=0,B=0,A=192)
+    ExecutionBarColor=(R=180,G=10,B=10,A=120)
 
     bHintGainingExecution=true
     HudHint_GainExecution1="Take out enemies with the Revolver"
-    HudHint_GainExecution2="to fill up the execution bar"
+    HudHint_GainExecution2="to fill up the execution bar."
     HudHint_GainExecution3=""
 
     bHintMarkingTargets=true
     HudHint_MarkTargets1="Hold the %KEY_AltFire% and highlight"
-    HudHint_MarkTargets2="targets to mark them for execution"
-    HudHint_MarkTargets3="Let go to perform a wild west quick draw"
+    HudHint_MarkTargets2="targets to mark them for execution."
+    HudHint_MarkTargets3="Let go to perform a wild west quick draw."
 
     bHintExecutionCost=true
     HudHints_ExecutionCost1="Remember, not all enemies can"
     HudHints_ExecutionCost2="be marked for execution, but"
-    HudHints_ExecutionCost3="most can"
+    HudHints_ExecutionCost3="most can!"
 
     bAllowHints=true
 	bShowHints=true
@@ -571,8 +736,8 @@ defaultproperties
 	Mesh=SkeletalMesh'PL_Revolver_Mesh.pl_revolver_viewmodel'
 	FirstPersonMeshSuffix="Pistol"
 
-	AmbientGlow=128
-	PlayerViewOffset=(X=0,Z=-10)
+	AmbientGlow=90 //128
+	PlayerViewOffset=(X=0) //(X=0,Z=-10)
 
     bDrawMuzzleFlash=false
 	MuzzleScale=1
@@ -606,7 +771,7 @@ defaultproperties
 	AutoSwitchPriority=2
 	InventoryGroup=2
 	GroupOffset=3
-	BobDamping=0.975
+	BobDamping=1.12 //0.975
 	ReloadCount=0
 	TraceAccuracy=0.15
 	ShotMarkerMade=class'GunfireMarker'
@@ -631,7 +796,26 @@ defaultproperties
 	SelectSound=Sound'PLWeapons.Revolver.Revolver_load1'
 	HolsterSound=Sound'PLWeapons.Revolver.Revolver_holster1'
 
-	OverrideHUDIcon=Texture'MrD_PL_Tex.HUD.Revolver_HUD'
+	OverrideHUDIcon=Texture'RevolverTex.hud_Revolver' //'MrD_PL_Tex.HUD.Revolver_HUD'
 	ThirdPersonRelativeLocation=(X=15,Z=6)
 	ThirdPersonRelativeRotation=(Pitch=16384,Yaw=16384)
+	
+	// Added by Man Chrzan: xPatch 2.0
+	TauntSound=sound'PLWeapons.Revolver.Revolver_taunt1'
+	ThirdPersonRelativeLocationLeft=(X=15,Y=-3,Z=-6)
+    ThirdPersonRelativeRotationLeft=(Pitch=-16384,Yaw=16384)
+	Skins[0]=Texture'RevolverTex.magnum_diffuse'
+	Skins[1]=Texture'RevolverTex.gungrip_diffuse'
+	Skins[2]=Texture'RevolverTex.magnum_bullets'
+	Skins[3]=Texture'MP_FPArms.LS_arms.LS_hands_dude'
+	
+	// Meow! 
+	bAttachCat=True
+	CatFireSound=Sound'WeaponSounds.machinegun_catfire'
+	CatBoneName="dummy_muzzle"
+	CatRelativeLocation=(X=0,Y=0,Z=3)
+	CatRelativeRotation=(Pitch=0,Roll=0,Yaw=16384)
+	StartShotsWithCat=9
+	
+	bAllowMiddleFinger=True
 }

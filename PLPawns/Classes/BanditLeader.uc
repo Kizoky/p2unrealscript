@@ -159,4 +159,5 @@ defaultproperties
 
 	bNoDismemberment=True
 	TakesShotgunHeadShot=0.1
+	TakesRifleHeadShot=0.2
 }

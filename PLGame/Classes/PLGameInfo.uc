@@ -163,6 +163,18 @@ function GameInfoIsNowValid()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// xPatch: Make all cats crazy like in AW since PL events take place after it.
+// One plot-hole less, and one more super-cool mechanic back!
+// Undone: Dervish cats are set on a per-pawn basis.
+///////////////////////////////////////////////////////////////////////////////
+/*
+function bool CrazyCats()
+{
+	return True;
+}
+*/
+
+///////////////////////////////////////////////////////////////////////////////
 // Returns true if the Dude should no longer be wearing his AW head wound wrap.
 ///////////////////////////////////////////////////////////////////////////////
 function bool DudeShouldBeBandaged()
@@ -504,29 +516,33 @@ function EndOfGame(P2Player player)
 	RecordEnding();
 	log(self$" GameRefVal new InfoSeqTime "$InfoSeqTime$" GameRefVal "$GameRefVal$" fover "$FOver);
 
-	// Grant achievement if we beat both AW and P2
-	if (FinallyOver())
+	// xPatch: Must be played from the first day to get these achievement		
+	if(TheGameState.StartDay == 0)	
 	{
-		if(Level.NetMode != NM_DedicatedServer ) Player.GetEntryLevel().EvaluateAchievement(Player,'PLFridayComplete');
-	}
-
-	// Grant achievements for beating the game in certain ways
-
-	// Speedrun ending
-	if (TheGameState.TimeElapsed <= PLGameState(TheGameState).SPEEDRUN_ACHIEVEMENT
-		&& !VerifySeqTime())				// Can't be in Enhanced
+		// Grant achievement if we beat Paradise Lost
+		if (FinallyOver())
 		{
-		if(Level.NetMode != NM_DedicatedServer ) Player.GetEntryLevel().EvaluateAchievement(Player,'PLSpeedRun',true);
+			if(Level.NetMode != NM_DedicatedServer ) Player.GetEntryLevel().EvaluateAchievement(Player,'PLFridayComplete');
 		}
-	// Jesus ending
-	if (TheGameState.PeopleKilled + PLGameState(TheGameState).AnimalKills == 0)
-	{
-		if(Level.NetMode != NM_DedicatedServer ) Player.GetEntryLevel().EvaluateAchievement(Player,'PLJesusRun',true);
-	}
-	// Gone Wild ending
-	if (InNightmareMode())		// Beat the game in nightmare mode
-	{
-		if(Level.NetMode != NM_DedicatedServer ) Player.GetEntryLevel().EvaluateAchievement(Player,'PLPOSTALRun',true);
+
+		// Grant achievements for beating the game in certain ways
+
+		// Speedrun ending
+		if (TheGameState.TimeElapsed <= PLGameState(TheGameState).SPEEDRUN_ACHIEVEMENT
+			&& !VerifySeqTime())				// Can't be in Enhanced
+			{
+			if(Level.NetMode != NM_DedicatedServer ) Player.GetEntryLevel().EvaluateAchievement(Player,'PLSpeedRun',true);
+			}
+		// Jesus ending
+		if (TheGameState.PeopleKilled + PLGameState(TheGameState).AnimalKills == 0)
+		{
+			if(Level.NetMode != NM_DedicatedServer ) Player.GetEntryLevel().EvaluateAchievement(Player,'PLJesusRun',true);
+		}
+		// Gone Wild ending
+		if (InNightmareMode())		// Beat the game in nightmare mode
+		{
+			if(Level.NetMode != NM_DedicatedServer ) Player.GetEntryLevel().EvaluateAchievement(Player,'PLPOSTALRun',true);
+		}
 	}
 		
 	// Shut off the apocalypse
@@ -766,6 +782,25 @@ Begin:
 	GetPlayer().ClientMessage("I see you're stuck in the Survivalist Encampment! Please stand by for a free ride outta here.");
 	Sleep(5.0);
 	SendPlayerTo(GetPlayer(), C4_ESCAPE_URL);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// xPatch: Update Main Menu depending on the time of week.
+///////////////////////////////////////////////////////////////////////////////
+function UpdateMainMenu()
+{
+	local string NewMenuURL;
+	
+	if(ParseLevelName(Level.GetLocalURL()) != MainMenuURL)
+	{
+		if(IsApocalypse())
+			NewMenuURL = DynamicMainMenuURL[1];
+		else
+			NewMenuURL = DynamicMainMenuURL[0];
+		
+		default.MainMenuURL = NewMenuURL;
+		MainMenuURL = NewMenuURL;
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1473,6 +1508,7 @@ defaultproperties
 	Begin Object Class=DayBase Name=PLMonday
 		Description="Monday"
 		UniqueName="DAY_A"
+		StartDayURL	= "PL-intro"	// for Two Weeks In Paradise
         LoadTex="p2misc_full.loading1"
         MapTex="PLHud.Map.map_day1"
 		Errands(0)=ErrandBase'ErrandBaseAskAboutChamp'
@@ -1506,6 +1542,7 @@ defaultproperties
 	Begin Object Class=DayBase Name=PLMondayHate
 		Description="Monday"
 		UniqueName="DAY_A"
+		StartDayURL	= "PL-intro"	// for Two Weeks In Paradise
         LoadTex="p2misc_full.loading1"
         MapTex="PLHud.Map.map_day1"
 		Errands(0)=ErrandBase'ErrandBaseCheckKennels'
@@ -1756,4 +1793,13 @@ defaultproperties
 	StatsScreenClassName="PLGame.PLStatsScreen"
 	MapScreenClassName="PLGame.PLMapScreen"
 	SuperChampClass=class'PLPawns.PLSuperChamp'
+	
+	// xPatch
+	LoadoutDays[0]=(Items=((Item=class'ShovelWeapon'),(Item=class'PistolWeapon',Amount=50),(Item=class'RevolverWeapon',Amount=50),(Item=class'GrenadeWeapon',Amount=5),(Item=class'PizzaInv',Amount=5),(Item=class'CrackInv'),(Item=class'MachineGunWeapon',Amount=100),(Item=class'RadarInv',Amount=200),(Item=class'GasCanWeapon',Amount=50)))
+	LoadoutDays[1]=(Items=((Item=class'ShovelWeapon'),(Item=class'PistolWeapon',Amount=100),(Item=class'RevolverWeapon',Amount=100),(Item=class'GSelectWeapon',Amount=50),(Item=class'GrenadeWeapon',Amount=10),(Item=class'FGrenadeWeapon',Amount=10),(Item=class'PizzaInv',Amount=10),(Item=class'CrackInv'),(Item=class'LeverActionShotgunWeapon',Amount=30),(Item=class'ShotgunWeapon',Amount=30),(Item=class'FastFoodInv',Amount=5),(Item=class'MachineGunWeapon',Amount=100),(Item=class'RadarInv',Amount=200),(Item=class'GasCanWeapon',Amount=100)))
+	LoadoutDays[2]=(Items=((Item=class'ShovelWeapon'),(Item=class'PistolWeapon',Amount=150),(Item=class'RevolverWeapon',Amount=150),(Item=class'GSelectWeapon',Amount=100),(Item=class'GrenadeWeapon',Amount=15),(Item=class'FGrenadeWeapon',Amount=15),(Item=class'PizzaInv',Amount=10),(Item=class'CrackInv',Amount=2),(Item=class'LeverActionShotgunWeapon',Amount=60),(Item=class'ShotgunWeapon',Amount=60),(Item=class'FastFoodInv',Amount=5),(Item=class'SledgeWeapon'),(Item=class'MP5Weapon',Amount=100),(Item=class'MachineGunWeapon',Amount=100),(Item=class'KevlarInv'),(Item=class'CatnipInv'),(Item=class'RadarInv',Amount=200),(Item=class'GasCanWeapon',Amount=10)))
+	LoadoutDays[3]=(Items=((Item=class'PLSwordWeapon'),(Item=class'ShovelWeapon'),(Item=class'PistolWeapon',Amount=200),(Item=class'RevolverWeapon',Amount=200),(Item=class'GSelectWeapon',Amount=150),(Item=class'GrenadeWeapon',Amount=20),(Item=class'FGrenadeWeapon',Amount=20),(Item=class'PizzaInv',Amount=10),(Item=class'CrackInv',Amount=3),(Item=class'LeverActionShotgunWeapon',Amount=90),(Item=class'ShotgunWeapon',Amount=90),(Item=class'FastFoodInv',Amount=10),(Item=class'SledgeWeapon'),(Item=class'MP5Weapon',Amount=150),(Item=class'MachineGunWeapon',Amount=150),(Item=class'KevlarInv'),(Item=class'CatnipInv'),(Item=class'RadarInv',Amount=200),(Item=class'LauncherWeapon',Amount=100),(Item=class'DualWieldInv'),(Item=class'MacheteWeapon'),(Item=class'GasCanWeapon',Amount=10)))
+	LoadoutDays[4]=(Items=((Item=class'PLSwordWeapon'),(Item=class'ShovelWeapon'),(Item=class'PistolWeapon',Amount=250),(Item=class'RevolverWeapon',Amount=250),(Item=class'GSelectWeapon',Amount=200),(Item=class'GrenadeWeapon',Amount=25),(Item=class'FGrenadeWeapon',Amount=20),(Item=class'PizzaInv',Amount=10),(Item=class'CrackInv',Amount=3),(Item=class'LeverActionShotgunWeapon',Amount=120),(Item=class'ShotgunWeapon',Amount=120),(Item=class'FastFoodInv',Amount=10),(Item=class'SledgeWeapon'),(Item=class'MP5Weapon',Amount=200),(Item=class'MachineGunWeapon',Amount=200),(Item=class'BodyArmorInv'),(Item=class'CatnipInv',Amount=2),(Item=class'RadarInv',Amount=200),(Item=class'LauncherWeapon',Amount=100),(Item=class'DualWieldInv',Amount=2),(Item=class'MacheteWeapon'),(Item=class'WeedWeapon',Amount=150),(Item=class'GasCanWeapon',Amount=100)))
+	LoadoutDays[5]=(Items=((Item=class'PLSwordWeapon'),(Item=class'ShovelWeapon'),(Item=class'PistolWeapon',Amount=250),(Item=class'RevolverWeapon',Amount=250),(Item=class'GSelectWeapon',Amount=200),(Item=class'GrenadeWeapon',Amount=25),(Item=class'FGrenadeWeapon',Amount=20),(Item=class'PizzaInv',Amount=10),(Item=class'CrackInv',Amount=3),(Item=class'LeverActionShotgunWeapon',Amount=120),(Item=class'ShotgunWeapon',Amount=120),(Item=class'FastFoodInv',Amount=10),(Item=class'SledgeWeapon'),(Item=class'MP5Weapon',Amount=200),(Item=class'MachineGunWeapon',Amount=200),(Item=class'BodyArmorInv'),(Item=class'CatnipInv',Amount=2),(Item=class'RadarInv',Amount=200),(Item=class'LauncherWeapon',Amount=100),(Item=class'DualWieldInv',Amount=2),(Item=class'MacheteWeapon'),(Item=class'WeedWeapon',Amount=150),(Item=class'GasCanWeapon',Amount=100)))
+	LoadoutDays[6]=(Items=((Item=class'PLSwordWeapon'),(Item=class'ShovelWeapon'),(Item=class'PistolWeapon',Amount=250),(Item=class'RevolverWeapon',Amount=250),(Item=class'GSelectWeapon',Amount=200),(Item=class'GrenadeWeapon',Amount=25),(Item=class'FGrenadeWeapon',Amount=20),(Item=class'PizzaInv',Amount=10),(Item=class'CrackInv',Amount=3),(Item=class'LeverActionShotgunWeapon',Amount=120),(Item=class'ShotgunWeapon',Amount=120),(Item=class'FastFoodInv',Amount=10),(Item=class'SledgeWeapon'),(Item=class'MP5Weapon',Amount=200),(Item=class'MachineGunWeapon',Amount=200),(Item=class'BodyArmorInv'),(Item=class'CatnipInv',Amount=2),(Item=class'RadarInv',Amount=200),(Item=class'LauncherWeapon',Amount=100),(Item=class'DualWieldInv',Amount=2),(Item=class'MacheteWeapon'),(Item=class'WeedWeapon',Amount=150),(Item=class'GasCanWeapon',Amount=100)))
 }

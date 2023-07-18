@@ -27,10 +27,28 @@ var vector CanvasDimensions;	// Current dimensions of canvas
 var vector CanvasClip;
 var float CanvasLeftBound;		// Canvas left bound
 
+/** Item button the joystick user wishes to select */
+var int DesiredItemButton;
+
 /** Initializes the wish granting menu */
 event Initialized() {
 	Super.Initialized();
+    DesiredItemButton = 0;
     PauseGame();
+}
+
+/** Returns whether or not the button at the given index of the Buttons array
+ * is currently highlighted by the mouse, given it's draw position. The reason
+ * we require a Draw position is because sometimes we ignore some screen space
+ * to support widescreen, and sometimes we don't, depends on the situation
+ * @param Idx - Index of the button from Buttons you want to check
+ * @param CanvasScale - Scaling of the canvas to determine the draw length
+ * @param Pos - Screen coordinates, not percentage where the button is drawn
+ * @return TRUE if the mouse is hovering over the button; FALSE otherwise
+ */
+function bool IsHighlightedButton(int Idx, float CanvasScale, vector Pos) {
+    if (PlatformIsSteamDeck()) return (Idx == DesiredItemButton);
+    else return Super.IsHighlightedButton(Idx, CanvasScale, Pos);
 }
 
 /** Overriden to implement button checking and execution */
@@ -197,7 +215,7 @@ function NextMenuItem(int Offset)
 	}
 	
 	// Sanity check
-	if (NextButton != -1)
+	if (NextButton != -1 && !PlatformIsSteamDeck())
 	{
 		MouseX = CanvasLeftBound * CanvasClip.X + Buttons[NextButton].Pos.X * CanvasDimensions.X + Buttons[NextButton].Scale.X * 0.5 * ButtonTexture.USize;
 		MouseY = Buttons[NextButton].Pos.Y * CanvasDimensions.Y + Buttons[NextButton].Scale.Y * 0.5 * ButtonTexture.VSize;
@@ -210,6 +228,7 @@ function NextMenuItem(int Offset)
 		if (PlatformIsWindows())	// not needed in SDL
 			ViewportOwner.Actor.ConsoleCommand("SETMOUSE"@IntMouseX@IntMouseY);
 	}
+    else DesiredItemButton = NextButton;
 }
 
 defaultproperties

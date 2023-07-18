@@ -45,9 +45,10 @@ defaultproperties
 	HudHint1="Press %KEY_Fire% to slice!"
 	HudHint2="Press %KEY_AltFire% to dice!"
 	Skins[0]=Texture'MP_FPArms.LS_arms.LS_hands_dude'
-	Skins[1]=Texture'PLCharacterSkins.SlimBitch.Blade_optimized_DiffuseMap'
-	BloodTextures[0]=Texture'PLCharacterSkins.SlimBitch.Blade_optimized_DiffuseMap'
-	BloodTextures[1]=Texture'PLCharacterSkins.SlimBitch.Blade_optimized_DiffuseMap'
+// Change by Man Chrzan: xPatch 2.0
+	Skins[1]=Texture'KatanaTex.Blade'					//'PLCharacterSkins.SlimBitch.Blade_optimized_DiffuseMap'
+	BloodTextures[0]=Texture'KatanaTex.Blade_blood1' 	//'PLCharacterSkins.SlimBitch.Blade_optimized_DiffuseMap'
+	BloodTextures[1]=Texture'KatanaTex.Blade_blood2' 	//'PLCharacterSkins.SlimBitch.Blade_optimized_DiffuseMap'
 	AttachmentClass=class'PLSwordAttachment'
 	PickupClass=class'PLSwordPickup'
 	AmmoName=class'PLSwordAmmoInv'
@@ -55,4 +56,7 @@ defaultproperties
 	ThirdPersonRelativeLocation=(X=8,Y=-1,Z=-13)
 	ItemName="Katana"
 	PlayerViewOffset=(X=2,Y=-2,Z=-8)
+// Added by Man Chrzan: xPatch 2.0	
+	WeaponSpeedShoot1  = 1.25
+	WeaponSpeedShoot2  = 1.25
 }

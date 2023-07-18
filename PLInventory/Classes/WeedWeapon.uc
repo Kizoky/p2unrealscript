@@ -49,7 +49,9 @@ function bool ShouldRunOutOfAmmo()
 function bool ReduceAmmo(float DeltaTime)
 {
 	if (AmmoType.AmmoAmount > 1 || ShouldRunOutOfAmmo())
-		Super.ReduceAmmo(DeltaTime);
+		return Super.ReduceAmmo(DeltaTime);
+	else
+		return false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -517,9 +519,60 @@ simulated event RenderOverlays(Canvas Canvas) {
 ///////////////////////////////////////////////////////////////////////////////
 // Set first person hands texture
 ///////////////////////////////////////////////////////////////////////////////
+/*
 simulated function ChangeHandTexture(Texture NewHandsTexture, Texture DefHandsTexture, Texture NewFootTexture)
 {
 	Skins[1] = NewHandsTexture;
+}
+*/
+
+///////////////////////////////////////////////////////////////////////////////
+// Added by Man Chrzan: xPatch 2.0
+// Chainsaw does have different alt-fire animations now so we need to
+// put it there to make sure Weed Whacker doesn't try to uses these.
+///////////////////////////////////////////////////////////////////////////////
+simulated function PlayAltFiring()
+{
+	Super(P2Weapon).PlayAltFiring();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Added by Man Chrzan: xPatch 2.0
+// New Bloody textures
+///////////////////////////////////////////////////////////////////////////////
+function DrewBlood()
+{	
+	// Can add blood, so do
+    if(BloodTextureIndex < BloodSkins.Length)
+	{
+		// update the texture
+	    SetBloodSkin(BloodSkins[BloodTextureIndex]);
+		BloodTextureIndex++;
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Remove all blood from blade
+///////////////////////////////////////////////////////////////////////////////
+function CleanWeapon()
+{
+	BloodTextureIndex = 0;
+	SetBloodSkin(Texture(default.Skins[0]));
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// xPatch: Returns if we should clean or not + restores blood if needed. 
+///////////////////////////////////////////////////////////////////////////////
+function bool RestoreBlood()
+{
+	if((P2GameInfoSingle(Level.Game) != None && P2GameInfoSingle(Level.Game).xManager.bKeepBlood && BloodTextureIndex != 0)
+	|| (bForceBlood && BloodTextureIndex != 0))
+	{
+		SetBloodSkin(BloodSkins[BloodTextureIndex - 1]);	// NOTE: BloodTextureIndex defines the next blood skin so do -1
+		bForceBlood=False;
+		return true;
+	}
+	return false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -566,4 +619,12 @@ defaultproperties
 	WeedMesh=StaticMesh'PL_tylermesh2.Compound_GREEN.weed_plant'
 	WeedHitSound=Sound'LevelSoundsToo.Bush.bush04'
 	WeedHitEmitter=class'WeedShredEmitter'
+	
+	BloodSkins[0]=Texture'PLWeedwhackerTEX.WeedBuddy_Bloody'
+	BloodSkins[1]=Texture'PLWeedwhackerTEX.WeedBuddy_Bloody2'
+	BloodSkins[2]=Texture'PLWeedwhackerTEX.WeedBuddy_Bloody3'
+	BloodSkins[3]=Texture'PLWeedwhackerTEX.WeedBuddy_Bloody4'
+	BloodSkins[4]=Texture'PLWeedwhackerTEX.WeedBuddy_Bloody5'
+	
+	bDelayedStartSound=True
 }

@@ -6,10 +6,14 @@
 // is no "pre-injury" in Paradise Lost, everything uses the bandaged skin
 // from AW, so we just force the bandaged skin everywhere.
 // FIXME Dude will need to be unbandaged on Friday!
+//
+// Edit by Piotr "Man Chrzan" Sztukowski
+// Modified to extend AWPostalDude, needed for Two Weeks In Paradise Game
 ///////////////////////////////////////////////////////////////////////////////
 class PLPostalDude extends PLDude
 	placeable;
 
+/*
 ///////////////////////////////////////////////////////////////////////////////
 // Vars, consts, enums, etc.
 ///////////////////////////////////////////////////////////////////////////////
@@ -125,26 +129,33 @@ function SwitchToNewMesh(Mesh NewMesh,
 	else
 		MyHead.Skins[0] = NewHeadSkin;
 }
+*/
 
 ///////////////////////////////////////////////////////////////////////////////
-// Called by AW7GameInfo
+// Called by PLGameInfo
 ///////////////////////////////////////////////////////////////////////////////
 function DudeCheckHeadSkin()
 {
-	// If it's not the weekend yet, use the normal (non-injured) dude head.
+	// xPatch: Adjust head location
+	DudeCheckHeadOffset();
+	
+	// Use the bandaged (injured) dude head.
 	if (!PLGameInfo(Level.Game).DudeShouldBeBandaged())
 	{
 		//log(self@"swapping to pre-injury head skin",'Debug');
-		MyHead.Skins[1] = PreInjuryHeadSkin;
+		if(MyHead.Skins[1] == PostInjuryHeadSkin)	
+			MyHead.Skins[1] = PreInjuryHeadSkin;
 	}
-	else
+	else // Use the normal (non-injured) dude head.
 	{
 		//log(self@"swapping to post-injury head skin",'Debug');
-		MyHead.Skins[1] = PostInjuryHeadSkin;
+		if(MyHead.Skins[1] == PreInjuryHeadSkin)		
+			MyHead.Skins[1] = PostInjuryHeadSkin;
 	}
 	//log(self@"DudeCheckHeadSkin now"@MyHead.Skins[1]);
 }
 
+/*
 ///////////////////////////////////////////////////////////////////////////////
 // Adds all the required equipment and picks out the urethra.
 // Do this here so we access to the inventory package for specific things
@@ -166,6 +177,7 @@ function AddDefaultInventory()
 		Super.AddDefaultInventory();
 	}
 }
+*/
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////

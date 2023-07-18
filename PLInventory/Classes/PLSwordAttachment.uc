@@ -8,5 +8,6 @@ class PLSwordAttachment extends ShovelAttachment;
 defaultproperties
 {
 	StaticMesh=StaticMesh'PLCharacterMeshes.beeyetch.SamuraiBlade'
-	FiringMode="BATON1"
+	DrawScale=0.75
+	FiringMode="KATANA1"
 }

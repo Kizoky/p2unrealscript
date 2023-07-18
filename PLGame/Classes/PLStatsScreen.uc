@@ -208,8 +208,7 @@ function RenderScreen(canvas Canvas)
 	if (URL == "") return;
 
 	// Hide this if they cheated
-	// FIXME FIXME FIXME when we turn autocheats/debug off
-	if (true/*!gamest.DidPlayerCheat()*/)
+	if (!gamest.DidPlayerCheat())
 	{
 		if (gamest.GetPlayerRankingSpeedRun() != "")
 			MyFont.TextColor=YellowC;
@@ -274,7 +273,7 @@ defaultproperties
 	DressedAsCop="Number of times dressed up as a Lawman:"
 	DogsTrained="Times a dog was befriended:"
 	MonkeysLost="Monkeys lost in combat:"
-	ErrandsPeaceful="Errands completed peacefully:"
+	//ErrandsPeaceful="Errands completed peacefully:"
 	GameMode="Game mode:"
 	Difficulty="Difficulty level:"
 	TimeElapsed="Time elapsed:"

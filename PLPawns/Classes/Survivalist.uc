@@ -56,12 +56,6 @@ defaultproperties
 	Armor=100.000000
 	ArmorMax=100.000000
 	TalkWhileFighting=0.200000
-	TakesShotgunHeadShot=0.250000
-	TakesRifleHeadShot=0.300000
-	TakesShovelHeadShot=0.350000
-	TakesOnFireDamage=0.400000
-	TakesAnthraxDamage=0.500000
-	TakesShockerDamage=0.100000
 	TalkBeforeFighting=0.200000
 	Fitness=0.900000
 	AttackRange=(Min=512,Max=4096)
@@ -75,7 +69,7 @@ defaultproperties
 
 	ViolenceRankTolerance=0
 	TakesShotgunHeadShot=	0.25
-	TakesRifleHeadShot=		0.3
+	TakesRifleHeadShot=		0.5 //0.3
 	TakesShovelHeadShot=	0.35
 	TakesOnFireDamage=		0.4
 	TakesAnthraxDamage=		0.5

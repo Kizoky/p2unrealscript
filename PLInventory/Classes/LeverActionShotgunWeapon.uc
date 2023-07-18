@@ -1,9 +1,13 @@
-class LeverActionShotgunWeapon extends PLDualWieldWeapon;
+class LeverActionShotgunWeapon extends DualCatableWeapon;//PLDualWieldWeapon;
 
 // Extra damage inflicted in the Enhanced Game
 var() class<DamageType> AltDamageTypeInflicted;
 var() float AltDamageAmount;
 
+// xPatch
+var sound LeverSound;
+
+/*
 ///////////////////////////////////////////////////////////////////////////////
 // Go through all your weapons and change out the hands texture for this new one
 ///////////////////////////////////////////////////////////////////////////////
@@ -12,6 +16,7 @@ simulated function ChangeHandTexture(Texture NewHandsTexture, Texture DefHandsTe
 	Skins[0] = NewHandsTexture;
 	LeftWeapon.ChangeHandTexture(NewHandsTexture, DefHandsTexture, NewFootTexture);
 }
+*/
 
 /** Copied from the default ShotgunWeapon */
 function TraceFire( float Accuracy, float YOffset, float ZOffset )
@@ -22,6 +27,10 @@ function TraceFire( float Accuracy, float YOffset, float ZOffset )
 	// Reduce the ammo only by 1 here, for the shotgun, but shoot
 	// ShotCountMaxForNotify number of pellets each time.
 	P2AmmoInv(AmmoType).UseAmmoForShot();
+	
+	// Reduce the cat ammo if we're using one
+	if(CatOnGun == 1)
+		CatAmmoLeft--;
 
 	for(i=0; i<ShotCountMaxForNotify; i++)
 	{	
@@ -59,6 +68,10 @@ function TraceAltFire(float Accuracy, float YOffset, float ZOffset)
 
 	P2AmmoInv(AmmoType).UseAmmoForShot();
 	Owner.MakeNoise(1.0);
+	
+	// Reduce the cat ammo if we're using one
+	if(CatOnGun == 1)
+		CatAmmoLeft--;
 	
 	if (P2GameInfoSingle(Level.Game) != None
 		&& P2GameInfoSingle(Level.Game).VerifySeqTime()
@@ -220,10 +233,23 @@ simulated function AltFire( float Value )
 	}
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// Added by Man Chrzan: xPatch 2.0
+// Play our new lever sound
+///////////////////////////////////////////////////////////////////////////////
+function Notify_PlayLeverSound()
+{
+	PlayOwnedSound(LeverSound, SLOT_Interact, 1.0);
+}
+
 defaultproperties
 {
-    MuzzleFlashBone="dummy_muzzle"
-    MuzzleFlashEmitterClass=class'LeverShotgunMuzzleFlashEmitter'
+    //MuzzleFlashBone="dummy_muzzle"
+    //MuzzleFlashEmitterClass=class'LeverShotgunMuzzleFlashEmitter'
+	bSpawnMuzzleFlash=True
+	MFBoneName="dummy_muzzle"
+	MFClass=class'xMuzzleFlashEmitter'
+	MFTex=Texture'Timb.muzzleflash.shotgun_corona'
 
     ItemName="Lever-Action Shotgun"
 	AmmoName=class'ShotGunBulletAmmoInv'
@@ -231,6 +257,7 @@ defaultproperties
 	AttachmentClass=class'LeverActionShotgunAttachment'
 
 	Mesh=SkeletalMesh'PL_Win_1887.pl_win_1887_viewmodel'
+	Skins[0]=Texture'MP_FPArms.LS_arms.LS_hands_dude'
 
 	FirstPersonMeshSuffix="Shotgun"
 
@@ -257,13 +284,14 @@ defaultproperties
 	ShakeRotTime=2.5
 
 	FireSound=Sound'WeaponSounds.shotgun_fire'
+	LeverSound=Sound'WeaponSoundsToo.1887Lever'		// Added by Man Chrzan: xPatch 2.0
 	SoundRadius=255
 	CombatRating=4
 	AIRating=0.3
 	AutoSwitchPriority=3
 	InventoryGroup=3
-	GroupOffset=2
-	BobDamping=0.975
+	GroupOffset=1
+	BobDamping=1.12 //0.975
 	ReloadCount=0
 	TraceAccuracy=0.7
 	ShotCountMaxForNotify=4
@@ -299,4 +327,12 @@ defaultproperties
 	
 	AltDamageTypeInflicted=class'BurnedDamage'
 	AltDamageAmount=1
+	
+	// Meow! 
+	bAttachCat=True
+	CatFireSound=Sound'WeaponSounds.shotgun_catfire'
+	CatBoneName="dummy_muzzle"
+	CatRelativeLocation=(X=0,Y=2,Z=3)
+	CatRelativeRotation=(Pitch=0,Roll=0,Yaw=16384)
+	StartShotsWithCat=9
 }

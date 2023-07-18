@@ -15,5 +15,5 @@ defaultproperties
 	PickupMessage="You picked up a block of C4."
 	DrawType=DT_StaticMesh
 	StaticMesh=StaticMesh'PL_tylermesh2.BlastingCAP.c4Bundle'
-	UseForErrands=1
+//	UseForErrands=1
 }

@@ -8,6 +8,7 @@ class PLZombieController extends AWZombieController;
 // Vars, consts, enums, etc.
 ///////////////////////////////////////////////////////////////////////////////
 const FRIENDLY_DAY = 2;		// Day the zombies won't attack the Dude (Wednesday)
+const FRIENDLY_DAY_2 = 9;		// Day the zombies won't attack the Dude (2nd Wednesday - Two Weeks)
 var bool bTriggeredAttack;
 
 // Try the friendly check immediately, if it fails then GameInfo will call it again for us.
@@ -24,7 +25,8 @@ simulated function GameInfoIsNowValid()
 {
 	if (P2GameInfoSingle(Level.Game) != None
 		&& P2GameInfoSingle(Level.Game).TheGameState != None
-		&& P2GameInfoSingle(Level.Game).GetCurrentDay() == FRIENDLY_DAY)
+		&& (P2GameInfoSingle(Level.Game).GetCurrentDay() == FRIENDLY_DAY
+		|| P2GameInfoSingle(Level.Game).GetCurrentDay() == FRIENDLY_DAY_2))
 	{
 		ZPawn.bPlayerIsFriend = true;
 		ZPawn.bPlayerIsEnemy = false;
@@ -54,7 +56,9 @@ function bool CanAttackThis(FPSPawn AttackMe)
 		return false;
 	
 	// Wednesday dude check.
-	if ((ZPawn.bPlayerIsFriend || P2GameInfoSingle(Level.Game).GetCurrentDay() == FRIENDLY_DAY)
+	if ((ZPawn.bPlayerIsFriend 
+		|| P2GameInfoSingle(Level.Game).GetCurrentDay() == FRIENDLY_DAY 
+		|| P2GameInfoSingle(Level.Game).GetCurrentDay() == FRIENDLY_DAY_2)
 		&& PLDude(AttackMe) != None)
 		return false;
 

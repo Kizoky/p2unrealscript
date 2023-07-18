@@ -15,5 +15,5 @@ defaultproperties
 	PickupMessage="You picked up a blasting cap."
 	DrawType=DT_StaticMesh
 	StaticMesh=StaticMesh'PL_tylermesh2.BlastingCAP.c4_detonator'
-	UseForErrands=1
+//	UseForErrands=1
 }

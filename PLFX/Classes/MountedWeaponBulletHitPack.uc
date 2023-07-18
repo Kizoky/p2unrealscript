@@ -10,7 +10,7 @@ class MountedWeaponBulletHitPack extends PLWeaponBulletHitPack;
 
 defaultproperties
 {
-    DecalClass=none
+    DecalClass=class'Fx.MachineGunBulletSplat'
 
     SmokeEmitterClass=class'MountedWeaponHitSmoke'
     SparkEmitterClass=class'MountedWeaponHitSpark'

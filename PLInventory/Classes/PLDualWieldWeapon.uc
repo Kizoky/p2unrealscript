@@ -6,7 +6,13 @@
  * muzzle flash emitters based on the UT3 structure
  *
  * @author Gordon Cheng
+ *
+ * @edited by Piotr "Man Chrzan" Sztukowski
+ * Renamed PlayFireEffects functions to PLPlayFireEffects
+ * To not conflict with the new PlayFireEffects from P2Weapon
+ * This whole PLDualWieldWeapon is not used anymore anyway.
  */
+ 
 class PLDualWieldWeapon extends P2DualWieldWeapon;
 
 /** MuzzleFlash Emitters */
@@ -31,17 +37,18 @@ simulated function PostBeginPlay() {
 simulated function LocalFire() {
     super.LocalFire();
 
-    PlayFireEffects();
+    PLPlayFireEffects();
 }
 
 simulated function LocalAltFire() {
     super.LocalAltFire();
 
-    PlayAltFireEffects();
+    PLPlayAltFireEffects();
 }
 
 /** Plays various fire effects */
-function PlayFireEffects() {
+function PLPlayFireEffects() 
+{
     if (MuzzleFlashEmitter != none) {
         MuzzleFlashEmitter.SetDirection(vector(Rotation), 0.0);
         MuzzleFlashEmitter.SpawnParticle(0, 1);
@@ -52,8 +59,8 @@ function PlayFireEffects() {
  * Plays various alt firing effects. By default, we play the primary firing
  * effects
  */
-function PlayAltFireEffects() {
-    PlayFireEffects();
+function PLPlayAltFireEffects() {
+    PLPlayFireEffects();
 }
 
 /** Overriden to add support for Emitter destruction */

@@ -22,4 +22,6 @@ defaultproperties
 	WeapClass=class'LeverActionShotgunWeapon'
 
 	FireSound=Sound'WeaponSounds.shotgun_fire'
+	
+	CatOffset=(X=75.000000,Y=-3.000000,Z=7.500000)		// xPatch
 }

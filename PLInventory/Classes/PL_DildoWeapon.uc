@@ -74,4 +74,5 @@ defaultproperties
 	ItemName="Dildo"
 	bWeaponIsGross=true
 	PlayerViewOffset=(X=1,Y=0,Z=-15)
+	bAllowMiddleFinger=True
 }

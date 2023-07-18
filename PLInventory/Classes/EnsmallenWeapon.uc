@@ -245,7 +245,8 @@ defaultproperties
 	CombatRating=0
 	AIRating=0
 	AutoSwitchPriority=1
-	BobDamping=0.970000
+	//BobDamping=0.970000
+	BobDamping=1.12 
 	ReloadCount=0
 	TraceAccuracy=0.005
 	ViolenceRank=1

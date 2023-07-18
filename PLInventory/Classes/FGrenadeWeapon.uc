@@ -132,7 +132,8 @@ defaultproperties
 	Skins[0]=Texture'MP_FPArms.LS_arms.LS_hands_dude'
 	FirstPersonMeshSuffix="Grenade"
     //PlayerViewOffset=(X=1.0000,Y=0.000000,Z=-2.0000)
-	PlayerViewOffset=(X=1.0000,Y=0.000000,Z=-10.0000)
+	//PlayerViewOffset=(X=1.0000,Y=0.000000,Z=-10.0000)
+	PlayerViewOffset=(X=5.000000,Y=2.000000)
 	FireOffset=(X=35.0000,Y=20.000000,Z=18.00000)
 	AltFireOffset=(X=35.0000,Y=18.0000,Z=-18.0000)
 
@@ -155,9 +156,9 @@ defaultproperties
 	FireSound=Sound'PL_FlashGrenadeSound.FlashGrenade_Fire'
 	AIRating=0.55
 	AutoSwitchPriority=6
-	InventoryGroup=6
-	GroupOffset=5
-	BobDamping=0.975000
+	InventoryGroup=7
+	GroupOffset=1
+	BobDamping=1.12 //0.975000
 	ReloadCount=0
 	TraceAccuracy=0.05
 	ShotCountMaxForNotify=0

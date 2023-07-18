@@ -261,9 +261,12 @@ exec function FunzerkingKicksAss()
 	weap = P2DualWieldWeapon(Outer.Pawn.Weapon);
 	if (weap != None)
 	{
+		// xPatch: Bug Fix (3rd person attachement remaining in left hand after diasbling the cheat)
 		bShouldDualWield = P2Player(Outer).bCheatDualWield || P2Player(Outer).DualWieldUseTime > 0;
-		weap.SetupDualWielding();
+		//weap.SetupDualWielding();
 		if (bShouldDualWield != weap.bDualWielding)
+			weap.GotoState('ToggleDualWielding');
+		else if (!bShouldDualWield && weap.bDualWielding)
 			weap.GotoState('ToggleDualWielding');
 	}
 }

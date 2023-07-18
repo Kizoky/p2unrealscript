@@ -12,6 +12,6 @@ defaultproperties
 	MaxAmmoMP=40
 	DamageAmount=13
 	MomentumHitMag=10000
-	DamageTypeInflicted=class'FGrenadeDamage'
+	//DamageTypeInflicted=class'FGrenadeDamage'
 	Texture=Texture'MrD_PL_Tex.HUD.SmokeNade_HUD'
 	}

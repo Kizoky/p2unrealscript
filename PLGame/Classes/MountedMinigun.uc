@@ -39,6 +39,14 @@ var int CurBarrelRotation, CurBarrelSpeed;
 var PLPersistantEmitter ShellCasingEmitter;*/
 var PLPersistantEmitter TracerEmitter;
 
+// Added by Man Chrzan - Muzzle Flash
+var P2Emitter MF;
+var class<P2Emitter>  MFClass; 
+var() name MFBoneName;
+var() vector MFRelativeLocation;
+var() rotator MFRelativeRotation;
+
+
 /** Create objects the Minigun may need to function or look freakin' sweet */
 simulated function PostBeginPlay() {
     super.PostBeginPlay();
@@ -175,6 +183,8 @@ function ProcessTraceHit(int Mode, Actor Other, vector HitLocation,
 function PlayFiringEffects(int Mode) {
     if (TracerEmitter != none)
         TracerEmitter.SpawnParticle(0, 1);
+		
+	PlayFireEffects(MFClass);	// Added by Man Chrzan
 }
 
 /**
@@ -221,6 +231,38 @@ function UpdateFire(float DeltaTime) {
     }
 }
 
+// Added by Man Chrzan
+simulated function PlayFireEffects(class<P2Emitter> MyMFClass)
+{
+	local int i;
+	local P2Emitter MF;
+	
+	// Spawn only if it disappeared
+	if (MyMFClass != none) //&& MF == none )
+	{
+		MF = Spawn( MyMFClass );
+		
+		// If it's xMuzzleFlashEmitter we can setup it.
+		if( xMuzzleFlashEmitter(MF) != None )
+		{
+			if(P2GameInfoSingle(Level.Game).xManager.bDynamicLights)
+				xMuzzleFlashEmitter(MF).SetDynamicLight();
+		}
+		
+		// Basic setup for any P2Emitter
+		MF.SetOwner( Owner );
+		AttachToBone( MF, MuzzleFlashBone );
+		MF.SetDirection(vector(Rotation), 0.0);
+		MF.SetRelativeRotation(MFRelativeRotation);
+		MF.SetRelativeLocation(MFRelativeLocation);
+
+		// Disable upon completion of effect
+		for( i=0; i < MF.Emitters.Length; i++ )
+			MF.Emitters[i].AutoDestroy = true; 
+	}
+}
+
+
 defaultproperties
 {
     HUDIcon=texture'MrD_PL_Tex.HUD.MiniGun_HUD'
@@ -250,17 +292,20 @@ defaultproperties
 
     //TracerEmitterClass=class'MountedWeaponTracer'
 
-    CameraFOV=50
+    CameraFOV=70 //50
 
     CameraOffset=(X=0,Y=0.45,Z=45.6)
     TriggerOffset=(X=-80)
     DismountOffset=(X=-80,Z=-16)
 
-    FiringModes(0)=(FireType=FIRETYPE_Instant,DamageAmount=10,NPCDamageAmount=1,Momentum=30000,FireInterval=0.02,NPCFireInterval=0.1,Accuracy=0.25,NPCAccuracy=0.5,TraceDist=10000,FireOffset=(X=104,Z=30),DamageType=class'MachineGunDamage')
+    FiringModes(0)=(FireType=FIRETYPE_Instant,DamageAmount=10,NPCDamageAmount=5,Momentum=30000,FireInterval=0.02,NPCFireInterval=0.1,Accuracy=0.25,NPCAccuracy=0.5,TraceDist=10000,FireOffset=(X=104,Z=30),DamageType=class'MinigunDamage')	//was DamageType=class'MachineGunDamage')
     FiringModes(1)=(FireType=FIRETYPE_None)
 
     DrawType=DT_Mesh
     Mesh=SkeletalMesh'MrD_PL_Anims.M_MiniGun_D'
 
     DrawScale=0.55
+	
+	MFClass=class'FX2.MuzzleFlash_Minigun'
+	MFRelativeLocation=(X=5,Y=0,Z=0)
 }

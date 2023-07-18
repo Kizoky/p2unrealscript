@@ -225,9 +225,10 @@ function ProcessTraceHit(int Mode, Actor Other, vector HitLocation,
 
 		if ((Pawn(Other) != none && Other != Owner) ||
              PeoplePart(Other) != none ||
-             CowheadProjectile(Other) != none) {}
-			 //Other.PlaySound(FleshHitSounds[Rand(FleshHitSounds.length)],
-             //    SLOT_Pain,,, 200.0);
+             CowheadProjectile(Other) != none) {
+			 Other.PlaySound(FleshHitSounds[Rand(FleshHitSounds.length)],
+                 SLOT_Pain,,, 200.0);
+			}
 		else if (BulletHitPack != none)
 		    BulletHitPack.SpawnImpactEffects(HitLocation, rotator(HitNormal));
 	}
@@ -290,8 +291,8 @@ function MountUser(Pawn User) {
 
         MountedWeaponUser = User;
         MountedWeaponUserWeapon = User.Weapon;
-
-        User.Weapon = none;
+		
+		User.Weapon = none;
     }
 
     // Start the mounting process
@@ -355,6 +356,7 @@ function FinishedUserDismount() {
 
     bMountedWeaponInUse = false;
     bMountingWeapon = false;
+	bNPCMountedWeaponUser = false;	
 
     MountedWeaponUser = none;
     MountedWeaponUserWeapon = none;

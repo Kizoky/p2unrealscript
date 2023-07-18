@@ -9,7 +9,7 @@ class RevolverAmmoPickup extends P2AmmoPickup;
 defaultproperties
 {
 	InventoryType=class'RevolverAmmoInv'
-    AmmoAmount=6
+    AmmoAmount=12
     MPAmmoAmount=6
 	DrawScale=1.0
     PickupMessage="You found a revolver speedloader."

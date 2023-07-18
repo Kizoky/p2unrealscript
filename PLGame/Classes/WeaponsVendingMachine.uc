@@ -44,8 +44,8 @@ defaultproperties
     MondayItemList(5)=(ItemPickupName="Inventory.GasCanPickup",ItemName="Gasoline",ItemDescription="Totally doesn't contain any lead",ItemIconName="HUDPack.Icons.Icon_Weapon_Gascan",ItemBuyRate=(ItemPrice=20,ItemAmount=50),bWeaponIsAlsoAmmo=True)
     MondayItemList(6)=(ItemPickupName="PLInventory.FGrenadePickup",ItemName="Flashbang Grenades",ItemDescription="Blind'em and bag'em",ItemIconName="MrD_PL_Tex.HUD.SmokeNade_HUD",ItemBuyRate=(ItemPrice=20,ItemAmount=5),bWeaponIsAlsoAmmo=True)
 
-    TuesdayItemList(0)=(ItemPickupName="EDStuff.GSelectPickup",ItemName="Glock",ItemDescription="Fully automatic and fits in your pocket",ItemIconName="EDHud.hud_Glock",ItemBuyRate=(ItemPrice=45))
-    TuesdayItemList(1)=(ItemPickupName="EDStuff.GSelectAmmoPickup",ItemName="Glock Cartridges",ItemDescription=".45 ACP cartridges",ItemIconName="PLHud.Icons.Icon_Glock_Ammo",ItemBuyRate=(ItemPrice=15,ItemAmount=15))
+    TuesdayItemList(0)=(ItemPickupName="EDStuff.GSelectPickup",ItemName="Machine Pistol",ItemDescription="Fully automatic and fits in your pocket",ItemIconName="EDHud.hud_Glock",ItemBuyRate=(ItemPrice=45))
+    TuesdayItemList(1)=(ItemPickupName="EDStuff.GSelectAmmoPickup",ItemName="Machine Pistol Cartridges",ItemDescription="9x19mm Parabellum cartridges",ItemIconName="PLHud.Icons.Icon_Glock_Ammo",ItemBuyRate=(ItemPrice=15,ItemAmount=15))
     TuesdayItemList(2)=(ItemPickupName="Inventory.MachineGunPickup",ItemName="Machine Gun",ItemDescription="Come on. You know you wanna",ItemIconName="HUDPack.Icons.Icon_Weapon_Machinegun",ItemBuyRate=(ItemPrice=40))
     TuesdayItemList(3)=(ItemPickupName="Inventory.MachinegunAmmoPickup",ItemName="MachineGun Cartridges",ItemDescription="5.56x45mm cartridges",ItemIconName="PLHud.Icons.Icon_MachineGun_Ammo",ItemBuyRate=(ItemPrice=15,ItemAmount=25))
     TuesdayItemList(4)=(ItemPickupName="Inventory.GrenadePickup",ItemName="Grenades",ItemDescription="One-step Stump Remover\\n\\nWARNING: Not for consumption",ItemIconName="HUDPack.Icons.Icon_Weapon_Grenade",ItemBuyRate=(ItemPrice=40,ItemAmount=4),bWeaponIsAlsoAmmo=true)
@@ -53,8 +53,8 @@ defaultproperties
     TuesdayItemList(6)=(ItemPickupName="Inventory.LauncherAmmoPickup",ItemName="Rocket Fuel",ItemDescription="Fuel for rocket propelled grenades",ItemIconName="PLHud.Icons.Icon_Launcher_Ammo",ItemBuyRate=(ItemPrice=15,ItemAmount=50))
 
     WednesdayItemList(0)=(ItemPickupName="PLInventory.LeverActionShotgunPickup",ItemName="Lever Action Shotgun",ItemDescription="Easily concealed weapon for terminating your enemies",ItemIconName="MrD_PL_Tex.HUD.LeverHUD",ItemBuyRate=(ItemPrice=125))
-    WednesdayItemList(1)=(ItemPickupName="EDStuff.MP5Pickup",ItemName="MP5",ItemDescription="Drug trafficker hated, SWAT approved",ItemIconName="EDHud.hud_mp5",ItemBuyRate=(ItemPrice=60))
-    WednesdayItemList(2)=(ItemPickupName="EDStuff.MP5AmmoPickup",ItemName="MP5 Cartridges",ItemDescription="9x19mm Parabellum cartridges",ItemIconName="PLHud.Icons.Icon_MP5_Ammo",ItemBuyRate=(ItemPrice=15,ItemAmount=25))
+    WednesdayItemList(1)=(ItemPickupName="EDStuff.MP5Pickup",ItemName="SMG",ItemDescription="Drug trafficker hated, SWAT approved",ItemIconName="EDHud.hud_mp5",ItemBuyRate=(ItemPrice=60))
+    WednesdayItemList(2)=(ItemPickupName="EDStuff.MP5AmmoPickup",ItemName="SMG Cartridges",ItemDescription="9x19mm Parabellum cartridges",ItemIconName="PLHud.Icons.Icon_MP5_Ammo",ItemBuyRate=(ItemPrice=25,ItemAmount=25))
     WednesdayItemList(3)=(ItemPickupName="Inventory.MolotovPickup",ItemName="Molotov Cocktail",ItemDescription="Perfect for the rioter on a budget",ItemIconName="HUDPack.Icons.Icon_Weapon_Molotov",ItemBuyRate=(ItemPrice=20,ItemAmount=5))
 
     ThursdayItemList(0)=(ItemPickupName="PLInventory.RevolverPickup",ItemName="Revolver",ItemDescription="Brings out your inner gunslinger",ItemIconName="MrD_PL_Tex.HUD.Revolver_HUD",ItemBuyRate=(ItemPrice=200))

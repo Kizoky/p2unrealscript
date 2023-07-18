@@ -110,6 +110,14 @@ function Died(Controller Killer, class<DamageType> DamageType, vector HitLocatio
     super.Died(Killer, DamageType, HitLocation);
 }
 
+// Added by Man Chrzan: xPatch 2.0
+/** Don't handle special shots (such like Rifle or Pistol headshots) to prevent instant kills */
+function bool HandleSpecialShots(int Damage, vector HitLocation, vector Momentum, out class<DamageType> ThisDamage,
+							vector XYdir, Pawn InstigatedBy, out int returndamage, out byte HeadShot)
+{
+	return false;
+}
+
 defaultproperties
 {
     bRandomizeHeadScale=false

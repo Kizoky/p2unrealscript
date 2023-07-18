@@ -13,7 +13,7 @@ var bool bUsingMountedWeapon;
 var localized string SellHint1, SellHint2;
 
 // Gears of War style third person shooting camera offset thingy!
-var vector ThirdPersonCameraOffset;
+//var vector ThirdPersonCameraOffset;
 
 const DOUBLE_DEUCE_CHANCE = 0.05;		// Percent chance to do a "double deuce" instead of a single deuce when telling people to fuck off
 
@@ -283,6 +283,8 @@ function GrabMoneyPutInCan(int MoneyToGet)
 	}
 }
 
+// NOTE: new version of this function is now in DudePlayer
+/*
 ///////////////////////////////////////////////////////////////////////////////
 // Server get down for MP
 ///////////////////////////////////////////////////////////////////////////////
@@ -380,6 +382,7 @@ function ServerGetDown()
 		}
 	}
 }
+*/
 
 ///////////////////////////////////////////////////////////////////////////////
 // Said a Corey Line
@@ -404,7 +407,8 @@ event Timer()
 	// Call super to stop the talking if necessary
 	Super.Timer();
 	// Skip these if we're in dual-wield mode, that pops up the head injury overlay
-	if (DualWieldUseTime == 0)
+	if (DualWieldUseTime == 0
+		&& PLHud(MyHud) != None)	// xPatch 2.0 Flashing Screen Bug Fix
 	{
 		AWDude(Pawn).HasHeadInjury=0;
 		P2Hud(myHUD).StopHeadInjury();
@@ -414,6 +418,7 @@ event Timer()
 ///////////////////////////////////////////////////////////////////////////////
 // Overriden so we can aim up and down when we're in third person
 ///////////////////////////////////////////////////////////////////////////////
+/*
 function rotator AdjustAim(Ammunition FiredAmmunition, vector projStart, int aimerror)
 {
     if (bBehindView)
@@ -421,6 +426,7 @@ function rotator AdjustAim(Ammunition FiredAmmunition, vector projStart, int aim
 
     return super.AdjustAim(FiredAmmunition, projStart, aimerror);
 }
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // Wrote this while testing out third person stuff, decided we might as well
@@ -444,6 +450,7 @@ function CalcBehindView(out vector CameraLocation, out rotator CameraRotation, f
 	else
 		Super.CalcBehindView(CameraLocation, CameraRotation, Dist);
 }
+*/
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -500,7 +507,7 @@ event TravelPostAccept()
 
 defaultproperties
 {
-	ThirdPersonCameraOffset=(X=-40,Y=30,Z=70)
+	//ThirdPersonCameraOffset=(X=-40,Y=30,Z=70)
 	SellHint1="Press %KEY_InventoryActivate% to sell this item."
 	SellHint2="Maybe you'll get a good price for it!"
 	DudeZombieKill(0)=Sound'PL-Dialog2.DudeZombieKilling.Dude-AllMessedUp'

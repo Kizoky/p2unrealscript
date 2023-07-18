@@ -15,5 +15,7 @@ defaultproperties
 	MuzzleOffset=(X=28,Z=5)
 	WeapClass=class'RevolverWeapon'
 
-	FireSound=sound'WeaponSounds.pistol_fire'
+	FireSound=sound'PLWeapons.Revolver.Revolver_shoot1'
+	
+	CatOffset=(X=28.000000,Y=0.000000,Z=7.000000)	// xPatch
 }
