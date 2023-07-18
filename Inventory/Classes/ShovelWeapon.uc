@@ -418,6 +418,25 @@ function DoHit( float Accuracy, float YOffset, float ZOffset )
 		}
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// xPatch: Classic Mode Stuff 
+///////////////////////////////////////////////////////////////////////////////
+function DrewBlood()
+{
+	if(P2GameInfoSingle(Level.Game).GetClassicMelee()
+		&& Class == Class'ShovelWeapon')
+		return;
+		
+	Super.DrewBlood();
+}
+
+// xPatch: Make sure that this gun is not extension!
+function bool CanSwapHands()
+{
+	return (Class == Class'ShovelWeapon');
+}
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // Default properties
 ///////////////////////////////////////////////////////////////////////////////
@@ -431,12 +450,12 @@ defaultproperties
 	AttachmentClass=class'ShovelAttachment'
 
 	Mesh=Mesh'MP_Weapons.MP_LS_Shovel'
-//	Mesh=Mesh'FP_Weapons.FP_Dude_Shovel'
+	OldMesh=Mesh'FP_Weapons.FP_Dude_Shovel'
 	Skins[0]=Texture'MP_FPArms.LS_arms.LS_hands_dude'
 //	Skins[0]=Texture'WeaponSkins.Dude_Hands'
 	FirstPersonMeshSuffix="Shovel"
 
-	AmbientGlow = 64
+    AmbientGlow=128
 
 	bMeleeWeapon=true
 	ShotMarkerMade=None
@@ -466,8 +485,8 @@ defaultproperties
 	AIRating=0.11
 	AutoSwitchPriority=1
 	InventoryGroup=1
-	GroupOffset=2
-	BobDamping=0.970000
+	GroupOffset=4
+//	BobDamping=0.970000
 	ReloadCount=0
 	TraceAccuracy=0.005
 	ViolenceRank=1
@@ -495,6 +514,12 @@ defaultproperties
 	
 	KActorHitAngle=45
 	
+	BobDamping=1.12 
+	
 	BloodTextures[0]=Texture'WeaponSkins_Bloody.shovel_texture_blood01'
 	BloodTextures[1]=Texture'WeaponSkins_Bloody.shovel_texture_blood02'
+	ThirdPersonBloodSkinIndex=0
+	
+	bDropInVeteranMode=1
+	VeteranModeDropChance=1.00
 	}

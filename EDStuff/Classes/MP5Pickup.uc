@@ -3,7 +3,7 @@ class MP5Pickup extends P2DualWieldWeaponPickup;
 defaultproperties
 {
 	AmmoGiveCount=30
-	DeadNPCAmmoGiveRange=(Min=10,Max=25)
+	DeadNPCAmmoGiveRange=(Min=15,Max=30)
 	BounceSound=Sound'MiscSounds.PickupSounds.gun_bounce'
 	MPAmmoGiveCount=30
 	InventoryType=Class'MP5Weapon'

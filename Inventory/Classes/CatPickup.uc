@@ -14,7 +14,7 @@ function PostBeginPlay()
 {
 	Super.PostBeginPlay();
 
-	LoopAnim('fall');
+	LoopAnim('sit_on');
 }
 
 ///////////////////////////////////////////////////////////////////////////////

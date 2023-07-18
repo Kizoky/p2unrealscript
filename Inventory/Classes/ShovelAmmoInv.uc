@@ -10,8 +10,12 @@ var Sound ShovelHitWall;
 const MIN_Z_MOMENTUM = 0.3;
 
 var() class<DamageType> AltDamageTypeInflictedSever;
+var() class<DamageType> ZombieHeadDamage;	// Added by Man Chrzan
+
 const MIN_HEALTH_FOR_SEVER = 0.25;
 const SEVER_CHANCE = 0.5;
+
+var float OldDamageAmount;
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -47,6 +51,14 @@ function ProcessTraceHit(Weapon W, Actor Other, Vector HitLocation, Vector HitNo
 
 	if ( (Other != self) && (Other != Owner) ) 
 	{
+		// xPatch: Classic Mode
+		if(P2GameInfoSingle(Level.Game) != None && P2GameInfoSingle(Level.Game).GetClassicMelee())
+		{
+			DamageAmount = OldDamageAmount;
+			AltDamageTypeInflictedSever = AltDamageTypeInflicted;
+		}
+		// end
+		
 		if(!P2Weapon(W).bAltFiring)
 		{
 			if(FPSPawn(Other) == None
@@ -58,7 +70,10 @@ function ProcessTraceHit(Weapon W, Actor Other, Vector HitLocation, Vector HitNo
 					Momentum.z = (MIN_Z_MOMENTUM*FRand()) + MIN_Z_MOMENTUM;
 				Momentum = MomentumHitMag*Momentum;
 
-				Other.TakeDamage(DamageAmount, Pawn(Owner), HitLocation, Momentum, DamageTypeInflicted);
+				if(Other.IsA('AWZombie') || Other.IsA('ZombieHead'))											// Added by Man Chrzan
+				    Other.TakeDamage(DamageAmount, Pawn(Owner), HitLocation, Momentum, ZombieHeadDamage);		// xPatch 2.0
+			    else	
+				    Other.TakeDamage(DamageAmount, Pawn(Owner), HitLocation, Momentum, DamageTypeInflicted);
 			}
 		}
 		else
@@ -72,6 +87,8 @@ function ProcessTraceHit(Weapon W, Actor Other, Vector HitLocation, Vector HitNo
 				if (FPSPawn(Other) != None
 					&& FPSPawn(Other).Health / FPSPawn(Other).HealthMax <= MIN_HEALTH_FOR_SEVER
 					&& FRand() <= SEVER_CHANCE
+					|| Other.IsA('AWZombie') 	// Added by Man Chrzan 
+					|| Other.IsA('ZombieHead')	// xPatch 2.0			
 					)
 					Other.TakeDamage(DamageAmount, Pawn(Owner), HitLocation, Momentum, AltDamageTypeInflictedSever);
 				else
@@ -118,7 +135,8 @@ function ProcessTraceHit(Weapon W, Actor Other, Vector HitLocation, Vector HitNo
 
 defaultproperties
 {
-	DamageAmount=12
+	DamageAmount=24 //12	// Change by ManChrzan
+	OldDamageAmount=12
 	bInstantHit=true
 	Texture=Texture'HUDPack.Icon_Weapon_Shovel'
 	DamageTypeInflicted=class'ShovelDamage'
@@ -129,4 +147,6 @@ defaultproperties
 	ShovelHitWall=Sound'WeaponSounds.Shovel_HitWall'
 	ShovelHitBody=Sound'WeaponSounds.Shovel_HitBody'
 	TransientSoundRadius=80
+	// Added by ManChrzan
+	ZombieHeadDamage=Class'BaseFX.SledgeDamage'
 }

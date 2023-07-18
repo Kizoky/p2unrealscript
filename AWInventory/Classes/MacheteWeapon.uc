@@ -251,6 +251,19 @@ function ThrowMachete()
 	AdjustedAim = Instigator.AdjustAim(AmmoType, StartTrace, 2*AimError);	
 	TurnOffHint();
 	macproj = spawn(class'MacheteProjectile',Instigator,,StartTrace, AdjustedAim);
+	
+	// xPatch: for Ludicrous difficulty give NPCs
+	// infinite machetes, but do "reload" them
+	if(PersonPawn(Instigator) != None 
+		&& !PersonPawn(Instigator).bPlayer
+		&& PersonPawn(Instigator).bAdvancedFiring
+		&& P2GameInfoSingle(Level.Game).InLudicrousMode())
+	{
+		bBladey = True;
+		bForceReload = True;
+	}
+	if(macproj != None && P2GameInfoSingle(Level.Game).InLudicrousMode())
+		macproj.bLudicrousMachete = True;
 
 	// Shake the view when you throw it
 	if ( Instigator != None)
@@ -309,6 +322,16 @@ function TraceFire( float Accuracy, float YOffset, float ZOffset )
 simulated function LocalFire()
 	{
 	local P2Player P;
+	
+	// xPatch: for Ludicrous difficulty an maybe something else?
+	// Makes NPCs throw machete if bAdvancedFiring is true.
+	if(PersonPawn(Instigator) != None 
+		&& !PersonPawn(Instigator).bPlayer
+		&& PersonPawn(Instigator).bAdvancedFiring)
+	{
+		LocalAltFire();
+		return;
+	}
 	
 	bPointing = true;
 
@@ -802,6 +825,29 @@ simulated function ClientCatchMachete()
 // End
 
 ///////////////////////////////////////////////////////////////////////////////
+// xPatch: for NPCs with infinite throwable machetes (Ludicrous difficulty)
+///////////////////////////////////////////////////////////////////////////////
+simulated function PlayReloading()
+{
+	PlayAnim('Load', WeaponSpeedReload, 0.05);
+	P2MocapPawn(Instigator).PlayWeaponSwitch(self);
+}
+
+function BringUp()
+{
+	Super.BringUp();
+
+	// Expand the use range for NPCs that will be throwing it
+	if(PersonPawn(Instigator) != None 
+		&& !PersonPawn(Instigator).bPlayer
+		&& PersonPawn(Instigator).bAdvancedFiring)
+	{
+		 NPCMeleeDist=1024;
+		 MaxRange=1024;
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Default properties
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -845,13 +891,19 @@ defaultproperties
      AIRating=0.110000
      MaxRange=95.000000
      FireSound=Sound'AWSoundFX.Machete.macheteswingmiss'
-     GroupOffset=5
+     GroupOffset=6
      PickupClass=Class'AWInventory.MachetePickup'
-     BobDamping=0.970000
+     //BobDamping=0.970000
      AttachmentClass=Class'AWInventory.MacheteAttachment'
      ItemName="Machete"
      Mesh=SkeletalMesh'AWWeaponAnim.LS_Machete'
      Skins(0)=Texture'MP_FPArms.LS_arms.LS_hands_dude'
      Skins(1)=Texture'AWWeaponSkins.Weapons.Machete_1'
      AmbientGlow=128
+	 
+	 // Change by Man Chrzan: xPatch 2.0
+	 PlayerViewOffset=(X=3.0000,Y=0.000000,Z=-8.2000)
+	 BobDamping=1.10
+	 ThirdPersonBloodSkinIndex=0
+	 WeaponSpeedReload=0.3	// For Ludicrous Mode NPCs 
 }

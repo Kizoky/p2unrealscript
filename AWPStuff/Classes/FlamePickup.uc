@@ -16,7 +16,7 @@ defaultproperties
 	AmmoGiveCount=100 // edit as desired
 	MPAmmoGiveCount=100 // edit as desired
 	InventoryType=class'FlameWeapon'
-	PickupMessage="You picked up a can of Stynx." // CHANGE ME
+	PickupMessage="You picked up a can of Stynx."
 	DrawType=DT_StaticMesh
 	StaticMesh=StaticMesh'ED_TPMeshes.WeaponsPickups.PU_Flamethrower'
 	DeadNPCAmmoGiveRange=(Min=10.000000,Max=80.000000)

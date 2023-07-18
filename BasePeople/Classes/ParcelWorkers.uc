@@ -36,4 +36,5 @@ defaultproperties
 	RandomizedBoltons(3)=BoltonDef'BoltonDefShades3'
 	RandomizedBoltons(4)=None
 	BlockMeleeFreq=0.5
+	bAllowRandomGuns=True	// xPatch
 	}

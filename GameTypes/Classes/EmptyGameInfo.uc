@@ -131,7 +131,7 @@ defaultproperties
 	DefaultPlayerClassName="GameTypes.AWPostalDude"
 	HUDType="GameTypes.AchievementHUD"
 	KissEmitterClass=class'FX2.KissEmitter'
-	MenuTitleTex="RWSProductTex.Postal2Complete"
+	MenuTitleTex="P2Misc.Logos.postal2underlined"
 	GameName="Sandbox"
 	GameNameshort="Sandbox"
 	GameDescription="A bare-bones sandbox game mode. Useful for playing custom maps."

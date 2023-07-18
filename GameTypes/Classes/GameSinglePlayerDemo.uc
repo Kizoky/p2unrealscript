@@ -190,7 +190,7 @@ defaultproperties
 	//////////////////////////////////////////////////////////////////////
 
 	// Demo
-	Begin Object Class=DayBase Name=DayBase0
+	Begin Object Class=DayBase Name=DayBaseDemo	// xPatch: changed DayBase0 to DayBaseDemo, bug fix
 		Description="Demoday"
 		UniqueName="DEMO"
 		ExcludeDays[0]="DAY_A"
@@ -222,7 +222,7 @@ defaultproperties
 	//////////////////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////
 
-	Days(0)=DayBase'DayBase0'
+	Days(0)=DayBase'DayBaseDemo'	// xPatch: changed DayBase0 to DayBaseDemo, bug fix
 
 	GameSpeed=1.000000
 	MaxSpectators=2

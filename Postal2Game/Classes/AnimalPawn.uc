@@ -80,6 +80,8 @@ simulated function PostNetBeginPlay()
 	if (Role < ROLE_Authority)
 	{
 		AnimBlendParams(MOVEMENTCHANNEL,0.0);
+		if (Health <= 0)
+			PlayAnim(GetAnimDeath(), 10000);
 	}
 }
 // End

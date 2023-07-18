@@ -11,7 +11,7 @@ class P2CheatManager extends CheatManager;
 
 
 var() CameraEffect BulletEffect;
-var Sound FanaticsTalking, KrotchyTalking, MikeJTalking, ZombieTalking;
+var Sound FanaticsTalking, KrotchyTalking, MikeJTalking, ZombieTalking, DudeTalking;
 var array<Sound> WrongItemSound;
 var sound bts, bte;
 var array<Material> DogSkins;
@@ -20,6 +20,8 @@ var array<Material> CatSkins;
 var array<NavigationPoint> ValidMailDrops;
 
 var Vector EarthGravity, MoonGravity;
+
+var bool bPeeAll;
 
 struct LoadoutItem
 {
@@ -62,7 +64,7 @@ const HEAD_SCALE = 2.0;
 ///////////////////////////////////////////////////////////////////////////////
 // DEBUG(?) - Gives player an inventory loadout based on the current day.
 ///////////////////////////////////////////////////////////////////////////////
-exec function LoadOut()
+exec function LoadOut(optional int LoadDay)
 {
 	local int i;
 	local int day;
@@ -76,7 +78,7 @@ exec function LoadOut()
 	if (!FPSPlayer(Outer).DebugEnabled())
 		return;
 	
-	// Get current day and dude
+/*	// Get current day and dude
 	day = P2GameInfoSingle(Outer.Level.Game).TheGameState.CurrentDay;
 	Dude = P2Pawn(Outer.Pawn);
 	
@@ -98,6 +100,8 @@ exec function LoadOut()
 				P2PowerupInv(Inv).AddAmount(LoadoutDays[day].Items[i].Amount);
 		}
 	}	
+*/
+	P2GameInfoSingle(Outer.Level.Game).GetLoadOut(LoadDay);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -546,6 +550,11 @@ exec function ThisIsMyBoomstick()
 	P2Pawn(Pawn).CreateInventory("AWPStuff.SawnOffWeapon");
 }
 
+exec function DoubleTrouble()
+{
+	ThisIsMyBoomstick();
+}
+
 exec function HedgeYourBets()
 {
 	if (!RecordCheater("HedgeYourBets",true))
@@ -603,12 +612,15 @@ exec function MP5Player()
 }
 
 // Debug test new weapons
-/*
 exec function NewWeapons()
 {
 	local Inventory ThisInv;
 
-	if (!RecordCheater("NewWeapons",true))
+	//if (!RecordCheater("NewWeapons",true))
+	//	return;
+	
+	if(P2GameInfo(Level.Game) == None
+		|| !FPSPlayer(Outer).DebugEnabled())
 		return;
 
 	P2Pawn(Pawn).CreateInventory("AWInventory.MacheteWeapon");
@@ -624,7 +636,13 @@ exec function NewWeapons()
 	P2Pawn(Pawn).CreateInventory("EDStuff.BaliWeapon");
 	P2Pawn(Pawn).CreateInventory("EDStuff.DynamiteWeapon");
 	P2Pawn(Pawn).CreateInventory("EDStuff.GSelectWeapon");
+	P2Pawn(Pawn).CreateInventory("EDStuff.MP5Weapon");
 	P2Pawn(Pawn).CreateInventory("EDStuff.GrenadeLauncherWeapon");
+	// xPatch Weapons
+	P2Pawn(Pawn).CreateInventory("EDStuff.GSelectWeaponReloadable");
+	P2Pawn(Pawn).CreateInventory("EDStuff.MP5WeaponReloadable");
+	P2Pawn(Pawn).CreateInventory("AWPStuff.CatLauncherWeapon");
+	P2Pawn(Pawn).CreateInventory("AWPStuff.AWPGrenadeLauncherWeapon");
 
 	thisinv = P2Pawn(Pawn).Inventory;
 	while(thisinv != None)
@@ -637,7 +655,6 @@ exec function NewWeapons()
 	}
 	log("NewWeapons done");
 }
-*/
 
 ///////////////////////////////////////////////////////////////////////////////
 // Gives player every destructive weapon in the game
@@ -651,9 +668,6 @@ exec function PackNHeat()
 	if (!RecordCheater("PackNHeat",true))
 		return;
 		
-	P2Pawn(Pawn).CreateInventory("AWInventory.MacheteWeapon");
-	P2Pawn(Pawn).CreateInventory("AWInventory.SledgeWeapon");
-	P2Pawn(Pawn).CreateInventory("AWInventory.ScytheWeapon");
 	P2Pawn(Pawn).CreateInventory("Inventory.BatonWeapon");
 	P2Pawn(Pawn).CreateInventory("Inventory.ShovelWeapon");
 	P2Pawn(Pawn).CreateInventory("Inventory.ShockerWeapon");
@@ -668,6 +682,9 @@ exec function PackNHeat()
 	P2Pawn(Pawn).CreateInventory("Inventory.RifleWeapon");
 	P2Pawn(Pawn).CreateInventory("Inventory.LauncherWeapon");
 	P2Pawn(Pawn).CreateInventory("Inventory.NapalmWeapon");
+	P2Pawn(Pawn).CreateInventory("AWInventory.MacheteWeapon");
+	P2Pawn(Pawn).CreateInventory("AWInventory.SledgeWeapon");
+	P2Pawn(Pawn).CreateInventory("AWInventory.ScytheWeapon");
 	P2Pawn(Pawn).CreateInventory("AWPStuff.BaseballBatWeapon");
 	P2Pawn(Pawn).CreateInventory("AWPStuff.ChainSawWeapon");
 	P2Pawn(Pawn).CreateInventory("AWPStuff.DustersWeapon");
@@ -1512,8 +1529,7 @@ exec function MightyFoot()
 		clientmessage("Mighty Foot deactivated");
 }
 
-// Stubbed out -- didn't finish this in time
-/*
+// It's back!
 exec function HereKittyKitty()
 {
 	local Inventory inv;
@@ -1524,7 +1540,6 @@ exec function HereKittyKitty()
 	inv = P2Pawn(Pawn).CreateInventory("AWPStuff.CatLauncherWeapon");
 	P2Weapon(Inv).bJustMade = False;
 }
-*/
 
 ///////////////////////////////////////////////////////////////////////////////
 // Spawns a dog and makes him love you
@@ -1872,7 +1887,7 @@ exec function MoonMan()
 // speed up firing rate
 // Enabled after beating the game under a set period of time (same as Sonicboom)
 ///////////////////////////////////////////////////////////////////////////////
-exec function TheQuick()
+exec function oldTheQuick()
 {
 	local inventory thisinv;
 
@@ -1913,6 +1928,17 @@ exec function TheQuick()
 		thisinv = thisinv.inventory;
 	}
 	*/
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Toggle TheQuick
+///////////////////////////////////////////////////////////////////////////////
+exec function TheQuick()
+{
+	if(!P2GameInfoSingle(Level.Game).TheGameState.bTheQuick)
+		oldTheQuick();
+	else
+		UnQuick();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -2180,6 +2206,7 @@ exec function RestoreCheat(string CheatToRestore)
 	local Inventory thisinv;
 	local P2Pawn p2p;
 	local PhysicsVolume PV;
+	local P2DualWieldWeapon weap;
 	
 	if (!P2GameInfoSingle(Level.Game).TheGameState.DidPlayerCheat())
 		return;
@@ -2218,6 +2245,19 @@ exec function RestoreCheat(string CheatToRestore)
 	{
 		foreach AllActors(class'PhysicsVolume', PV)
 			PV.Gravity = MoonGravity;
+	}
+	
+	// Added by Man Chrzan: xPatch 2.0
+	if (CheatToRestore == "DoubleTheGun")
+	{
+		P2Player(Outer).bCheatDualWield = true;
+		weap = P2DualWieldWeapon(Outer.Pawn.Weapon);
+		if (weap != None)
+		{
+			weap.SetupDualWielding();
+			if (!weap.bDualWielding)
+				weap.GotoState('ToggleDualWielding');
+		}
 	}
 }
 
@@ -2313,12 +2353,445 @@ exec function TooSpookyForMe()
 	ClientMessage(NightModeOffText);
 }
 
+
+
+//////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////
+// Added by Man Chrzan: xPatch 2.0 - more cheats 
+//////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////
+// Gives player all PL weapons (works only in P2 launched via Paradise Lost)
+///////////////////////////////////////////////////////////////////////////////
+exec function ParadiseIsLost()
+{
+	local Inventory thisinv;
+	local class<Inventory> TestClass;
+	local int i;
+
+	if (!RecordCheater("ParadiseIsLost",true))
+		return;
+
+	P2Pawn(Pawn).CreateInventory("PLInventory.BeanBagWeapon");
+	P2Pawn(Pawn).CreateInventory("PLInventory.FGrenadeWeapon");
+	P2Pawn(Pawn).CreateInventory("PLInventory.LeverActionShotgunWeapon");
+	P2Pawn(Pawn).CreateInventory("PLInventory.RevolverWeapon");
+	P2Pawn(Pawn).CreateInventory("PLInventory.WeedWeapon");
+	P2Pawn(Pawn).CreateInventory("PLInventory.PL_DildoWeapon");
+	P2Pawn(Pawn).CreateInventory("PLInventory.PLSwordWeapon");
+	P2Pawn(Pawn).CreateInventory("PLInventory.HammerWeapon");
+	
+	thisinv = P2Pawn(Pawn).Inventory;
+	while(thisinv != None)
+	{
+		if(P2Weapon(thisinv) != None)
+		{
+			P2Weapon(thisinv).bJustMade=false;
+		}
+		thisinv = thisinv.inventory;
+	}
+}
+
+exec function PLWeapons()
+{
+	ParadiseIsLost();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Gives player all available ED Weapons
+///////////////////////////////////////////////////////////////////////////////
+exec function GetTheJobDone()
+{
+	local Inventory thisinv;
+	local class<Inventory> TestClass;
+	local int i;
+
+	if (!RecordCheater("GetTheJobDone",true))
+		return;
+
+	P2Pawn(Pawn).CreateInventory("EDStuff.GSelectWeapon");
+	P2Pawn(Pawn).CreateInventory("EDStuff.MP5Weapon");
+	P2Pawn(Pawn).CreateInventory("AWPStuff.BaseballBatWeapon");
+	P2Pawn(Pawn).CreateInventory("AWPStuff.ChainSawWeapon");
+	P2Pawn(Pawn).CreateInventory("AWPStuff.DustersWeapon");
+	P2Pawn(Pawn).CreateInventory("AWPStuff.FlameWeapon");
+	P2Pawn(Pawn).CreateInventory("AWPStuff.SawnOffWeapon");
+	P2Pawn(Pawn).CreateInventory("EDStuff.ShearsWeapon");
+	P2Pawn(Pawn).CreateInventory("EDStuff.AxeWeapon");
+	P2Pawn(Pawn).CreateInventory("EDStuff.BaliWeapon");
+	P2Pawn(Pawn).CreateInventory("EDStuff.DynamiteWeapon");
+	P2Pawn(Pawn).CreateInventory("EDStuff.GrenadeLauncherWeapon");
+	
+	thisinv = P2Pawn(Pawn).Inventory;
+	while(thisinv != None)
+	{
+		if(P2Weapon(thisinv) != None)
+		{
+			P2Weapon(thisinv).bJustMade=false;
+		}
+		thisinv = thisinv.inventory;
+	}
+}
+
+exec function EDWeapons()
+{
+	GetTheJobDone();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Super deluxe cheat known only by the chosen ones :) 
+// Gives player all the secret weapons (Not available in the cheat menu)
+///////////////////////////////////////////////////////////////////////////////
+exec function SeekritWeaponzPls()
+{
+	local Inventory thisinv;
+	local class<Inventory> TestClass;
+	local int i;
+
+	if (!RecordCheater("SeekritWeaponzPls",true))
+		return;
+
+	P2Pawn(Pawn).CreateInventory("Inventory.PlagueWeapon");
+	P2Pawn(Pawn).CreateInventory("Inventory.BoxLauncherWeapon");
+	P2Pawn(Pawn).CreateInventory("EDStuff.BetaShotgunWeapon");
+	P2Pawn(Pawn).CreateInventory("Inventory.MrDKNadeWeapon");
+	P2Pawn(Pawn).CreateInventory("Inventory.FistsWeapon");
+	P2Pawn(Pawn).CreateInventory("P2R.ProtestSignWeapon");
+	P2Pawn(Pawn).CreateInventory("AWPStuff.NukeWeapon");
+	
+	thisinv = P2Pawn(Pawn).Inventory;
+	while(thisinv != None)
+	{
+		if(P2Weapon(thisinv) != None)
+		{
+			P2Weapon(thisinv).bJustMade=false;
+		}
+		thisinv = thisinv.inventory;
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// DEBUG - Gives player only original weapons
+///////////////////////////////////////////////////////////////////////////////
+exec function OldWeapons()
+{
+	local Inventory thisinv;
+	local class<Inventory> TestClass;
+	local int i;
+
+	if(P2GameInfo(Level.Game) == None
+		|| !FPSPlayer(Outer).DebugEnabled())
+		return;
+
+	P2Pawn(Pawn).CreateInventory("AWInventory.MacheteWeapon");
+	P2Pawn(Pawn).CreateInventory("AWInventory.SledgeWeapon");
+	P2Pawn(Pawn).CreateInventory("AWInventory.ScytheWeapon");
+	P2Pawn(Pawn).CreateInventory("Inventory.BatonWeapon");
+	P2Pawn(Pawn).CreateInventory("Inventory.ShovelWeapon");
+	P2Pawn(Pawn).CreateInventory("Inventory.ShockerWeapon");
+	P2Pawn(Pawn).CreateInventory("Inventory.PistolWeapon");
+	P2Pawn(Pawn).CreateInventory("Inventory.ShotgunWeapon");
+	P2Pawn(Pawn).CreateInventory("Inventory.MachinegunWeapon");
+	P2Pawn(Pawn).CreateInventory("Inventory.GasCanWeapon");
+	P2Pawn(Pawn).CreateInventory("Inventory.CowHeadWeapon");
+	P2Pawn(Pawn).CreateInventory("Inventory.GrenadeWeapon");
+	P2Pawn(Pawn).CreateInventory("Inventory.ScissorsWeapon");
+	P2Pawn(Pawn).CreateInventory("Inventory.MolotovWeapon");
+	P2Pawn(Pawn).CreateInventory("Inventory.RifleWeapon");
+	P2Pawn(Pawn).CreateInventory("Inventory.LauncherWeapon");
+	P2Pawn(Pawn).CreateInventory("Inventory.NapalmWeapon");
+
+	// Only award these weapons if they've earned them
+	if (P2Player(Outer).bPlegg)
+		P2Pawn(Pawn).CreateInventory("Inventory.PlagueWeapon");
+	
+	thisinv = P2Pawn(Pawn).Inventory;
+	while(thisinv != None)
+	{
+		if(P2Weapon(thisinv) != None)
+		{
+			P2Weapon(thisinv).bJustMade=false;
+		}
+		thisinv = thisinv.inventory;
+	}
+	log("OldWeapons done");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Gives player Box Launcher
+///////////////////////////////////////////////////////////////////////////////
+exec function SoThatsWhatItDoes()
+{
+	local Inventory thisinv, invadd;
+	local class<Inventory> TestClass;
+	local int i;
+	
+	local P2PowerupInv ppinv;
+
+	if (!RecordCheater("SoThatsWhatItDoes",true))
+		return;
+
+	P2Pawn(Pawn).CreateInventory("Inventory.BoxLauncherWeapon");
+	
+	thisinv = P2Pawn(Pawn).Inventory;
+	while(thisinv != None)
+	{
+		if(P2Weapon(thisinv) != None)
+		{
+			P2Weapon(thisinv).bJustMade=false;
+		}
+		thisinv = thisinv.inventory;
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Gives player some Crackola
+///////////////////////////////////////////////////////////////////////////////
+exec function ChugIt()
+{
+	local Inventory invadd;
+	local P2PowerupInv ppinv;
+
+	if (!RecordCheater("ChugIt",true))
+		return;
+
+	invadd = P2Player(Outer).MyPawn.CreateInventory("Inventory.CrackColaInv");
+
+	ppinv = P2PowerupInv(invadd);
+	if(ppinv != None)
+		ppinv.AddAmount(19);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Gives player a Power-Infused Gary Autobiography 
+///////////////////////////////////////////////////////////////////////////////
+exec function PowerInfused()
+{
+	local Inventory invadd;
+	local P2PowerupInv ppinv;
+
+	if (!RecordCheater("PowerInfused",true))
+		return;
+
+	invadd = P2Player(Outer).MyPawn.CreateInventory("AWInventory.GaryHeadInv");
+
+	ppinv = P2PowerupInv(invadd);
+	if(ppinv != None)
+		ppinv.AddAmount(19);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Turns bystanders into Dudes
+///////////////////////////////////////////////////////////////////////////////
+exec function DudeVSDude()
+{
+	if (!RecordCheater("DudeVSDude",false))
+		return;
+
+	ClientMessage("Deudeizing your bystanders--please wait.");
+
+	DudePlayer(Outer).ConvertNonImportants(class'PostalDudeNPC', ,True,True);
+
+	DudePlayer(Outer).MyPawn.PlaySound(DudeTalking);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Gives player a karma gun
+///////////////////////////////////////////////////////////////////////////////
+exec function KarmaGun()
+{
+	local Inventory thisinv;
+
+	if (!RecordCheater("KarmaGun",true))
+		return;
+		
+	thisinv = P2Pawn(Pawn).CreateInventoryByClass(class'P2EHandsWeapon');
+
+	// Force it to come out immediately
+	if (thisinv != None)
+	{
+		Pawn.PendingWeapon = Weapon(thisinv);
+		P2Weapon(Pawn.PendingWeapon).SetReadyForUse(true);
+		if ( Pawn.Weapon == None
+			|| Pawn.Weapon.bDeleteMe)
+			Pawn.ChangedWeapon();
+
+		if ( Pawn.Weapon != Pawn.PendingWeapon
+			&& Pawn.PendingWeapon != None)
+			Pawn.Weapon.PutDown();
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Dual Wield baby!
+///////////////////////////////////////////////////////////////////////////////
+exec function DoubleTheGun()
+{
+	local P2DualWieldWeapon weap;
+	local bool bShouldDualWield;
+	
+	if (!RecordCheater("DoubleTheGun",true))
+		return;
+		
+	P2Player(Outer).bCheatDualWield = !P2Player(Outer).bCheatDualWield;
+	P2GameInfoSingle(Level.Game).TheGameState.bDualWield = P2Player(Outer).bCheatDualWield;
+	
+	if(P2Player(Outer).DualWieldUseTime > 0)
+		return;
+	
+	weap = P2DualWieldWeapon(Outer.Pawn.Weapon);
+	if (weap != None)
+	{
+		if (!weap.bDualWielding)
+		{
+			// Setup dual wielding if not already setup
+			if (weap.LeftWeapon == None)
+				weap.SetupDualWielding();
+			weap.GotoState('ToggleDualWielding');
+		}
+		else
+			weap.GotoState('ToggleDualWielding');
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Commentout NPCUrethraWeapon has problem
+///////////////////////////////////////////////////////////////////////////////
+exec function PeeAll()
+{
+	local P2Pawn CheckP;
+	local Inventory Inv, Next, Link;
+
+	if (!RecordCheater("PeeAll",true))
+		return;
+
+	if (bPeeAll)
+	{
+		NormalizeThem(true);
+		bPeeAll = false;
+		return;
+	}
+
+	// For every Pawn on the current level.
+	ForEach DynamicActors(class 'P2Pawn', CheckP)
+	{
+		// humans only.
+		if (PersonController(CheckP.Controller) != None)
+		{
+			// And bump them up to be ready to fight, if they have a weapon
+			if(CheckP.PainThreshold < 1.0)
+				CheckP.PainThreshold = 1.0;
+			if(CheckP.Cajones < 1.0)
+				CheckP.Cajones = 1.0;
+			// Give a new weapon.
+			CheckP.CreateInventory("Inventory.xNPCUrethraWeapon");			
+//			PersonController(Pawn.Controller).SwitchToHands();
+		}
+	}
+	bPeeAll = true;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Reset pawns weapon and state
+///////////////////////////////////////////////////////////////////////////////
+exec function NormalizeThem(optional bool bSilent)
+{
+	local int i;
+	local PersonPawn CheckP;
+
+	if (!RecordCheater("NormalizeThem",!bSilent))
+		return;
+
+	// For every Pawn on the current level.
+	ForEach DynamicActors(class 'PersonPawn', CheckP)
+	{
+		// humans only.
+		if (PersonController(CheckP.Controller) != None)
+		{
+			if(!P2GameInfo(Level.Game).TheyHateMeMode()
+				&& !P2GameInfo(Level.Game).InHestonMode())
+			{
+//				CheckP.SetHeadScale(CheckP.default.HeadScale);
+				CheckP.bGunCrazy = CheckP.default.bGunCrazy;
+				CheckP.Cajones = CheckP.default.Cajones;
+				CheckP.GroundSpeed = CheckP.default.GroundSpeed;
+				CheckP.PainThreshold = CheckP.default.PainThreshold;
+				CheckP.bPlayerIsEnemy = CheckP.default.bPlayerIsEnemy;
+				CheckP.bPlayerIsFriend = CheckP.default.bPlayerIsFriend;
+				if(!CheckP.bSliderStasis)	// ignore SliderPawns
+				{
+					CheckP.Controller.Destroy();
+					CheckP.Controller = None;
+					CheckP.Controller = spawn(CheckP.ControllerClass);
+					CheckP.Controller.Possess(CheckP);
+				}
+			}
+			// Reset some attributes.
+			CheckP.bHasViolentWeapon = false;
+			CheckP.bHasDistanceWeapon = false;
+			CheckP.bGotDefaultInventory = false;
+			CheckP.DestroyAllInventory();
+			CheckP.AddDefaultInventory();
+			// SliderPawns fix
+			if(!CheckP.bSliderStasis)
+				CheckP.Controller.Reset();
+		}
+	}
+	bPeeAll = false;
+	if(!bSilent)
+		ClientMessage("Cheat: NormalizeThem");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// ApocalypseNow. Copied from SandboxGame
+///////////////////////////////////////////////////////////////////////////////
+exec function ApocalypseNow()
+{
+	if (!RecordCheater("ApocalypseNow",true))
+		return;
+
+	if(P2GameInfoSingle(Level.Game).TheGameState.bIsApocalypse)
+	{
+		P2GameInfoSingle(Level.Game).TheGameState.bIsApocalypse = false;
+		NormalizeThem(true);
+		P2GameInfoSingle(Level.Game).GotoState('Running');
+	}
+	else
+	{
+		P2GameInfoSingle(Level.Game).TheGameState.bIsApocalypse = true;
+		P2GameInfoSingle(Level.Game).ConvertAllPawnsToRiotMode();
+		P2GameInfoSingle(Level.Game).GotoState('RunningApocalypse');
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// NPC and Dude start puking
+///////////////////////////////////////////////////////////////////////////////
+exec function PukeAll()
+{
+	local PersonPawn CheckP;
+
+	if (!RecordCheater("PukeAll",true))
+		return;
+
+	ForEach DynamicActors(class 'PersonPawn', CheckP) // For every Pawn on the current level
+	{
+		if(!CheckP.bSliderStasis
+			&& CheckP.MyHead != None)
+			Head(CheckP.MyHead).StartPuking(1);
+	}
+}
+
 defaultproperties
 {
 	FanaticsTalking=Sound'HabibDialog.habib_ailili'
 	KrotchyTalking=Sound'KrotchyDialog.wm_krotchy_bitchyougot'
 	MikeJTalking=Sound'MikeJDialog.Cuss_7'
 	ZombieTalking=Sound'AWDialog.Zombie.zombie_curse5'
+	DudeTalking=Sound'DudeDialog.dude_youvegottabekid'
 	DogSkins[0]=Texture'AnimalSkins.Dog'
 	DogSkins[1]=Texture'AnimalSkins.Dog2'
 	DogSkins[2]=Texture'AnimalSkins.Dog3'
@@ -2341,13 +2814,15 @@ defaultproperties
 	MoonGravity=(Z=-250)
 	WrongItemSound[0]=Sound'DudeDialog.dude_notright'
 	WrongItemSound[1]=Sound'DudeDialog.dude_nope'
-	LoadoutDays[0]=(Items=((Item=class'ShovelWeapon'),(Item=class'PistolWeapon',Amount=50),(Item=class'GrenadeWeapon',Amount=5),(Item=class'PizzaInv',Amount=5),(Item=class'CrackInv'),(Item=class'MachineGunWeapon',Amount=100),(Item=class'RadarInv',Amount=200),(Item=class'GasCanWeapon',Amount=50)))
-	LoadoutDays[1]=(Items=((Item=class'ShovelWeapon'),(Item=class'PistolWeapon',Amount=100),(Item=class'GSelectWeapon',Amount=50),(Item=class'GrenadeWeapon',Amount=10),(Item=class'PizzaInv',Amount=10),(Item=class'CrackInv'),(Item=class'ShotgunWeapon',Amount=30),(Item=class'FastFoodInv',Amount=5),(Item=class'MachineGunWeapon',Amount=100),(Item=class'RadarInv',Amount=200),(Item=class'GasCanWeapon',Amount=100)))
-	LoadoutDays[2]=(Items=((Item=class'ShovelWeapon'),(Item=class'PistolWeapon',Amount=150),(Item=class'GSelectWeapon',Amount=100),(Item=class'GrenadeWeapon',Amount=15),(Item=class'PizzaInv',Amount=10),(Item=class'CrackInv',Amount=2),(Item=class'ShotgunWeapon',Amount=60),(Item=class'FastFoodInv',Amount=5),(Item=class'SledgeWeapon'),(Item=class'MP5Weapon',Amount=100),(Item=class'MachineGunWeapon',Amount=100),(Item=class'KevlarInv'),(Item=class'CatnipInv'),(Item=class'RadarInv',Amount=200),(Item=class'GasCanWeapon',Amount=10)))
-	LoadoutDays[3]=(Items=((Item=class'ShovelWeapon'),(Item=class'PistolWeapon',Amount=200),(Item=class'GSelectWeapon',Amount=150),(Item=class'GrenadeWeapon',Amount=20),(Item=class'PizzaInv',Amount=10),(Item=class'CrackInv',Amount=3),(Item=class'ShotgunWeapon',Amount=90),(Item=class'FastFoodInv',Amount=10),(Item=class'SledgeWeapon'),(Item=class'MP5Weapon',Amount=150),(Item=class'MachineGunWeapon',Amount=150),(Item=class'KevlarInv'),(Item=class'CatnipInv'),(Item=class'RadarInv',Amount=200),(Item=class'LauncherWeapon',Amount=100),(Item=class'MacheteWeapon'),(Item=class'GasCanWeapon',Amount=10)))
-	LoadoutDays[4]=(Items=((Item=class'ShovelWeapon'),(Item=class'PistolWeapon',Amount=250),(Item=class'GSelectWeapon',Amount=200),(Item=class'GrenadeWeapon',Amount=25),(Item=class'PizzaInv',Amount=10),(Item=class'CrackInv',Amount=3),(Item=class'ShotgunWeapon',Amount=120),(Item=class'FastFoodInv',Amount=10),(Item=class'SledgeWeapon'),(Item=class'MP5Weapon',Amount=200),(Item=class'MachineGunWeapon',Amount=200),(Item=class'BodyArmorInv'),(Item=class'CatnipInv',Amount=2),(Item=class'RadarInv',Amount=200),(Item=class'LauncherWeapon',Amount=100),(Item=class'MacheteWeapon'),(Item=class'ChainsawWeapon',Amount=150),(Item=class'GasCanWeapon',Amount=100)))
-	LoadoutDays[5]=(Items=((Item=class'ShovelWeapon'),(Item=class'PistolWeapon',Amount=250),(Item=class'GSelectWeapon',Amount=200),(Item=class'GrenadeWeapon',Amount=25),(Item=class'PizzaInv',Amount=10),(Item=class'CrackInv',Amount=3),(Item=class'ShotgunWeapon',Amount=120),(Item=class'FastFoodInv',Amount=10),(Item=class'SledgeWeapon'),(Item=class'MP5Weapon',Amount=200),(Item=class'MachineGunWeapon',Amount=200),(Item=class'BodyArmorInv'),(Item=class'CatnipInv',Amount=2),(Item=class'RadarInv',Amount=200),(Item=class'LauncherWeapon',Amount=100),(Item=class'MacheteWeapon'),(Item=class'ChainsawWeapon',Amount=150),(Item=class'GasCanWeapon',Amount=100)))
-	LoadoutDays[6]=(Items=((Item=class'ShovelWeapon'),(Item=class'PistolWeapon',Amount=250),(Item=class'GSelectWeapon',Amount=200),(Item=class'GrenadeWeapon',Amount=25),(Item=class'PizzaInv',Amount=10),(Item=class'CrackInv',Amount=3),(Item=class'ShotgunWeapon',Amount=120),(Item=class'FastFoodInv',Amount=10),(Item=class'SledgeWeapon'),(Item=class'MP5Weapon',Amount=200),(Item=class'MachineGunWeapon',Amount=200),(Item=class'BodyArmorInv'),(Item=class'CatnipInv',Amount=2),(Item=class'RadarInv',Amount=200),(Item=class'LauncherWeapon',Amount=100),(Item=class'MacheteWeapon'),(Item=class'ChainsawWeapon',Amount=150),(Item=class'GasCanWeapon',Amount=100)))
+	
+	// Moved to GameSinglePlayer and AWGameSP
+	//LoadoutDays[0]=(Items=((Item=class'ShovelWeapon'),(Item=class'PistolWeapon',Amount=50),(Item=class'GrenadeWeapon',Amount=5),(Item=class'PizzaInv',Amount=5),(Item=class'CrackInv'),(Item=class'MachineGunWeapon',Amount=100),(Item=class'RadarInv',Amount=200),(Item=class'GasCanWeapon',Amount=50)))
+	//LoadoutDays[1]=(Items=((Item=class'ShovelWeapon'),(Item=class'PistolWeapon',Amount=100),(Item=class'GSelectWeapon',Amount=50),(Item=class'GrenadeWeapon',Amount=10),(Item=class'PizzaInv',Amount=10),(Item=class'CrackInv'),(Item=class'ShotgunWeapon',Amount=30),(Item=class'FastFoodInv',Amount=5),(Item=class'MachineGunWeapon',Amount=100),(Item=class'RadarInv',Amount=200),(Item=class'GasCanWeapon',Amount=100)))
+	//LoadoutDays[2]=(Items=((Item=class'ShovelWeapon'),(Item=class'PistolWeapon',Amount=150),(Item=class'GSelectWeapon',Amount=100),(Item=class'GrenadeWeapon',Amount=15),(Item=class'PizzaInv',Amount=10),(Item=class'CrackInv',Amount=2),(Item=class'ShotgunWeapon',Amount=60),(Item=class'FastFoodInv',Amount=5),(Item=class'SledgeWeapon'),(Item=class'MP5Weapon',Amount=100),(Item=class'MachineGunWeapon',Amount=100),(Item=class'KevlarInv'),(Item=class'CatnipInv'),(Item=class'RadarInv',Amount=200),(Item=class'GasCanWeapon',Amount=10)))
+	//LoadoutDays[3]=(Items=((Item=class'ShovelWeapon'),(Item=class'PistolWeapon',Amount=200),(Item=class'GSelectWeapon',Amount=150),(Item=class'GrenadeWeapon',Amount=20),(Item=class'PizzaInv',Amount=10),(Item=class'CrackInv',Amount=3),(Item=class'ShotgunWeapon',Amount=90),(Item=class'FastFoodInv',Amount=10),(Item=class'SledgeWeapon'),(Item=class'MP5Weapon',Amount=150),(Item=class'MachineGunWeapon',Amount=150),(Item=class'KevlarInv'),(Item=class'CatnipInv'),(Item=class'RadarInv',Amount=200),(Item=class'LauncherWeapon',Amount=100),(Item=class'MacheteWeapon'),(Item=class'GasCanWeapon',Amount=10)))
+	//LoadoutDays[4]=(Items=((Item=class'ShovelWeapon'),(Item=class'PistolWeapon',Amount=250),(Item=class'GSelectWeapon',Amount=200),(Item=class'GrenadeWeapon',Amount=25),(Item=class'PizzaInv',Amount=10),(Item=class'CrackInv',Amount=3),(Item=class'ShotgunWeapon',Amount=120),(Item=class'FastFoodInv',Amount=10),(Item=class'SledgeWeapon'),(Item=class'MP5Weapon',Amount=200),(Item=class'MachineGunWeapon',Amount=200),(Item=class'BodyArmorInv'),(Item=class'CatnipInv',Amount=2),(Item=class'RadarInv',Amount=200),(Item=class'LauncherWeapon',Amount=100),(Item=class'MacheteWeapon'),(Item=class'ChainsawWeapon',Amount=150),(Item=class'GasCanWeapon',Amount=100)))
+	//LoadoutDays[5]=(Items=((Item=class'ShovelWeapon'),(Item=class'PistolWeapon',Amount=250),(Item=class'GSelectWeapon',Amount=200),(Item=class'GrenadeWeapon',Amount=25),(Item=class'PizzaInv',Amount=10),(Item=class'CrackInv',Amount=3),(Item=class'ShotgunWeapon',Amount=120),(Item=class'FastFoodInv',Amount=10),(Item=class'SledgeWeapon'),(Item=class'MP5Weapon',Amount=200),(Item=class'MachineGunWeapon',Amount=200),(Item=class'BodyArmorInv'),(Item=class'CatnipInv',Amount=2),(Item=class'RadarInv',Amount=200),(Item=class'LauncherWeapon',Amount=100),(Item=class'MacheteWeapon'),(Item=class'ChainsawWeapon',Amount=150),(Item=class'GasCanWeapon',Amount=100)))
+	//LoadoutDays[6]=(Items=((Item=class'ShovelWeapon'),(Item=class'PistolWeapon',Amount=250),(Item=class'GSelectWeapon',Amount=200),(Item=class'GrenadeWeapon',Amount=25),(Item=class'PizzaInv',Amount=10),(Item=class'CrackInv',Amount=3),(Item=class'ShotgunWeapon',Amount=120),(Item=class'FastFoodInv',Amount=10),(Item=class'SledgeWeapon'),(Item=class'MP5Weapon',Amount=200),(Item=class'MachineGunWeapon',Amount=200),(Item=class'BodyArmorInv'),(Item=class'CatnipInv',Amount=2),(Item=class'RadarInv',Amount=200),(Item=class'LauncherWeapon',Amount=100),(Item=class'MacheteWeapon'),(Item=class'ChainsawWeapon',Amount=150),(Item=class'GasCanWeapon',Amount=100)))
 	
 	NoSkeletonsText="It's as if millions of doots suddenly cried out in terror and were suddenly silenced."
 	NightModeOffText="The day will return to you in due time."

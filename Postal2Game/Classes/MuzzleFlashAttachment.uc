@@ -16,8 +16,8 @@ class MuzzleFlashAttachment extends InventoryAttachment;
 var int TickCount;	// How long to display it
 
 // No longer using these--saves replication
-var(MuzzleFlash) ELightType FlashLightType;
-var(MuzzleFlash) ELightEffect FlashLightEffect;
+//var(MuzzleFlash) ELightType FlashLightType;
+//var(MuzzleFlash) ELightEffect FlashLightEffect;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Check to enable dynamic lights
@@ -128,8 +128,8 @@ defaultproperties
 
 	bHidden=true
 
-	FlashLightEffect=LE_NonIncidence
-	FlashLightType=LT_Steady
+	//FlashLightEffect=LE_NonIncidence
+	//FlashLightType=LT_Steady
 
 	bCollideActors=false
 	bCollideWorld=false

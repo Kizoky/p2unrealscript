@@ -110,6 +110,13 @@ const STANDUP_WAITTIME			  = 0.4;
 const FIND_GROUND_ALIVE_RAGDOLL	  = 200;
 const CHANGE_OVER_RESTART_TIME	  = 0.4;
 
+// Man Chrzan: xPatch
+var Texture OldHeadSkin;
+var Texture OldBodySkin;
+var Mesh OldHeadMesh;
+var Mesh OldBodyMesh;
+
+
 // Fix for invisible head If LD defines head skin but body skin
 // (default body skins were overwritten by the chameleon skin setup)
 // Quick fix, for now just override the LD setting and have the chameleon
@@ -139,6 +146,21 @@ simulated function PostBeginPlay()
 	{
 		// Redo some zombie variables
 		RandomizeAttribute(VoicePitch, RAND_ATTRIBUTE_DEFAULT, 0.7, 0.5);
+		
+		// Man Chrzan: xPatch
+		// Check to restore classic looks
+		if(P2GameInfoSingle(Level.Game) != None 
+		&& P2GameInfoSingle(Level.Game).GetClassicZombies())
+		{
+			if(OldBodyMesh != None)
+				SetMyMesh(OldBodyMesh, , true);
+			if(OldBodySkin != None)	
+				SetMySkin(OldBodySkin);
+			if(OldHeadMesh != None)	
+				MyHead.LinkMesh(OldHeadMesh, true);
+			if(OldHeadSkin != None)
+				MyHead.Skins[0] = OldHeadSkin;
+		}
 	}
 }
 
@@ -421,10 +443,17 @@ simulated function SetupAnims()
 	LinkAnims();
 
 	//if(AnimGroupUsed != -1)
-		AnimGroupUsed = Rand(10);	// Pick which walks and other random anims to pick.
+/*		AnimGroupUsed = Rand(10);	// Pick which walks and other random anims to pick.*/
 	//debuglog(self@"pick anim group"@AnimGroupUsed);
 	//else
 	//	AnimGroupUsed=0;	// Pick the basic one
+	
+	// Man Chrzan: xPatch
+	if(P2GameInfoSingle(Level.Game) != None 
+	&& P2GameInfoSingle(Level.Game).GetClassicZombies())
+		AnimGroupUsed = Rand(2);	
+	else
+		AnimGroupUsed = Rand(10);
 
 	if(bFloating)
 		MovementAnims[0]	= 'z_bob';
@@ -516,7 +545,7 @@ simulated function SetAnimRunning()
 {
 	if(bFloating)
 		MovementAnims[0]	= 'c_walk';
-	else if (FRand() < 0.5)
+	else if (FRand() < 0.5 || (P2GameInfoSingle(Level.Game) != None && P2GameInfoSingle(Level.Game).GetClassicZombies())) // Man Chrzan: xPatch
 		MovementAnims[0]	= 'z_charge';
 	else
 		MovementAnims[0]	= 'z_charge_alt';
@@ -559,7 +588,7 @@ simulated function name GetAnimSwipeRight()
 }
 simulated function name GetAnimSmash()
 {
-	if (FRand() < 0.5)
+	if (FRand() < 0.5 || (P2GameInfoSingle(Level.Game) != None && P2GameInfoSingle(Level.Game).GetClassicZombies())) // Man Chrzan: xPatch
 		return 'z_smash';
 	else
 		return 'z_smash_alt';
@@ -592,7 +621,7 @@ simulated function name GetAnimTourettes()
 }
 simulated function name GetAnimDeathCrawl()
 {
-	if (FRand() < 0.5)
+	if (FRand() < 0.5 || (P2GameInfoSingle(Level.Game) != None && P2GameInfoSingle(Level.Game).GetClassicZombies())) // Man Chrzan: xPatch
 		return 'z_crawl';
 	else
 		return 'z_crawl_alt';
@@ -937,7 +966,8 @@ function bool HandleSpecialShots(int Damage, vector HitLocation, vector Momentum
 		if(Health > 0)
 		{
 			if(ThisDamage == class'ShotgunDamage'
-				|| ThisDamage == class'RifleDamage')
+				|| ThisDamage == class'SuperShotgunDamage'					// xPatch: SuperShotgunDamage support
+				|| ClassIsChildOf(ThisDamage, class'RifleDamage'))			// xPatch: SuperRifleDamage support
 			{
 				// For if no damage is done
 				if(TakesShotgunHeadShot == 0.0
@@ -959,7 +989,8 @@ function bool HandleSpecialShots(int Damage, vector HitLocation, vector Momentum
 					DistToMe = VSize(XYdir);
 					
 					if(DistToMe < DISTANCE_TO_EXPLODE_HEAD
-						&& ThisDamage == class'ShotgunDamage')
+						&& ThisDamage == class'ShotgunDamage'
+						|| ThisDamage == class'SuperShotgunDamage')	// xPatch: SuperShotgunDamage support
 					// Is close enough with a shotgun to explode the head
 					{
 						// Check a little more accurately, if you actually hit the head or not
@@ -998,7 +1029,8 @@ function bool HandleSpecialShots(int Damage, vector HitLocation, vector Momentum
 						if(ZDist > 0)
 							return false;
 					}
-					else if(ThisDamage == class'RifleDamage')
+					// xPatch: Instead of cutting off the head - so annoying - destroy it.
+/*					else if(ThisDamage == class'RifleDamage')
 					// Sniper rifle rounds knock their heads off--they blow them up when the head
 					// is decapitated.
 					{
@@ -1006,6 +1038,38 @@ function bool HandleSpecialShots(int Damage, vector HitLocation, vector Momentum
 						HeadShot = 1;
 						return true;
 					}
+*/
+					else if(ClassIsChildOf(ThisDamage, class'RifleDamage'))
+					{
+						// We've hit the head, now reduce the damage, if necessary
+						if(!(P2GameInfo(Level.Game) != None
+							&& P2GameInfo(Level.Game).PlayerGetsHeadShots()))
+							returndamage = TakesShotgunHeadShot*HealthMax;
+						else
+							returndamage = HealthMax+1;
+
+						// if this kills them, blow their head up
+						if(returndamage >= Health
+							&& bHeadCanComeOff)
+						{
+							// record special kill
+							if(P2GameInfoSingle(Level.Game) != None
+								&& P2GameInfoSingle(Level.Game).TheGameState != None
+								&& P2Pawn(InstigatedBy) != None
+								&& P2Pawn(InstigatedBy).bPlayer)
+							{
+								P2GameInfoSingle(Level.Game).TheGameState.RifleHeadShot++;
+							}
+
+							if(class'P2Player'.static.BloodMode())
+							{
+								ExplodeHead(HitLocation, Momentum);
+							}
+						}
+						HeadShot = 1;
+						return true;
+					}
+					// Change End
 				}
 				// continue on, if this didn't take
 			}
@@ -1457,6 +1521,7 @@ function TakeDamage( int Damage, Pawn instigatedBy, Vector hitlocation,
 		// Or if your head was killed, then you must die too
 		if(damageType == class'HeadKillDamage'
 			|| ((ClassIsChildOf(damageType, class'ShotgunDamage')
+					|| ClassIsChildOf(damageType, class'RifleDamage') // Added by Man Chrzan: xPatch 2.0
 					|| ClassIsChildOf(damageType, class'SledgeDamage')
 					|| ClassIsChildOf(damageType, class'SwipeSmashDamage'))
 				&& HeadShot == 1))

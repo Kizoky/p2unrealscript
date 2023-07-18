@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////////
-// In gun ammo
+// NOTE! MP5 uses now NineAmmoInv. This is old not used anymore class.
 ///////////////////////////////////////////////////////////////////////////////
 class MP5AmmoInv extends P2AmmoInv;
 
@@ -15,14 +15,17 @@ function ProcessTraceHit(Weapon W, Actor Other, Vector HitLocation, Vector HitNo
 {
 	local Rotator NewRot;
 
-	UseAmmoForShot();
+	// Reduce ammo only if it's not reloadable weapon
+	if (!P2Weapon(W).bReloadableWeapon)
+		UseAmmoForShot();
 
 	if ( Other == None )
 		return;
 
 	if(Other.bStatic)
 	{
-		spawn(class'MachinegunBulletHitPack',W.Owner, ,HitLocation, Rotator(HitNormal));
+		//spawn(class'MachinegunBulletHitPack',W.Owner, ,HitLocation, Rotator(HitNormal));
+		spawn(class'PistolBulletHitPack',Owner, ,HitLocation, Rotator(HitNormal));
 	}
 	else 
 	{

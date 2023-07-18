@@ -131,9 +131,11 @@ function Notify_ShootLauncher()
 				}
         }
 }
+
 ///////////////////////////////////////////////////////////////////////////////
 defaultproperties
 {
+	bDisableDualWielding=True	// xPatch
 	AmmoUseRate=0.250000
 	InitialAmmoCost=0.500000
 	AmmoName=Class'BoxLauncherAmmoInv'

@@ -9,4 +9,6 @@ class BloodExplosionSplatMaker extends SplatMaker;
 defaultproperties
 {
 	mysplatclass=class'BloodExplosionSplat'
+	//mysplatclassEnh = class'xBloodDripSplat'
+	//mysplatclassAWP = class'xAWPBloodDripSplat'
 }

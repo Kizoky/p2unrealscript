@@ -21,7 +21,8 @@ enum ETest
 	ET_ErrandActivated_Name,							// Checks to see if an errand is activated (name)
 	ET_CopsWantPlayer,									// Checks to see if the player is wanted by the cops
 	ET_Apocalypse,										// Checks to see if the apocalypse is running
-	ET_JesusRun											// Checks to see if the player is eligible for a Jesus rating (zero people, zombies, and animals killed)
+	ET_JesusRun,										// Checks to see if the player is eligible for a Jesus rating (zero people, zombies, and animals killed)
+	ET_LudicrousRun										// xPatch: Checks if the player is on the hardest ever Ludicrous difficulty
 	};
 
 var(Action) ETest Test;
@@ -77,6 +78,10 @@ function ProceedToNextAction(ScriptedController C)
 				
 			case ET_JesusRun:
 				bResult = (game.TheGameState.PeopleKilled + game.TheGameState.CatsKilled + game.TheGameState.ElephantsKilled + game.TheGameState.DogsKilled + game.TheGameState.ZombiesKilledOverall == 0) == Is;
+				break;
+				
+			case ET_LudicrousRun:
+				bResult = (game.InLudicrousDifficulty()) == Is;
 				break;
 
 			default:
@@ -137,6 +142,10 @@ function string GetActionString()
 		case ET_JesusRun:
 			return ActionString@"check if jesus run is "$Is;
 			break;
+			
+		case ET_LudicrousRun:
+			return ActionString@"check if Ludicrous run is "$Is;
+			break;			
 
 		default:
 			break;

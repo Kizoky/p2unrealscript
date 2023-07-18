@@ -76,7 +76,7 @@ defaultproperties
         FadeOut=True
         FadeInEndTime=0.200000
         FadeIn=True
-        MaxParticles=3
+        MaxParticles=4
         DrawStyle=PTDS_AlphaBlend
         StartSizeRange=(X=(Min=20.000000,Max=20.000000),Y=(Min=20.000000,Max=20.000000))
         Texture=Texture'nathans.Skins.Bloodpuddle1'

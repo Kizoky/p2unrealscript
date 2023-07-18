@@ -432,7 +432,7 @@ native static final function ResetConfig();
 native final function bool PlatformIsMacOS();		// MacOS X.
 native final function bool PlatformIsUnix();		// Linux, FreeBSD, etc (NOT OSX!)
 native final function bool PlatformIsWindows();		// Win32, Win32.
-native final function bool PlatformIs64Bit();		// Linux64, Win64.
+native final function bool PlatformIsSteamDeck();	// Linux Steam Deck
 native final function String GetBuildDate();		// Returns a string containing the build date.
 native final function string GetCountryCode();		// Returns a string containing the country code identifier from Default.ini
 

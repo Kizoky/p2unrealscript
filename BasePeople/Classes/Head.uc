@@ -112,6 +112,10 @@ var float fTakeDamageDelay;
 const DAMAGE_DELAY = 0.1;
 // End
 
+// Added by Man Chrzan: xPatch 2.0
+const DISTANCE_TO_EXPLODE_HEAD_RIFLE = 99999;
+var bool bBouncedOnce;											// Backport form AWP, for Baseball Bat.
+
 ///////////////////////////////////////////////////////////////////////////////
 // Get ready
 ///////////////////////////////////////////////////////////////////////////////
@@ -241,13 +245,13 @@ function bool WillSteam()
 function PinataStyleExplodeEffects(vector HitLocation, vector Momentum)
 {
 	local BodyEffects headeffects;
+	local int EffectsType;
 
 	if(MyBody != None)
 		MyBody.DestroyHeadBoltons();
 
 	headeffects = spawn(HeadExplosionEffect,,,HitLocation);
 	headeffects.SetRelativeMotion(Momentum, Velocity);
-
 	headeffects.PlaySound(ExplodeHeadSound,,,,100,GetRandPitch());
 
 	if (Level.NetMode != NM_StandAlone)
@@ -350,6 +354,9 @@ simulated function HitWall (vector HitNormal, actor HitWallActor)
 	local PlayerController P;
 	local float DistFlew;
 	local float MetersFlew;
+
+	// Added by Man Chrzan: Backport from AWP
+	bBouncedOnce = True;
 
 	// If we're hitting an person, lose a lot of speed, so it will be around him
 	// to kick it.
@@ -487,6 +494,7 @@ function TakeDamage( int Dam, Pawn instigatedBy, Vector hitlocation,
 	local vector dir;
 	local float DistToMe, CheckDist;
 	local bool bCheckExplode;
+	local bool bNoDamageDelay;
 
 	if(class'P2Player'.static.BloodMode())
 	{
@@ -495,6 +503,15 @@ function TakeDamage( int Dam, Pawn instigatedBy, Vector hitlocation,
 			CheckDist = DISTANCE_TO_EXPLODE_HEAD_SHOTGUN;
 			bCheckExplode=true;
 		}
+// Added by Man Chrzan: xPatch 2.0
+		else if(ClassIsChildOf(ThisDamage, class'RifleDamage') 
+				|| ThisDamage == class'SuperShotgunDamage'
+				|| ThisDamage == class'SuperBulletDamage')	
+		{
+			CheckDist = DISTANCE_TO_EXPLODE_HEAD_RIFLE;
+			bCheckExplode=true;
+		} 	
+// end												
 		else if(ThisDamage == class'BulletDamage'
 			|| ThisDamage == class'RifleDamage')
 		{
@@ -538,7 +555,8 @@ function TakeDamage( int Dam, Pawn instigatedBy, Vector hitlocation,
 		GotoState(''); // in case we were in the RemoveMe state, get us back to normal
 		
 		// If the player shoveled us, record our start position
-		if (ThisDamage == class'ShovelDamage')
+		if (ThisDamage == class'ShovelDamage'
+			|| ThisDamage == class'BludgeonDamage')	// xPatch: Do it for Baseball Bat too
 		{
 			StartPos = Location;
 			bBeingShoveled = true;
@@ -564,13 +582,15 @@ function TakeDamage( int Dam, Pawn instigatedBy, Vector hitlocation,
 		if(ClassIsChildOf(ThisDamage, class'BurnedDamage'))
 		{
 			CatchOnFire(FPSPawn(instigatedBy), (ThisDamage==class'NapalmDamage'));
+			bNoDamageDelay=True; // xPatch: Fix for not being able to kick burning head.
 		}
 
 		// We got hit with a plague. You're infected now.
 		if(ThisDamage == class'ChemDamage')
 		{
 			ChemicalInfection(FPSPawn(instigatedBy));
-			return;
+			//rturn;
+			bNoDamageDelay=True;
 		}
 
 		// Check if the head is getting pissed on, then put out the fire associated
@@ -591,6 +611,11 @@ function TakeDamage( int Dam, Pawn instigatedBy, Vector hitlocation,
 				spawn(class'BloodImpactMaker',self,,HitLocation,Rotator(-momentum));
 			}
 		}
+		
+		// Added by Man Chrzan: burning head bug fix
+		if(bNoDamageDelay)
+			return;
+		
 		// Change by NickP: fix
 		//bTakeDamageTimer = true;
 		//SetTimer(0.1, false);
@@ -1193,6 +1218,19 @@ state Dead
 			else
 				SetTimer(REMOVE_DEAD_TIME, false);	
 		}
+		// xPatch: Singleplayer version
+		else if (P2GameInfo(Level.Game).LimbsLifetimeMax < 60)
+		{
+			if (!PlayerCanSeeMe() && (MyBody == None || !MyBody.bHasHead))
+			{
+				Destroy();
+				if(MyBody != None)
+					MyBody.DestroyHeadBoltons();
+			}
+			else
+				SetTimer(REMOVE_DEAD_TIME, false);	
+		}
+		// End
 	}
 
 	///////////////////////////////////////////////////////////////////////////////
@@ -1212,6 +1250,14 @@ state Dead
 			|| Level.NetMode == NM_ListenServer)
 			// Clients in MP remove dead bodies after a while
 			SetTimer(REMOVE_DEAD_START_TIME, false);
+			
+		// xPatch: remove heads (only dismembered ones!) multiplayer way if enabled
+		if(P2GameInfo(Level.Game).LimbsLifetimeMax < 60
+			&& (MyBody == None || !MyBody.bHasHead) )
+		{
+			SetTimer(P2GameInfo(Level.Game).LimbsLifetimeMax, false);
+			//log("xPatch Log: "$self$" will be removed within "$P2GameInfo(Level.Game).LimbsLifetimeMax);
+		}
 	}
 }
 
@@ -1292,6 +1338,17 @@ state KnockedOutState
 	}
 }
 
+// xPatch: Bug Fix - dead people blinking after reloading save
+event PostLoadGame()
+{
+	Super.PostLoadGame();
+	
+	if(myBody == None 
+	|| MyBody.bDeleteMe 
+	|| myBody.Health <= 0)
+		GotoState('Dead');
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Default properties
 ///////////////////////////////////////////////////////////////////////////////
@@ -1323,5 +1380,5 @@ defaultproperties
 	BurnVictimHeadSkin = Texture'ChamelHeadSkins.Special.BurnVictim'
 	WaitTime=0.05
 	bAlwaysZeroBoneOffset=true
-	HeadExplosionEffect=class'ExplodedHeadEffects'
+	HeadExplosionEffect=class'ExplodedHeadEffects' 
 	}

@@ -37,16 +37,45 @@ var const localized string TooMuchAmmoHint;
 
 const MAX_AMMO_ENHANCED = 9999;
 
+// xPatch:
+struct ClassicIconsReplaceStr
+{
+	var Texture NewIcon;
+	var Texture OldIcon;
+};
+var array<ClassicIconsReplaceStr> ClassicIcons;
+// End
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 event PostBeginPlay()
 {
+	local int i;
+	
 	Super.PostBeginPlay();
 	if (P2GameInfoSingle(Level.Game) != None
 		&& P2GameInfoSingle(Level.Game).VerifySeqTime())
 		// Let 'em have lots and lots of ammo in enhanced mode
 		MaxAmmo = MAX_AMMO_ENHANCED;
+	
+	// xPatch: Ludicrous Difficulty, reduce by half.
+	if (P2GameInfoSingle(Level.Game) != None
+		&& P2GameInfoSingle(Level.Game).InVeteranMode())
+		MaxAmmo = default.MaxAmmo * 0.5;
+		
+	// xPatch: Optional classic icons
+	if(P2GameInfoSingle(Level.Game) != None 
+		&& P2GameInfoSingle(Level.Game).GetClassicIcons()
+		&& Texture != None)
+	{
+		for(i=0; i<ClassicIcons.Length; i++)
+		{
+			if(Texture == ClassicIcons[i].NewIcon 
+			&& ClassicIcons[i].OldIcon != None)
+				Texture = ClassicIcons[i].OldIcon;
+		}
+	}
+	
 }	
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -174,4 +203,10 @@ defaultproperties
 	bReadyForUse=true
 	TransientSoundRadius=100
 	bStasis=true
+	
+	// xPatch: Classic Icons
+	ClassicIcons(0)=(NewIcon=Texture'HUDPack.icon_inv_emptyhands',OldIcon=Texture'ClassicIcons.Weapons.icon_inv_emptyhands')
+	ClassicIcons(1)=(NewIcon=Texture'HUDPack.icon_inv_Clipboard',OldIcon=Texture'ClassicIcons.Weapons.icon_inv_Clipboard')
+	ClassicIcons(2)=(NewIcon=Texture'HUDPack.Icon_Weapon_Shovel',OldIcon=Texture'ClassicIcons.Icon_Weapon_Shovel')
+	ClassicIcons(3)=(NewIcon=Texture'HUDPack.Icon_Weapon_Scissors',OldIcon=Texture'ClassicIcons.Icon_Weapon_Scissors')
 }

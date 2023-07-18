@@ -15,6 +15,7 @@ var() float NonLethalDamageBoost;					// Damage multiplier when inflicting non-l
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
+
 function ProcessTraceHit(Weapon W, Actor Other, Vector HitLocation, Vector HitNormal, Vector X, Vector Y, Vector Z)
 {
 	local SmokeHitPuff smoke1;

@@ -634,10 +634,16 @@ function SortKeysByDefaults(out Binding bind)
 function ShowKeyStr(Binding bind, int iInput)
 {
 	local string strKey;
+	
 	if (iInput >= 0 && iInput < bind.astrKeys.Length)
 	{
 		strKey = bind.astrKeys[iInput];
-		bind.win.SetValue(iInput, strKey, FPSHUD(GetPlayerOwner().MyHud).MyButtons.GetIcon(bind.aiKeys[iInput]));
+		
+		// xPatch: fallback to old method for unknown keys instead of showing blank tex
+		if(FPSHUD(GetPlayerOwner().MyHud).MyButtons.GetIcon(bind.aiKeys[iInput]) == Blank)
+			bind.win.SetValue(iInput, strKey);
+		else // End
+			bind.win.SetValue(iInput, strKey, FPSHUD(GetPlayerOwner().MyHud).MyButtons.GetIcon(bind.aiKeys[iInput]));
 	}
 	else
 		bind.win.SetValue(iInput, strKey, Blank);
@@ -1431,7 +1437,10 @@ defaultproperties
 	aActionControls[3]=(strAlias="DoKick")  // 01/15/03 JMI Changed Kick to DoKick.
 	aActionControls[4]=(strAlias="UseZipper")
 	aActionControls[5]=(strAlias="Suicide")
-	aActionControls[6]=(strAlias="GetDown")
+	aActionControls[6]=(strAlias="GetDown")	
+	aActionControls[7]=(strAlias="MiddleFinger") // xPatch: "Fuck You" rework
+//	aActionControls[8]=(strAlias="ToggleView")	 // xPatch: 3rd Person View
+	
 	
 	aActionControlsLabel[0]="Empty Hands"
     aActionControlsLabel[1]="Crouch"
@@ -1440,6 +1449,8 @@ defaultproperties
 	aActionControlsLabel[4]="Unzip/Zip Pants"
 	aActionControlsLabel[5]="Commit Suicide"
 	aActionControlsLabel[6]="Yell 'Get Down'"
+	aActionControlsLabel[7]="Flip the Bird"	// xPatch: Fuck You rework
+//	aActionControlsLabel[8]="3rd Person View"	// xPatch: 3rd Person Veiew
 
 	
 	// Display Controls //
@@ -1506,6 +1517,7 @@ defaultproperties
 	aMiscControls[6]=(strAlias="GrowHUD")
 	aMiscControls[7]=(strAlias="Type")
 	aMiscControls[8]=(strAlias="ConsoleToggle")
+	aMiscControls[9]=(strAlias="ToggleInvHints")
 	
 	aMiscControlsLabel[0]="Quick Save"
 	aMiscControlsLabel[1]="Quick Load"
@@ -1516,6 +1528,7 @@ defaultproperties
 	aMiscControlsLabel[6]="Grow HUD"
 	aMiscControlsLabel[7]="Console Command"
 	aMiscControlsLabel[8]="Dev Console"
+	aMiscControlsLabel[9]="Toggle Weapon/Inv Hints"
 	
 	// Multiplayer Controls //
 	//aMultiControls[0] = (strLabel="Talk (Say)",strAlias="Talk")
@@ -1583,6 +1596,7 @@ defaultproperties
 	aWeaponControls[4]=(strAlias="ThrowWeapon")
 	aWeaponControls[5]=(strAlias="WeaponZoomIn",bNoClear=True)
 	aWeaponControls[6]=(strAlias="WeaponZoomOut",bNoClear=True)
+	aWeaponControls[7]=(strAlias="Reload") // Added by Man Chrzan: xPatch 2.0
 	
 	aWeaponControlsLabel[0]="Primary Fire"
 	aWeaponControlsLabel[1]="Secondary Fire"
@@ -1591,6 +1605,7 @@ defaultproperties
 	aWeaponControlsLabel[4]="Drop Weapon"
 	aWeaponControlsLabel[5]="Rifle Zoom In"
 	aWeaponControlsLabel[6]="Rifle Zoom Out"
+	aWeaponControlsLabel[7]="Reload (Mod Weapons)"	// Added by Man Chrzan: xPatch 2.0
 	
 	// Weapon Groups //
 	//aWeaponControls2[0] = (strLabel="Melee Weapons",strAlias="SwitchWeapon 1")
@@ -1766,66 +1781,69 @@ defaultproperties
 	Defaults[22]=(alias="StrafeRight",key="D",cat="Keys")
 	Defaults[23]=(alias="InventoryActivate",key="E",cat="Keys")
 	Defaults[24]=(alias="ToggleToHands",key="F",cat="Keys")
-	Defaults[25]=(alias="GetDown",key="G",cat="Keys")
+	Defaults[25]=(alias="MiddleFinger",key="G",cat="Keys")
 	Defaults[26]=(alias="Suicide",key="K",cat="Keys")
-	Defaults[27]=(alias="QuickUseMap",key="M",cat="Keys")
-	Defaults[28]=(alias="DoKick",key="Q",cat="Keys")
-	Defaults[29]=(alias="UseZipper",key="R",cat="Keys")
-	Defaults[30]=(alias="MoveBackward",key="S",cat="Keys")
-	Defaults[31]=(alias="QuickHealth",key="T",cat="Keys")
-	Defaults[32]=(alias="MoveForward",key="W",cat="Keys")
-	Defaults[33]=(alias="ThrowPowerup",key="X",cat="Keys")
-	Defaults[34]=(alias="ThrowWeapon",key="Z",cat="Keys")
-	Defaults[35]=(alias="Duck",key="Ctrl",cat="Old")
-	Defaults[36]=(alias="InventoryActivate",key="Enter",cat="Old")
-	Defaults[37]=(alias="WantsToSkip",key="Enter",cat="Old")
-	Defaults[38]=(alias="InventoryPrevious",key="LeftBracket",cat="Keys")
-	Defaults[39]=(alias="Pause",key="Pause",cat="Keys")
-	Defaults[40]=(alias="InventoryNext",key="RightBracket",cat="Keys")
-	Defaults[41]=(alias="Walking",key="Shift",cat="Keys")
-	Defaults[42]=(alias="Jump",key="Space",cat="Keys")
-	Defaults[43]=(alias="GameOverRestart",key="Space",cat="Keys")
-	Defaults[44]=(alias="WantsToSkip",key="Space",cat="Keys")
-	Defaults[45]=(alias="ConsoleToggle",key="Tilde",cat="Keys")
-	Defaults[46]=(alias="ToggleToHands",key="Joy16",cat="Pad")
-	Defaults[47]=(alias="InventoryActivate",key="Joy15",cat="Pad")
-	Defaults[48]=(alias="UseZipper",key="Joy14",cat="Pad")
-	Defaults[49]=(alias="BackButton",key="Joy14",cat="Pad")
-	Defaults[50]=(alias="ConfirmButton",key="Joy13",cat="Pad")
-	Defaults[51]=(alias="GameOverRestart",key="Joy13",cat="Pad")
-	Defaults[52]=(alias="WantsToSkip",key="Joy13",cat="Pad")
-	Defaults[53]=(alias="Jump",key="Joy13",cat="Pad")
-	Defaults[54]=(alias="AltFire",key="Joy11",cat="Pad")
-	Defaults[55]=(alias="Fire",key="Joy12",cat="Pad")
-	Defaults[56]=(alias="NextWeapon",key="Joy10",cat="Pad")
-	Defaults[57]=(alias="WeaponZoomOut",key="Joy10",cat="Pad")
-	Defaults[58]=(alias="WeaponZoomIn",key="Joy9",cat="Pad")
-	Defaults[59]=(alias="PrevWeapon",key="Joy9",cat="Pad")
-	Defaults[60]=(alias="DoKick",key="Joy8",cat="Pad")
-	Defaults[61]=(alias="Duck",key="Joy7",cat="Pad")
-	Defaults[62]=(alias="QuickUseMap",key="Joy6",cat="Pad")
-	Defaults[63]=(alias="MenuButton",key="Joy5",cat="Pad")
-	Defaults[64]=(alias="InventoryMenu",key="Joy4",cat="Pad")
-	Defaults[65]=(alias="MenuRightButton",key="Joy4",cat="Pad")
-	Defaults[66]=(alias="InventoryMenu",key="Joy3",cat="Pad")
-	Defaults[67]=(alias="MenuLeftButton",key="Joy3",cat="Pad")
-	Defaults[68]=(alias="ThrowWeapon",key="Joy2",cat="Pad")
-	Defaults[69]=(alias="MenuDownButton",key="Joy2",cat="Pad")
-	Defaults[70]=(alias="ThrowPowerup",key="Joy1",cat="Pad")
-	Defaults[71]=(alias="MenuUpButton",key="Joy1",cat="Pad")
-	Defaults[72]=(alias="MenuMouseX",key="JoyX",cat="Pad")
-	Defaults[73]=(alias="MenuMouseY",key="JoyY",cat="Pad")
-	Defaults[74]=(alias="AXIS aStrafe SPEEDBASE=4.00 DEADZONE=0.10",key="JoyX",cat="Pad")
-	Defaults[75]=(alias="AXIS aBaseY SPEEDBASE=4.00 DEADZONE=0.10",key="JoyY",cat="Pad")
-	Defaults[76]=(alias="AXIS aBaseX SPEEDBASE=5.00 DEADZONE=0.10",key="JoyU",cat="Pad")
-	Defaults[77]=(alias="AXIS aLookUp SPEEDBASE=4.00 DEADZONE=0.10",key="JoyV",cat="Pad")
-	Defaults[78]=(alias="InventoryMenu",key="Tab",cat="Keys")
-	Defaults[79]=(alias="ConfirmButton",key="Enter",cat="Keys")
-	Defaults[80]=(alias="BackButton",key="Backspace",cat="Keys")
-	Defaults[81]=(alias="MenuUpButton",key="Up",cat="Keys")
-	Defaults[82]=(alias="MenuDownButton",key="Down",cat="Keys")
-	Defaults[83]=(alias="MenuLeftButton",key="Left",cat="Keys")
-	Defaults[84]=(alias="MenuRightButton",key="Right",cat="Keys")
+	Defaults[27]=(alias="ToggleInvHints",key="L",cat="Keys")
+	Defaults[28]=(alias="QuickUseMap",key="M",cat="Keys")
+	Defaults[29]=(alias="DoKick",key="Q",cat="Keys")
+	Defaults[30]=(alias="UseZipper",key="R",cat="Keys")
+	Defaults[31]=(alias="MoveBackward",key="S",cat="Keys")
+	Defaults[32]=(alias="QuickHealth",key="T",cat="Keys")
+	Defaults[33]=(alias="MoveForward",key="W",cat="Keys")
+	Defaults[34]=(alias="ThrowPowerup",key="X",cat="Keys")
+	Defaults[35]=(alias="GetDown",key="Y",cat="Keys")
+	Defaults[36]=(alias="ThrowWeapon",key="Z",cat="Keys")
+	Defaults[37]=(alias="Duck",key="Ctrl",cat="Old")
+	Defaults[38]=(alias="InventoryActivate",key="Enter",cat="Old")
+	Defaults[39]=(alias="WantsToSkip",key="Enter",cat="Old")
+	Defaults[40]=(alias="InventoryPrevious",key="LeftBracket",cat="Keys")
+	Defaults[41]=(alias="Pause",key="Pause",cat="Keys")
+	Defaults[42]=(alias="InventoryNext",key="RightBracket",cat="Keys")
+	Defaults[43]=(alias="Walking",key="Shift",cat="Keys")
+	Defaults[44]=(alias="Jump",key="Space",cat="Keys")
+	Defaults[45]=(alias="GameOverRestart",key="Space",cat="Keys")
+	Defaults[46]=(alias="WantsToSkip",key="Space",cat="Keys")
+	Defaults[47]=(alias="ConsoleToggle",key="Tilde",cat="Keys")
+	Defaults[48]=(alias="ToggleToHands",key="Joy16",cat="Pad")
+	Defaults[49]=(alias="InventoryActivate",key="Joy15",cat="Pad")
+	Defaults[50]=(alias="UseZipper",key="Joy14",cat="Pad")
+	Defaults[51]=(alias="BackButton",key="Joy14",cat="Pad")
+	Defaults[52]=(alias="ConfirmButton",key="Joy13",cat="Pad")
+	Defaults[53]=(alias="GameOverRestart",key="Joy13",cat="Pad")
+	Defaults[54]=(alias="WantsToSkip",key="Joy13",cat="Pad")
+	Defaults[55]=(alias="Jump",key="Joy13",cat="Pad")
+	Defaults[56]=(alias="AltFire",key="Joy11",cat="Pad")
+	Defaults[57]=(alias="Fire",key="Joy12",cat="Pad")
+	Defaults[58]=(alias="NextWeapon",key="Joy10",cat="Pad")
+	Defaults[59]=(alias="WeaponZoomOut",key="Joy10",cat="Pad")
+	Defaults[60]=(alias="WeaponZoomIn",key="Joy9",cat="Pad")
+	Defaults[61]=(alias="PrevWeapon",key="Joy9",cat="Pad")
+	Defaults[62]=(alias="DoKick",key="Joy8",cat="Pad")
+	Defaults[63]=(alias="Duck",key="Joy7",cat="Pad")
+	Defaults[64]=(alias="QuickUseMap",key="Joy6",cat="Pad")
+	Defaults[65]=(alias="MenuButton",key="Joy5",cat="Pad")
+	Defaults[66]=(alias="InventoryMenu",key="Joy4",cat="Pad")
+	Defaults[67]=(alias="MenuRightButton",key="Joy4",cat="Pad")
+	Defaults[68]=(alias="InventoryMenu",key="Joy3",cat="Pad")
+	Defaults[69]=(alias="MenuLeftButton",key="Joy3",cat="Pad")
+	Defaults[70]=(alias="ThrowWeapon",key="Joy2",cat="Pad")
+	Defaults[71]=(alias="MenuDownButton",key="Joy2",cat="Pad")
+	Defaults[72]=(alias="ThrowPowerup",key="Joy1",cat="Pad")
+	Defaults[73]=(alias="MenuUpButton",key="Joy1",cat="Pad")
+	Defaults[74]=(alias="MenuMouseX",key="JoyX",cat="Pad")
+	Defaults[75]=(alias="MenuMouseY",key="JoyY",cat="Pad")
+	Defaults[76]=(alias="AXIS aStrafe SPEEDBASE=4.00 DEADZONE=0.10",key="JoyX",cat="Pad")
+	Defaults[77]=(alias="AXIS aBaseY SPEEDBASE=4.00 DEADZONE=0.10",key="JoyY",cat="Pad")
+	Defaults[78]=(alias="AXIS aBaseX SPEEDBASE=5.00 DEADZONE=0.10",key="JoyU",cat="Pad")
+	Defaults[79]=(alias="AXIS aLookUp SPEEDBASE=4.00 DEADZONE=0.10",key="JoyV",cat="Pad")
+	Defaults[80]=(alias="InventoryMenu",key="Tab",cat="Keys")
+	Defaults[81]=(alias="ConfirmButton",key="Enter",cat="Keys")
+	Defaults[82]=(alias="BackButton",key="Backspace",cat="Keys")
+	Defaults[83]=(alias="MenuUpButton",key="Up",cat="Keys")
+	Defaults[84]=(alias="MenuDownButton",key="Down",cat="Keys")
+	Defaults[85]=(alias="MenuLeftButton",key="Left",cat="Keys")
+	Defaults[86]=(alias="MenuRightButton",key="Right",cat="Keys")
+	Defaults[87]=(alias="Reload",key="MiddleMouse",cat="Keys")	// Added by Man Chrzan
 	MultiBindWarningTitle="Information"
 	MultiBindWarningText="You've bound a menu navigation key to another function. You will be unable to use this function while the weapon selector is visible."
 }

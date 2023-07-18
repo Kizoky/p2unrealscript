@@ -1,4 +1,4 @@
-class MachetePickup extends P2WeaponPickup;
+class MachetePickup extends P2BloodWeaponPickup;
 
 defaultproperties
 {

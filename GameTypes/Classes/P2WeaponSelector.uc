@@ -2,7 +2,8 @@
 //
 // NOTE: Always assume the client's resolution height is 768 when doing any
 // scaling.
-class P2WeaponSelector extends P2EInteraction;
+class P2WeaponSelector extends P2EInteraction
+	config(Selectors);
 
 #exec OBJ LOAD FILE=P2Fonts.utx
 
@@ -19,13 +20,14 @@ struct SInvGroupInfo
 };
 
 // Configurable HUD variables.
-var() Color				AmmoBarColor,
+var() Color AmmoBarColor,
 					AmmoBarBGColor,
 					NormalGroupElementColor,
 					SelectedGroupElementColor,
 					NormalWeaponElementColor,
 					SelectedWeaponElementColor,
-					NoAmmoWeaponColor;
+					NoAmmoWeaponColor,
+					GroupCellColor;
 
 var() enum ESelectorType {
 	STYPE_Normal,
@@ -78,9 +80,16 @@ var protected vector			CurGroupCellSize, CurGroupRowPos, DesGroupRowPos;
 var localized string			CannotEmptyHandsNowMsg;
 
 var globalconfig bool	bFullScreen;			// If true, draws the weapon selector on the entire screen instead of confining it
-var globalconfig float	TimeoutDelayNormal;	// Auto-timeout delay (normal mode)
+var globalconfig float	TimeoutDelayNormal;		// Auto-timeout delay (normal mode)
 var globalconfig float	TimeoutDelayAuto;		// Auto-timeout delay (auto-swap mode)
 var float SelectorIdleTime;						// Amount of time the weapon selector has been idle
+
+// xPatch: Customization
+var globalconfig bool bCarouselSelector;
+var globalconfig bool bRememberLastWeapon;
+var globalconfig Texture MyGroupCellTex;
+var globalconfig Color MyGroupCellColor, MySelectedGroupElementColor, MySelectedWeaponElementColor,
+						MyAmmoBarBGColor, MyAmmoBarColor, MyNoAmmoWeaponColor;
 
 /*
 	Only used whenever weapons are being added to WeaponGroups.
@@ -396,8 +405,11 @@ function GetWeapon(class<Weapon> NewWeaponClass, optional bool bSilent)
 					}
 					return;
 				}
+
 				PlayerOwner.Pawn.PendingWeapon = Weapon(Inv);
-				PlayerOwner.Pawn.Weapon.PutDown();
+				if (PlayerOwner.Pawn.PendingWeapon != None)
+					PlayerOwner.Pawn.Weapon.PutDown();
+				
 				if (!bSilent)
 					GetSoundActor().PlaySound(SelectedWeaponSound);
 				return;
@@ -520,6 +532,8 @@ function SwitchWeapon(byte F)
 	local int i;
 	local int OldGroupIndex;
 	local int OldWListIndex;
+	local P2Weapon LastW;
+	local byte Abort;
 	
 	//log("SwitchWeapon"@F@"Selected"@SelectedGroupIndex@"WList"@SelectedWListIndex);
 	
@@ -536,12 +550,22 @@ function SwitchWeapon(byte F)
 	OldGroupIndex = SelectedGroupIndex;
 	OldWListIndex = SelectedWListIndex;
 	
+	// xPatch: Get the last used weapon in group
+	if(bRememberLastWeapon)
+		PlayerOwner.FindGroupWeapon(F, LastW, Abort);
+	// End
+	
 	while ((W == None || !W.HasAmmo() || !ValidHandsWeapon(W.Class)) && i < 100)
 	{
 		if(WeaponGroups[SelectedGroupIndex].InvGroup != F)
 		{
 			SelectedGroupIndex = GetWeaponGroupSlot(F);
-			SelectedWListIndex = 0;
+			// xPatch: Change to the last used weapon in group
+			if(LastW != None)
+				SelectedWListIndex = FindWeaponInWList(LastW, SelectedGroupIndex);
+			else // End
+				SelectedWListIndex = 0;
+				
 			if (SelectedGroupIndex == -1)
 				break;
 		//	CorrectIndexes();
@@ -600,6 +624,10 @@ final function RefreshSelector()
 	ResetIndexes();
 	RefreshCarouselArray();
 	SetDestinations(true);
+	
+	// xPatch: Setup our custom properties, but only for this class, no extensions!
+	if(Class == Class'P2WeaponSelector')
+		SetupSelector(False);
 }
 
 function bool SwitchWeaponByIndex(optional bool bNoReset)
@@ -713,13 +741,14 @@ function DrawGroupCell(Canvas C, vector CurPos, int GroupIdx, float CanvasScale)
 	local string S;
 	local vector TextPos;
 
-	// Set default draw color.
-	C.DrawColor = NormalGroupElementColor;
-
 	// Draw background.
 	GetP2EUtils().SetPos(C, CurPos.X, CurPos.Y);
+	C.DrawColor = GroupCellColor;	// xPatch: Customizable GroupCell Color
 	C.DrawTileClipped(GroupCellTex, CurGroupCellSize.X, CurGroupCellSize.Y, 0, 0, GroupCellTex.USize, GroupCellTex.VSize);
-
+	
+	// Set default draw color.
+	C.DrawColor = NormalGroupElementColor;
+	
 	// Draw another background to indicate no ammo or selected.
 	if(SelectedGroupIndex == GroupIdx)
 	{
@@ -760,13 +789,14 @@ function DrawWeaponListCell(Canvas C, vector CurPos, int GroupIdx, int ListIdx, 
 
 	W = WeaponGroups[GroupIdx].WList[ListIdx];
 	
-	// Set default draw color.
-	C.DrawColor = NormalWeaponElementColor;
-
 	// Draw background.
 	GetP2EUtils().SetPos(C, CurPos.X, CurPos.Y);
+	C.DrawColor = GroupCellColor;	// xPatch: Customizable GroupCell Color
 	C.DrawTileClipped(GroupCellTex, CurGroupCellSize.X, CurGroupCellSize.Y, 0, 0, GroupCellTex.USize, GroupCellTex.VSize);
 //	DrawTextureClipped(C, GroupCellTex, GroupCellScale, CanvasScale);
+
+	// Set default draw color.
+	C.DrawColor = NormalWeaponElementColor;
 
 	// Draw another background to indicate no ammo or selected.
 	if(SelectedWListIndex == ListIdx || !W.HasAmmo() || !ValidHandsWeapon(W.Class))
@@ -1254,7 +1284,7 @@ function PostRender(Canvas Canvas)
 
 	if((PlayerOwner.Pawn == None) || (WeaponGroups.Length == 0))
 		return;
-
+	
 	if(SelectorType == STYPE_Carousel)
 		DrawCarouselSelector(Canvas);
 	else
@@ -1385,16 +1415,107 @@ function xCoopRefreshList()
 }
 // End
 
+///////////////////////////////////////////////////////////////////////////////
+// xPatch: Setup custom colors etc.
+///////////////////////////////////////////////////////////////////////////////
+function SetupSelector(bool bDefault)
+{
+	local color Blank;
+	
+	Blank.R = 0;
+	Blank.G = 0;
+	Blank.B = 0;
+	Blank.A = 0;
+	
+	if(bDefault)
+	DefaultSelector();
+	
+	if(bCarouselSelector)
+		SelectorType=STYPE_Carousel;
+	else
+		SelectorType=STYPE_Normal;
+	
+	if(MyGroupCellTex != None)
+		GroupCellTex = MyGroupCellTex;
+	if(MyGroupCellColor != Blank) 	
+		GroupCellColor = MyGroupCellColor;		
+	if(MySelectedGroupElementColor != Blank) 	
+		SelectedGroupElementColor = MySelectedGroupElementColor;	
+	if(MySelectedWeaponElementColor != Blank)
+		SelectedWeaponElementColor = MySelectedWeaponElementColor;
+	if(MyAmmoBarBGColor != Blank)
+		AmmoBarBGColor = MyAmmoBarBGColor;
+	if(MyAmmoBarColor != Blank)	
+		AmmoBarColor = MyAmmoBarColor;
+	if(MyNoAmmoWeaponColor != Blank) 	
+		NoAmmoWeaponColor = MyNoAmmoWeaponColor;	
+}
+
+function DefaultSelector()
+{
+/*	bCarouselSelector=False;
+	default.bCarouselSelector=False;
+	
+	MyGroupCellTex = default.GroupCellTex;		
+	MySelectedGroupElementColor = default.SelectedGroupElementColor;	
+	MySelectedWeaponElementColor = default.SelectedWeaponElementColor;
+	MyAmmoBarBGColor = default.AmmoBarBGColor;
+	MyAmmoBarColor = default.AmmoBarColor;
+	MyNoAmmoWeaponColor = default.NoAmmoWeaponColor;	
+	
+	default.MyGroupCellTex = default.GroupCellTex;		
+	default.MySelectedGroupElementColor = default.SelectedGroupElementColor;	
+	default.MySelectedWeaponElementColor = default.SelectedWeaponElementColor;
+	default.MyAmmoBarBGColor = default.AmmoBarBGColor;
+	default.MyAmmoBarColor = default.AmmoBarColor;
+	default.MyNoAmmoWeaponColor = default.NoAmmoWeaponColor;	
+	
+	PlayerOwner.Static.StaticSaveConfig();*/
+	
+	// Doesn't want to save itself into the config otherwise duh..
+	ViewportOwner.Actor.ConsoleCommand("Set P2WeaponSelector" @ "bCarouselSelector" @ False );
+	ViewportOwner.Actor.ConsoleCommand("Set P2WeaponSelector" @ "MyGroupCellTex" @ default.GroupCellTex);
+	ViewportOwner.Actor.ConsoleCommand("Set P2WeaponSelector" @ "MySelectedGroupElementColor" @ GetColorAsString(default.SelectedGroupElementColor));
+	ViewportOwner.Actor.ConsoleCommand("Set P2WeaponSelector" @ "MySelectedWeaponElementColor" @ GetColorAsString(default.SelectedWeaponElementColor));
+	ViewportOwner.Actor.ConsoleCommand("Set P2WeaponSelector" @ "MyAmmoBarBGColor" @ GetColorAsString(default.AmmoBarBGColor));
+	ViewportOwner.Actor.ConsoleCommand("Set P2WeaponSelector" @ "MyAmmoBarColor" @ GetColorAsString(default.AmmoBarColor));
+	ViewportOwner.Actor.ConsoleCommand("Set P2WeaponSelector" @ "MyNoAmmoWeaponColor" @ GetColorAsString(default.NoAmmoWeaponColor));
+	ViewportOwner.Actor.ConsoleCommand("Set P2WeaponSelector" @ "MyGroupCellColor" @ GetColorAsString(default.GroupCellColor));
+}
+
+function string GetColorAsString(color TheColor)
+{
+	local string TheColorStr;
+	local int R, G, B, A;
+	local color TempColor;
+	
+	TempColor = TheColor;
+	R = TempColor.R;
+	G = TempColor.G;
+	B = TempColor.B;
+	A = TempColor.A;
+	
+	TheColorStr = "(R="$R$",G="$G$",B="$B$",A="$A$")";
+	
+	log(self$" GetColorAsString = "$TheColorStr);
+	return TheColorStr;
+}
+
 defaultproperties
 {
 	NormalGroupElementColor=(R=255,G=255,B=255,A=255)
-	SelectedGroupElementColor=(R=255,G=255,B=0,A=63)
+	//SelectedGroupElementColor=(R=255,G=255,B=0,A=63)
+	SelectedGroupElementColor=(B=0,G=0,R=0,A=140)
 	NormalWeaponElementColor=(R=255,G=255,B=255,A=255)
-	SelectedWeaponElementColor=(R=255,G=255,B=0,A=63)
+	//SelectedWeaponElementColor=(R=255,G=255,B=0,A=63)
+	SelectedWeaponElementColor=(B=0,G=0,R=0,A=105)
 	NoAmmoWeaponColor=(R=160,G=0,B=0,A=63)
 
-	AmmoBarBGColor=(R=63,G=63,B=63,A=255)
-	AmmoBarColor=(R=160,G=0,B=0,A=255)
+	//AmmoBarBGColor=(R=63,G=63,B=63,A=255)
+	//AmmoBarColor=(R=160,G=0,B=0,A=255)
+	AmmoBarBGColor=(B=33,G=33,R=33,A=225)
+	AmmoBarColor=(B=0,G=130,R=0,A=225)
+	GroupCellColor=(R=255,G=255,B=255,A=255)
 
 	SelectorType=STYPE_Normal
 
@@ -1410,7 +1531,8 @@ defaultproperties
 	GroupBarWNameSpacing=1.25
 
 	GroupCellBorder=0.1
-	GroupCellTex=Texture'MpHUD.HUD.field_gray'
+	//GroupCellTex=Texture'MpHUD.HUD.field_gray'
+	GroupCellTex=Texture'xPatchTex.HUD.selector_red'
 	GroupCellScale=(X=0.25,Y=0.5)
 	SelectedGroupCellTex=Texture'Engine.WhiteSquareTexture'
 
@@ -1434,4 +1556,5 @@ defaultproperties
 	
 	TimeoutDelayNormal=0.000000
 	TimeoutDelayAuto=5.000000
+	bRememberLastWeapon=True
 }

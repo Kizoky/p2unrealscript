@@ -16,6 +16,8 @@ class LauncherProjectile extends P2Projectile;
 var P2Emitter STrail;					// smoke trail
 var P2Emitter FTrail;					// fire trail
 
+var bool bCatRider;
+
 var float	ForwardAccelerationMag;		// how much acceleration mag after you've gotten going
 var float	DefaultFuelTime;			// How much flying fuel you get to start
 var float	FallAfterNoFuelTime;		// How long you fall for, after you're out of fuel
@@ -169,6 +171,11 @@ function GenExplosion(vector HitLocation, vector HitNormal, Actor Other)
 	exp.CheckForHitType(Other);
 	exp.ShakeCamera(exp.ExplosionDamage);
 	exp.ForceLocation = WallHitPoint;
+
+	// xPatch:
+	if( bCatRider )
+		spawn(class'MeatExplosion', self,, Location);
+	// End
 
 	// If we're controlling this particular rocket, tell the player about it
 	if(Instigator != None
@@ -612,9 +619,25 @@ state Tumbling extends Eject
 	}
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// xPatch: It's now catable, ported from Happy Night
+///////////////////////////////////////////////////////////////////////////////
+function CatConvert(Material CatSkin)
+{
+	SetDrawType(DT_Mesh);
+	LinkMesh(Mesh);
+	if( CatSkin != None )
+		Skins[0] = CatSkin;
+	LoopAnim('fall');
+	AmbientSound = Sound'AnimalSounds.Cat.CatScream_loop1';
+	RocketBounce = Sound'WeaponSounds.flesh_explode';
+	bCatRider = true;
+}
+
 defaultproperties
 {
- 	NoDamageTime=0.3
+ 	Mesh=SkeletalMesh'Animals.meshCat'
+	NoDamageTime=0.3
 	Speed=250.000000
     MaxSpeed=5000.000000
 	Damage=0.000000	// these two are handled in the FX explosion

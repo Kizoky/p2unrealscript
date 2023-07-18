@@ -36,7 +36,6 @@ const BEEP_TIME			= 4;
 const PULSE_CHANGE		= 100;
 const PULSE_MAX			= 80;
 
-
 replication
 {
 	reliable if(Role == ROLE_Authority)
@@ -49,6 +48,11 @@ replication
 event TravelPostAccept()
 {
 	Super.TravelPostAccept();
+	
+	// xPatch: No need to show amount in nightmare mode (it's infinite)
+	if(P2GameInfoSingle(Level.Game).InNightmareMode()
+		&& !P2GameInfoSingle(Level.Game).InVeteranMode())
+		bDisplayAmount = False;	
 
 	if(Amount <= 0)
 		UsedUp();
@@ -77,6 +81,11 @@ function PickupFunction(Pawn Other)
 		Amount = 1; // don't need any more than this since it's infinite
 		Activate();
 	}
+	
+	// xPatch: No need to show amount in nightmare mode (it's infinite)
+	if(P2GameInfoSingle(Level.Game).InNightmareMode() 
+		&& !P2GameInfoSingle(Level.Game).InVeteranMode())
+		bDisplayAmount = False;	
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -293,7 +302,8 @@ Begin:
 				// Don't use juice in grab bag--unlimited
 				// Don't use in Nightmare either
 				if (GrabBagGame(Level.Game) == None
-					&& !P2GameInfoSingle(Level.Game).InNightmareMode())
+					&& !P2GameInfoSingle(Level.Game).InNightmareMode() 
+					|| P2GameInfoSingle(Level.Game).InVeteranMode())
 					ReduceAmount(1,,,,true);	// For each TimeSlice, it uses on radarinv unit
 			}
 		}

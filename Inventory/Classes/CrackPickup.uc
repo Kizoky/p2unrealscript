@@ -21,8 +21,22 @@ state Pickup
 	///////////////////////////////////////////////////////////////////////////////
 	function bool ValidTouch( actor Other )
 	{
+		local Inventory MyCrack;
+			
+		// xPatch: In veteran mode we can pick it up, but only one + there are changes 
+		// in CrackInv.SmokeIt() and DudePlayer.CheckForCrackUse() for this difficulty
+		if (P2GameInfo(Level.Game).InVeteranMode()
+			&& P2Pawn(Other) != None)
+		{
+			MyCrack = P2Pawn(Other).FindInventoryType(class'CrackInv');
+			if(MyCrack != None)
+				return false;
+			
+			NightmareInventoryType = InventoryType;
+			return Super.ValidTouch(Other);
+		}
 		// In nightmare mode don't pick up the item unless you really need it.
-		if (P2GameInfo(Level.Game).InNightmareMode()
+		else if (P2GameInfo(Level.Game).InNightmareMode()
 			&& P2Pawn(Other) != None
 			&& P2Pawn(Other).Health >= P2Pawn(Other).HealthMax)
 			return false;
@@ -45,3 +59,4 @@ defaultproperties
 	bNoBotPickup=true
 	MaxDesireability = -1.0
 	}
+ 

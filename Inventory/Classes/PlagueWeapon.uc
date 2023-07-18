@@ -59,7 +59,11 @@ simulated function PlayAltFiring()
 		PlayOwnedSound(AltFireSound,SLOT_Interact,1.0,,,WeaponFirePitchStart + (FRand()*WeaponFirePitchRand),false);
 	else // just on yours in SP games
 		Instigator.PlaySound(AltFireSound, SLOT_None, 1.0, true, , WeaponFirePitchStart + (FRand()*WeaponFirePitchRand));
-	PlayAnim('Shoot1', WeaponSpeedShoot2, 0.05);
+	
+	if (!bDualWielding && RightWeapon == none) 
+		bForceReload=true;
+		
+	PlayAnim('Shoot2', WeaponSpeedShoot2, 0.05);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -179,6 +183,31 @@ state NormalFire
 		//bAltFiring=false;
 		}
 	}
+	
+// xPatch: Make sure that this gun is not extension!
+function bool CanSwapHands()
+{
+	return (Class == Class'PlagueWeapon');
+}
+
+// xPatch: Dual Wielding
+function SetLeftArmVisibility() 
+{
+	Super(P2DualWieldWeapon).SetLeftArmVisibility();
+}
+
+simulated function PlayFiring()
+{
+	if (!bDualWielding && RightWeapon == none) 
+		bForceReload=true;
+		
+	Super(P2DualWieldWeapon).PlayFiring();
+	if(bShowHint1)
+	{
+		bShowHint1=false;
+		UpdateHudHints();
+	}
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Default properties
@@ -192,7 +221,7 @@ defaultproperties
 	ErrandPickupClass = None
 	AttachmentClass=class'PlagueAttachment'
 
-//	Mesh=Mesh'Patch1_FP_Weapons.FP_Dude_WMD'
+	OldMesh=Mesh'Patch1_FP_Weapons.FP_Dude_WMD'
 	Mesh=Mesh'MP_Weapons.MP_LS_WMD'
 //	Skins[0]=Texture'WeaponSkins.Dude_Hands'
 	Skins[0]=Texture'MP_FPArms.LS_arms.LS_hands_dude'
@@ -222,7 +251,8 @@ defaultproperties
 	AutoSwitchPriority=9
 	InventoryGroup=9
 	GroupOffset=2
-	BobDamping=0.975000
+//	BobDamping=0.975000
+	BobDamping=1.12 
 	ReloadCount=0
 	TraceAccuracy=0.3
 	ShotCountMaxForNotify=0
@@ -248,4 +278,7 @@ defaultproperties
 	bShowHints=true
 	HudHint1="Press %KEY_Fire% for light-weight rocket."
 	HudHint2="Press %KEY_AltFire% for a bouncing heavy rocket."
+	
+	LeftHandBoneName="Bip01 L UpperArm"
+	bDisableDualWielding=False
 	}

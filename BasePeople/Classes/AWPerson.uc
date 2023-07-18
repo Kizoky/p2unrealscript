@@ -1,6 +1,6 @@
 //=============================================================================
 // AWPerson
-// Copyright 2003 Running With Scissors, Inc.  All Rights Reserved.
+// Copyright 2023 Running With Scissors Studios LLC.  All Rights Reserved.
 //
 // Base class for all bystander characters in AW.
 //
@@ -65,6 +65,8 @@ var bool		bBottomHalfNewSpawn;	// If true, the bottom half was just made and nee
 var bool		bBottomWarpDeathAnim;	// If you started out alive and then chopped in half, you'll want to
 										// play the death anim... if not, you'll want to warp to the end of your
 										// death anim. Do that if this is true.
+										
+var bool bMasochistPlayer;				// xPatch: Allows to dismember player's limbs 
 
 const PANTS_STR		=	'_Pants';
 const SKIRT_STR		=	'_Skirt';
@@ -142,6 +144,13 @@ const INSANE_MELEE_PCT			= 0.25;
 const MOVE_BUFFER = 100;
 
 const MIN_HEALTH_TO_SLIT_THROAT = 30.0;
+
+// Added by Man Chrzan: xPatch 2.0	
+const MIN_HEALTH_TO_BULLET_CUT = 30.0;
+var class<P2Emitter> NewGutsEmitterClass1[3];
+var class<P2Emitter> NewGutsEmitterClass2[3];
+const GutsPath = "Postal2Game.P2Player GutsType";	
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // MP anims copied from Dude
@@ -482,7 +491,7 @@ simulated function PostBeginPlay()
 	StuckCheckRadius = STUCK_RADIUS;
 	
 	// Force cheap blood spouts for now.
-	bCheapBloodSpouts = true;
+	//bCheapBloodSpouts = true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1145,6 +1154,7 @@ function DetermineClothing(string checkname)
 	pos = InStr(checkname, SKIRT_STR);
 	if(pos > 0)
 		bSkirt=true;
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1477,6 +1487,11 @@ function CutThisLimb(Pawn instigatedBy, int cutindex, vector momentum, float DoS
 	if(cutindex == LEFT_LEG
 		|| cutindex == RIGHT_LEG)
 		bMissingLegParts=true;
+		
+	// xPatch: Make sure they always drop weapon when they have their arms cut off.
+	if (PersonController(Controller) != None 
+		&& (cutindex == RIGHT_ARM || cutindex == LEFT_ARM))
+		PersonController(Controller).ThrowWeapon();
 
 	//log(self@"limb severed",'Debug');
 	// Shrink bone just before it, completely
@@ -1620,7 +1635,7 @@ function bool HandleSever(Pawn instigatedBy, vector momentum, out class<DamageTy
 		return false;
 	}
 	else if(cutindex != HEAD_INDEX)
-	{
+	{	
 		// Cut limb off if it's still there
 		if(BoneArr[cutindex] == 1
 			// Only allow in dismemberment mode
@@ -1628,9 +1643,11 @@ function bool HandleSever(Pawn instigatedBy, vector momentum, out class<DamageTy
 			&& !bNoDismemberment
 			// And if blood is allowed
 			&& class'P2Player'.Static.BloodMode()
+			&& (P2Player(Controller) == None || Health <= 0)	// xPatch: No matter what don't cut off player's limbs if he's not dead
 			)
 		{
 			if (DamageType == class'SuperShotgunBodyDamage'
+				|| ClassIsChildOf(DamageType,class'BulletDamage')
 				|| ClassIsChildOf(DamageType,class'ExplodedDamage'))
 				// Don't play sound when dismembered by shotgun/explosion
 				CutThisLimb(InstigatedBy, cutindex, momentum, 0, 1.0);
@@ -1675,6 +1692,95 @@ function bool HandleSever(Pawn instigatedBy, vector momentum, out class<DamageTy
 			ConvertToCuttingDamage(DamageType);
 			return true;
 		}
+	}
+	return false;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Added by Man Chrzan: xPatch 2.0
+// Handle chopping off limbs but no heads
+///////////////////////////////////////////////////////////////////////////////
+function bool HandleBulletSever(Pawn instigatedBy, vector momentum, out class<DamageType> damageType,
+						  int cutindex, out int Damage, out vector hitlocation)
+{
+	local float DismChance;
+	
+	// Chance for dismember
+	if (ClassIsChildOf(DamageType,class'SuperRifleDamage')
+		|| ClassIsChildOf(DamageType,class'RifleDamage')
+		|| ClassIsChildOf(DamageType,class'SuperShotgunBodyDamage'))
+		DismChance = 1.00;	// Super Rifle	
+	else if (ClassIsChildOf(damageType, class'ShotgunDamage'))
+		DismChance = 0.35;	// Shotgun
+	else if (ClassIsChildOf(damageType, class'MachineGunDamage'))
+		DismChance = 0.12;	// Machine Gun
+	else
+		DismChance = 0.23;	// Pistol and other bullets 
+	
+	// Don't allow in non-dismemberment mode
+	if (!P2GameInfo(Level.Game).bEnableDismemberment
+		|| bNoDismemberment
+		// Or in pussy non-blood mode
+		|| !class'P2Player'.Static.BloodMode()
+		// No-Dismember Chance
+		|| FRand() > DismChance 
+		)
+	{
+		// Convert into normal cutting damage and run super instead
+		//ConvertToCuttingDamage(DamageType);
+		Super.TakeDamage(Damage, InstigatedBy, HitLocation, momentum, damageType);		
+		return false;
+	}
+	
+	if((ClassIsChildOf(DamageType,class'MinigunDamage') && FRand() < 0.35)
+		|| ClassIsChildOf(DamageType,class'SuperShotgunBodyDamage')) 
+	{
+		if(DecideScytheChop(InstigatedBy, momentum, damageType, Damage, HitLocation))
+		return true;
+	}
+
+	// Check where the hit was, if we weren't already passed one
+	if(cutindex == INVALID_LIMB)
+		cutindex = DecideSeverBone(HitLocation, damageType);
+	// Make sure DecideSeverBone got a good limb
+	if(cutindex == INVALID_LIMB)
+	{
+		// it's not there, so turn the damage into normal cutting damage
+		//ConvertToCuttingDamage(DamageType);
+		Super.TakeDamage(Damage, InstigatedBy, HitLocation, momentum, damageType);
+		return false;
+	}
+	else if(cutindex != HEAD_INDEX)
+	{
+		// Cut limb off if it's still there
+		if(BoneArr[cutindex] == 1
+			// Only allow in dismemberment mode
+			&& P2GameInfo(Level.Game).bEnableDismemberment
+			&& !bNoDismemberment
+			// And if blood is allowed
+			&& class'P2Player'.Static.BloodMode()
+			)
+		{
+			// Don't play sound when dismembered by bullets
+			CutThisLimb(InstigatedBy, cutindex, momentum, 0, 1.0);
+	
+			CheckIfStumped(InstigatedBy);
+			
+			return true;
+		}
+		else // it's not there, so turn the damage into normal cutting damage
+		{
+			//ConvertToCuttingDamage(DamageType);
+			Super.TakeDamage(Damage, InstigatedBy, HitLocation, momentum, damageType);
+			return false;
+		}
+	}
+	else 
+	{
+		// turn the damage into normal cutting damage
+		//ConvertToCuttingDamage(DamageType);
+		Super.TakeDamage(Damage, InstigatedBy, HitLocation, momentum, damageType);
+		return false; //true;
 	}
 	return false;
 }
@@ -1784,6 +1890,7 @@ function HalfTorsoStumps()
 	local coords usecoords;
 	local Stump usestump;
 	local P2Emitter gutsemitter;
+//	local int EffectsType;
 
 	// Put stump on bottom of torso
 	usecoords = GetBoneCoords(BONE_MID_SPINE);
@@ -1806,6 +1913,24 @@ function HalfTorsoStumps()
 	AttachToBone(gutsemitter, TOP_TORSO);
 	gutsemitter = spawn(GutsEmitterClass2,self,,usecoords.origin);
 	AttachToBone(gutsemitter, TOP_TORSO);
+
+// xPatch: mod version stuff	
+/*
+	EffectsType = int(ConsoleCommand("get" @ GutsPath));
+	
+	if(EffectsType == 0)	// Use old var for compability with workshop gore mods.
+		gutsemitter = spawn(GutsEmitterClass1,self,,usecoords.origin);
+	else					// Use new var with multiple effect classes.
+		gutsemitter = spawn(NewGutsEmitterClass1[EffectsType],self,,usecoords.origin);
+	AttachToBone(gutsemitter, TOP_TORSO);
+	
+	if(EffectsType == 0)	// Use old var for compability with workshop gore mods.
+		gutsemitter = spawn(GutsEmitterClass2,self,,usecoords.origin);
+	else					// Use new var with multiple effect classes.
+		gutsemitter = spawn(NewGutsEmitterClass2[EffectsType],self,,usecoords.origin);
+	AttachToBone(gutsemitter, TOP_TORSO);
+*/
+// End
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -2182,6 +2307,7 @@ function bool HandleBali(Pawn instigatedBy, out vector momentum, out class<Damag
 	return false;
 }
 
+
 //Used so that the head does not detach but the PourerFeeder still activates
 function SlitThroat(Pawn instigatedBy, vector HitLocation, vector Momentum)
 {
@@ -2334,15 +2460,16 @@ function TakeDamage( int Damage, Pawn instigatedBy, Vector hitlocation,
 	// Cat handles this
 	//else if(ClassIsChildOf(damageType, class'DervishDamage'))
 	//	Damage = TakesDervishDamage*Damage;
-
-	if(// Can't cut off player limbs
-		P2Player(Controller) == None)
+	
+	// Can't cut off player limbs unless it's bMasochistPlayer (Ludicrous difficulty)
+	if(P2Player(Controller) == None 
+		|| (P2Player(Controller) != None && bMasochistPlayer && !P2Player(Controller).bGodMode))
 	{
 		// If it's a damage type and hasn't been lowered, allow limb severance
 		// but if TakesMacheteDamage (for instance) is less than 1.0, then don't let limbs be cut
 		if(ClassIsChildOf(damageType, class'MacheteDamage'))
 		{
-			if(Damage >= StartDamage)
+			if(Damage >= StartDamage || Damage > Health )
 				bUseSuper = !(HandleSever(InstigatedBy, momentum, damagetype, INVALID_LIMB, Damage, HitLocation));
 			else // convert to lower damage type
 				ConvertToCuttingDamage(DamageType);
@@ -2350,25 +2477,53 @@ function TakeDamage( int Damage, Pawn instigatedBy, Vector hitlocation,
 		else if(ClassIsChildOf(damageType, class'SledgeDamage')
 				|| ClassIsChildOf(damageType, class'SwipeSmashDamage'))
 		{
-			if(Damage >= StartDamage)
+			if(Damage >= StartDamage || Damage > Health )
 				bUseSuper = !(HandleSledge(InstigatedBy, momentum, damagetype, Damage, HitLocation));
 			else if(TakesSledgeDamage > 0) // convert to lower damage type unless it was blocked completely
 				damageType = class'BludgeonDamage';
 		}
-		else if(ClassIsChildOf(damageType, class'ScytheDamage'))
+		else if(ClassIsChildOf(damageType, class'ScytheDamage')
+				&& !ClassIsChildOf(damageType, class'SuperShotgunBodyDamage'))	// xPatch: SuperShotgunBodyDamage is handed differently now
 		{
-			if(Damage >= StartDamage)
+			if(Damage >= StartDamage || Damage > Health )
 				bUseSuper = !(HandleScythe(InstigatedBy, momentum, damagetype, Damage, HitLocation));
 			else // convert to lower damage type
 				ConvertToCuttingDamage(DamageType);
 		}
 		else if(ClassIsChildOf(damageType, class'BaliDamage'))
 		{
-			if(Damage >= StartDamage)
+			if(Damage >= StartDamage || Damage > Health )
 				bUseSuper = !(HandleBali(InstigatedBy, momentum, damagetype, Damage, HitLocation));
 			else // convert to lower damage type
 				ConvertToCuttingDamage(DamageType);
 		}
+// Added by Man Chrzan: xPatch 2.0
+		// SuperShotgunBodyDamage is now handled with HandleBulletSever
+		else if (ClassIsChildOf(DamageType,class'SuperShotgunBodyDamage'))
+		{
+			if(Damage >= StartDamage || Damage > Health )
+				bUseSuper = !(HandleBulletSever(InstigatedBy, momentum, damagetype, INVALID_LIMB, Damage, HitLocation));
+			else // convert to lower damage type
+				ConvertToCuttingDamage(DamageType);
+		}
+		// Super Head-Exploding and Dismembering Rifle Damage
+		else if (ClassIsChildOf(DamageType,class'SuperRifleDamage'))
+		{
+			if(Damage >= Health - MIN_HEALTH_TO_BULLET_CUT )
+				HandleBulletSever(instigatedBy, momentum, damageType, INVALID_LIMB, Damage, hitlocation);
+				
+			bUseSuper=true;
+		}
+		// Bullet Dismemberment
+/*		else if(ClassIsChildOf(damageType, class'BulletDamage'))
+		{
+			if( Damage >= Health
+				&& class'P2Player'.Static.UseExtraGore() )
+				HandleBulletSever(instigatedBy, momentum, damageType, INVALID_LIMB, Damage, hitlocation);
+				
+			bUseSuper=true;
+		}	*/
+// Man Chrzan: End
 		else
 			bUseSuper=true;
 
@@ -2452,6 +2607,10 @@ function TakeDamage( int Damage, Pawn instigatedBy, Vector hitlocation,
 		if (Health <= 0)
 		{
 			MultiplayerDismemberment(OriginalDamageType, HitLocation);
+			
+			// xPatch: Dismemberment on explosion impact
+			if(ClassIsChildOf(damageType, class'ExplodedDamage') && P2GameInfo(Level.Game).bEnableExplosionDismemberment)
+				HandleExplosionDead(Damage, InstigatedBy, HitLocation, momentum, damageType);
 		}
 		// End
 	}
@@ -2628,6 +2787,7 @@ function HandleExplosionDead(int Damage, Pawn instigatedBy, Vector hitlocation,
 	
 	// Don't do this in non-dismemberment or pussy no-blood mode
 	if (!P2GameInfo(Level.Game).bEnableDismemberment
+		|| !P2GameInfo(Level.Game).bEnableExplosionDismemberment	// xPatch
 		|| bNoDismemberment
 		|| !class'P2Player'.Static.BloodMode())
 		return;
@@ -2911,6 +3071,26 @@ state Dying
 					bUseSuper = !(HandleSledge(InstigatedBy, momentum, damagetype, Damage, HitLocation));
 				else if(ClassIsChildOf(damageType, class'ScytheDamage'))
 					bUseSuper = !(HandleScythe(InstigatedBy, momentum, damagetype, Damage, HitLocation));
+				
+				/////////////////////////////////////
+				// Added by Man Chrzan: xPatch 2.0 (EXTRA GORE Option)
+										
+				// Super Rifle always dismember corpses
+				else if (ClassIsChildOf(DamageType,class'SuperRifleDamage'))
+					{			
+						HandleBulletSever(InstigatedBy, momentum, damagetype, INVALID_LIMB, Damage, HitLocation);
+						Super.TakeDamage(Damage, InstigatedBy, HitLocation, momentum, damageType);
+					}
+				// Bullets dismember corpses if enabled
+/*				else if (ClassIsChildOf(DamageType,class'BulletDamage') 
+							&& class'P2Player'.Static.UseExtraGore())										
+					{	  		
+						HandleBulletSever(InstigatedBy, momentum, damagetype, INVALID_LIMB, Damage, HitLocation);
+						Super.TakeDamage(Damage, InstigatedBy, HitLocation, momentum, damageType);
+					}	*/
+					
+				// Man Chrzan: End
+				/////////////////////////////////////
 				else
 					bUseSuper=true;
 				if(ClassIsChildOf(damageType, class'CuttingDamage'))
@@ -3162,6 +3342,7 @@ defaultproperties
 	ExtraAnims(6)=MeshAnimation'MoreCharacters.f_sit_idle'
 	ExtraAnims(7)=MeshAnimation'MoreCharacters.valentine_anim'
 	ExtraAnims(8)=MeshAnimation'AW7Characters.fat_fistsing'
+	ExtraAnims(9)=MeshAnimation'xEDAnims.animED' // xPatch
 	PLAnims=MeshAnimation'Characters.animAvg_PL'
 	PLAnims_Fat=MeshAnimation'Characters.animFat_PL'
 	PLAnims_Mini=MeshAnimation'Gary_Characters.animMini_PL'

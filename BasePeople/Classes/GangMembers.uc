@@ -24,4 +24,5 @@ defaultproperties
 	ChameleonSkins(4)="end"	// end-of-list marker (in case super defines more skins)
 
 	bInnocent=true
+	bAllowRandomGuns=True	// xPatch
 	}

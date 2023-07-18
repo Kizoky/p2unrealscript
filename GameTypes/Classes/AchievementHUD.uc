@@ -36,7 +36,6 @@ function AchievementUnlocked(String AchievementName, String Description, Texture
 simulated event PostRender( canvas Canvas )
 {
 	Super.PostRender(Canvas);
-	
 	DrawAchievements(Canvas);
 }
 
@@ -84,7 +83,8 @@ function DrawAchievements(Canvas Canvas)
 		
 		PosX += (AchIcon.USize * Scale + SPACING_X * CanvasWidth);
 
-		MyFont.TextColor = RedColor;
+		// Change by Man Chrzan: xPatch 2.0
+/*		MyFont.TextColor = RedColor;
 		MyFont.DrawTextEX(Canvas, CanvasWidth, PosX, PosY, UnlockMsg, 2, false, EJ_Left);
 		PosY += SPACING_Y * CanvasHeight;		
 		MyFont.TextColor = WhiteColor;
@@ -92,7 +92,13 @@ function DrawAchievements(Canvas Canvas)
 		PosY += SPACING_Y * CanvasHeight;
 		MyFont.DrawTextEX(Canvas, CanvasWidth, PosX, PosY, AchDesc, 1, true, EJ_Left);
 		PosY += SPACING_Y * CanvasHeight;
-		MyFont.TextColor = RedColor;		
+		MyFont.TextColor = RedColor; 		*/	
+		MyFont.DrawTextEX(Canvas, CanvasWidth, PosX, PosY, UnlockMsg, 2, false, EJ_Left, MyFont.default.TextColor);
+		PosY += SPACING_Y * CanvasHeight;		
+		MyFont.DrawTextEX(Canvas, CanvasWidth, PosX, PosY, AchName, 1, true, EJ_Left, WhiteColor);
+		PosY += SPACING_Y * CanvasHeight;
+		MyFont.DrawTextEX(Canvas, CanvasWidth, PosX, PosY, AchDesc, 1, true, EJ_Left, WhiteColor);
+		PosY += SPACING_Y * CanvasHeight;	
 	}
 }
 

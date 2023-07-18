@@ -70,8 +70,10 @@ event PostTravel(P2Pawn PlayerPawn)
 	local Inventory InvAdd;
 	local P2PowerupInv ppinv;
 	local ClothesPickup clothes;
-
+	local RadarTargetPickup chompy;
+	
 	const NIGHTMARE_RADAR_MIN = 2000;
+	const VETERAN_RADAR_MIN = 100;
 
 	// Take away the clipboard mission in They Hate Me mode
 	if (TheyHateMeMode())
@@ -80,22 +82,50 @@ event PostTravel(P2Pawn PlayerPawn)
 	Super.PostTravel(PlayerPawn);
 
 	// In nightmare mode, give him a radar with a long battery life
-	if (/*TheGameState.bFirstLevelOfDay &&*/ InNightmareMode())
+	if (InNightmareMode())
 	{
-		invadd = PlayerPawn.CreateInventoryByClass(class'RadarInv');
-		//log(Self$" invadd "$invadd);
-		// Make sure they have enough--if you have more than this, that's fine.
-		ppinv = P2PowerupInv(invadd);
-		if(ppinv != None
-			&& ppinv.Amount < NIGHTMARE_RADAR_MIN)
-			ppinv.SetAmount(NIGHTMARE_RADAR_MIN);
+		// xPatch: no infinite radar in super-hard mode for masochists :)
+		// But give them something to start with though.
+		if(InVeteranMode())
+		{
+			// Only on the start of a day 
+			if(TheGameState.bFirstLevelOfDay)
+			{
+				// Check if they have it, if not create it.
+				invadd = PlayerPawn.FindInventoryType(class'RadarInv');
+				if(invadd == None)
+					invadd = PlayerPawn.CreateInventoryByClass(class'RadarInv');
+					
+				ppinv = P2PowerupInv(invadd);
+				// And make sure they don't have less than this amount
+				if(ppinv != None && ppinv.Amount < VETERAN_RADAR_MIN)
+					ppinv.SetAmount(VETERAN_RADAR_MIN);
+			}
+		}
+		else
+		{
+			invadd = PlayerPawn.CreateInventoryByClass(class'RadarInv');
+			//log(Self$" invadd "$invadd);
+			// Make sure they have enough--if you have more than this, that's fine.
+			ppinv = P2PowerupInv(invadd);
+			if(ppinv != None
+				&& ppinv.Amount < NIGHTMARE_RADAR_MIN)
+				ppinv.SetAmount(NIGHTMARE_RADAR_MIN);
 
-		// Force it to activate immediately if not already active.
-		if (ppinv != None
-			&& !ppinv.IsInState('Operating'))
-			ppinv.Activate();
+			// Force it to activate immediately if not already active.
+			if (ppinv != None
+				&& !ppinv.IsInState('Operating'))
+			{
+				ppinv.bDisplayAmount = False;	// xPatch: No need to show amount in expert mode (it's infinite)
+				if(TheGameState.bFirstLevelOfDay)
+					ppinv.Activate();
+			}
+		}
 
-		// Delete clothes pickups the dude could use to sneak around town.
+		// xPatch: Instead of deleting clothes I modified 
+		// DudeDressedAsCop and DudeDressedAsGimp in LambController.uc
+		// to make sure they attack the player. Seems like a more reasonable solution.
+/*		// Delete clothes pickups the dude could use to sneak around town.
 		foreach DynamicActors(class'ClothesPickup', clothes)
 		{
 			if (!clothes.bUseForErrands
@@ -103,11 +133,29 @@ event PostTravel(P2Pawn PlayerPawn)
 				&& GimpClothesPickupErrand(Clothes) == None)
 				clothes.Destroy();
 		}
+*/	
+	}
+	
+	// xPatch: Delete chompy plug-in in this mode, it's "slightly" overpowered.
+	if(InVeteranMode())
+	{
+		foreach DynamicActors(class'RadarTargetPickup', chompy)
+			chompy.Destroy();
 	}
 
 	// Check for the dude's bandaged head
 	CheckDudeHeadSkin();
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// xPatch: Make cats crazy on weekend and on Ludicrous difficulty
+///////////////////////////////////////////////////////////////////////////////
+function bool CrazyCats()
+{
+	return (IsWeekend() || InLudicrousMode());
+}
+
+
 // Moved to their respective inventory classes.
 /*
 event InitGame(out string Options, out string Error)
@@ -266,7 +314,6 @@ state RunningApocalypse
 		NewCatTime = NEW_CAT_BASE_TIME + Rand(NEW_CAT_RAND_TIME);
 	}
 }
-
 
 defaultproperties
 	{
@@ -486,7 +533,8 @@ defaultproperties
 		DudeStartComment="DudeDialog.dude_map_dad"
 		DudeWhereComment="DudeDialog.Dude_map_loc1"
 		DudeFoundComment="DudeDialog.Dude_map_loc6"
-		DudeCompletedComment="DudeDialog.dude_map_next"
+		//DudeCompletedComment="DudeDialog.dude_map_next"			// Change by Man Chrzan: xPatch 2.0
+		DudeCompletedComment="DudeDialog.dude_nowyoucantsayi"		// Unused voice line
 		Goals(0)=ErrandGoalUrineQuotaMet'ErrandGoalUrineQuotaMet0'
 	End Object
 
@@ -610,7 +658,8 @@ defaultproperties
 		DudeStartComment="DudeDialog.dude_map_getkrotchy"
 		DudeWhereComment="DudeDialog.Dude_map_loc2"
 		DudeFoundComment="DudeDialog.Dude_map_loc5"
-		DudeCompletedComment="DudeDialog.dude_map_missionaccom"
+		DudeCompletedComment="DudeDialog.dude_map_missionaccom"	// Change by Man Chrzan: xPatch 2.0
+		//DudeCompletedComment="DudeDialog.dude_wonderhowmuchon"		// unused voice line - (Undone)
 		Goals(0)=ErrandGoalGetPickup'ErrandGoalGetPickup8'
 		Goals(1)=ErrandGoalGetInvClassFromPerson'ErrandGoalGetInvClassFromPerson3'
 	End Object
@@ -967,7 +1016,8 @@ defaultproperties
 	GameSpeed=1.000000
 	MaxSpectators=2
 	DefaultPlayerName="TheDude"
-	PlayerControllerClassName="GameTypes.DudePlayer"
+	//PlayerControllerClassName="GameTypes.DudePlayer"		// Change by Man Chrzan: xPatch 2.0
+	PlayerControllerClassName="GameTypes.AWDudePlayer" 	 	// Kill Counter FIX
 	IntroURL			= "intro.fuk"
 	StartFirstDayURL	= "suburbs-3"
 	StartNextDayURL		= "suburbs-3"
@@ -979,10 +1029,22 @@ defaultproperties
 	ApocalypseTex="AW7Tex.Misc.ApocalypseNewspaper"
 	ChameleonClass=class'ChameleonPlus'
     DefaultPlayerClassName="GameTypes.AWPostalDude"
-	HUDType="GameTypes.AchievementHUD"
+	//HUDType="GameTypes.AchievementHUD"					// Change by Man Chrzan: xPatch 2.0
+	HUDType="GameTypes.AWWrapHUD"							// Kill Counter FIX
 	KissEmitterClass=class'FX2.KissEmitter'
 	GameName="POSTAL 2"
 	GameNameshort="POSTAL 2"
 	GameDescription="The original POSTAL 2. Live a life in the week of 'The POSTAL Dude', a hapless everyman just trying to check off some chores."
 	HolidaySpawnerClassName="Postal2Holidays.HolidaySpawner"
+	MenuTitleTex="P2Misc.Logos.postal2underlined"
+	
+	// xPatch: added loadout from cheat manager to the game itself, needes to be here for day selection to work correctly.
+	LoadoutDays[0]=(Items=((Item=class'ShovelWeapon'),(Item=class'PistolWeapon',Amount=50),(Item=class'GrenadeWeapon',Amount=5),(Item=class'PizzaInv',Amount=5),(Item=class'CrackInv'),(Item=class'MachineGunWeapon',Amount=100),(Item=class'RadarInv',Amount=200),(Item=class'GasCanWeapon',Amount=50)))
+	LoadoutDays[1]=(Items=((Item=class'ShovelWeapon'),(Item=class'PistolWeapon',Amount=100),(Item=class'GSelectWeapon',Amount=50,NonClassic=True),(Item=class'GrenadeWeapon',Amount=10),(Item=class'PizzaInv',Amount=10),(Item=class'CrackInv'),(Item=class'ShotgunWeapon',Amount=30),(Item=class'FastFoodInv',Amount=5),(Item=class'MachineGunWeapon',Amount=100),(Item=class'RadarInv',Amount=20),(Item=class'GasCanWeapon',Amount=100)))
+	LoadoutDays[2]=(Items=((Item=class'ShovelWeapon'),(Item=class'PistolWeapon',Amount=150),(Item=class'GSelectWeapon',Amount=100,NonClassic=True),(Item=class'GrenadeWeapon',Amount=15),(Item=class'PizzaInv',Amount=10),(Item=class'CrackInv',Amount=2),(Item=class'ShotgunWeapon',Amount=60),(Item=class'FastFoodInv',Amount=5),(Item=class'SledgeWeapon'),(Item=class'MP5Weapon',Amount=30,NonClassic=True),(Item=class'MachineGunWeapon',Amount=100),(Item=class'KevlarInv'),(Item=class'CatnipInv'),(Item=class'RadarInv',Amount=200),(Item=class'GasCanWeapon',Amount=10)))
+	LoadoutDays[3]=(Items=((Item=class'ShovelWeapon'),(Item=class'PistolWeapon',Amount=200),(Item=class'GSelectWeapon',Amount=150,NonClassic=True),(Item=class'GrenadeWeapon',Amount=20),(Item=class'PizzaInv',Amount=10),(Item=class'CrackInv',Amount=3),(Item=class'ShotgunWeapon',Amount=90),(Item=class'FastFoodInv',Amount=10),(Item=class'SledgeWeapon'),(Item=class'MP5Weapon',Amount=50,NonClassic=True),(Item=class'MachineGunWeapon',Amount=150),(Item=class'KevlarInv'),(Item=class'CatnipInv'),(Item=class'RadarInv',Amount=200),(Item=class'LauncherWeapon',Amount=100),(Item=class'MacheteWeapon'),(Item=class'GasCanWeapon',Amount=10)))
+	LoadoutDays[4]=(Items=((Item=class'ShovelWeapon'),(Item=class'PistolWeapon',Amount=250),(Item=class'GSelectWeapon',Amount=200,NonClassic=True),(Item=class'GrenadeWeapon',Amount=25),(Item=class'PizzaInv',Amount=10),(Item=class'CrackInv',Amount=3),(Item=class'ShotgunWeapon',Amount=120),(Item=class'FastFoodInv',Amount=10),(Item=class'SledgeWeapon'),(Item=class'MP5Weapon',Amount=80,NonClassic=True),(Item=class'MachineGunWeapon',Amount=200),(Item=class'BodyArmorInv'),(Item=class'CatnipInv',Amount=2),(Item=class'RadarInv',Amount=200),(Item=class'LauncherWeapon',Amount=100),(Item=class'MacheteWeapon'),(Item=class'ChainsawWeapon',Amount=150),(Item=class'GasCanWeapon',Amount=100)))
+	LoadoutDays[5]=(Items=((Item=class'ShovelWeapon'),(Item=class'PistolWeapon',Amount=250),(Item=class'GSelectWeapon',Amount=200,NonClassic=True),(Item=class'GrenadeWeapon',Amount=25),(Item=class'PizzaInv',Amount=10),(Item=class'CrackInv',Amount=3),(Item=class'ShotgunWeapon',Amount=120),(Item=class'FastFoodInv',Amount=10),(Item=class'SledgeWeapon'),(Item=class'MP5Weapon',Amount=100,NonClassic=True),(Item=class'MachineGunWeapon',Amount=200),(Item=class'BodyArmorInv'),(Item=class'CatnipInv',Amount=2),(Item=class'RadarInv',Amount=200),(Item=class'LauncherWeapon',Amount=100),(Item=class'MacheteWeapon'),(Item=class'ChainsawWeapon',Amount=150),(Item=class'GasCanWeapon',Amount=100)))
+	LoadoutDays[6]=(Items=((Item=class'ShovelWeapon'),(Item=class'PistolWeapon',Amount=250),(Item=class'GSelectWeapon',Amount=200,NonClassic=True),(Item=class'GrenadeWeapon',Amount=25),(Item=class'PizzaInv',Amount=10),(Item=class'CrackInv',Amount=3),(Item=class'ShotgunWeapon',Amount=120),(Item=class'FastFoodInv',Amount=10),(Item=class'SledgeWeapon'),(Item=class'MP5Weapon',Amount=200,NonClassic=True),(Item=class'MachineGunWeapon',Amount=200),(Item=class'BodyArmorInv'),(Item=class'CatnipInv',Amount=3),(Item=class'RadarInv',Amount=200),(Item=class'LauncherWeapon',Amount=100),(Item=class'MacheteWeapon'),(Item=class'ChainsawWeapon',Amount=150),(Item=class'GasCanWeapon',Amount=100),(Item=class'SawnOffWeapon',Amount=1)))
+	
 	}

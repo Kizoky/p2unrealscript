@@ -1451,7 +1451,8 @@ state RunningScared extends RunToTarget
 		otherpawn = P2Pawn(Other);
 		
 		// Marphy - Dead people shouldn't care about cats.
-		if(otherpawn.Controller != None
+		if(otherpawn != None 	// xPatch: check for none first
+			&& otherpawn.Controller != None
 			&& !otherpawn.bPlayer
 			&& otherpawn.Health > 0)
 		{

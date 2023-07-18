@@ -19,7 +19,7 @@ var class<Splat>		mysplatclass;
 
 simulated function PostNetBeginPlay()
 {
-	Super.PostNetBeginPlay();
+	Super(Actor).PostNetBeginPlay();
 	// If we're not the dedicated server, let's make more effects
 	if(Level.NetMode != NM_DedicatedServer)
 		MakeMoreEffects();

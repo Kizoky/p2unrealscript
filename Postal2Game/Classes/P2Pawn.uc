@@ -276,7 +276,7 @@ const DRIP_FLOOR_Z_CHECK	=	800;
 var float HEAD_RATIO_OF_FULL_HEIGHT;
 
 const DISTANCE_TO_EXPLODE_HEAD	=	220;
-const DISTANCE_TO_PUNCTURE_HEAD	=	32;
+const DISTANCE_TO_PUNCTURE_HEAD	=	140;  	//32; 	Change by Man Chrzan: xPatch 2.0 
 
 const DIE_Z_MULT				=	1.3;
 const DEATH_CRAWL_ON_FIRE_PCT	=	25;
@@ -292,6 +292,9 @@ const NO_CEILING_CHECK			=	1024;
 // SP or MP.
 const REMOVE_DEAD_START_TIME	=	12.0;
 const REMOVE_DEAD_TIME			=	2.0;
+
+const REMOVE_DEAD_START_TIME_SP	=	30.0;
+const REMOVE_DEAD_TIME_SP		=	8.0;
 
 // Armor can allow a certain amount of damage through and absorb the rest.
 // 1.0 means it absorbs all the damage, 0.0 means the pawn takes all the damage
@@ -320,6 +323,10 @@ var float NonLethalHealth;
 var bool					bIsAutomaton;
 
 var int PeopleBurned;		// Number of people burned by our napalm launcher
+
+// Added by Man Chrzan: xPatch 2.0
+//var bool bIsBulletHit;		// For Bullet-Hit Blood effects
+var(PawnAttributes) bool bForceDualWield;	// Enables dual wielding for all owned weapons (if possible).
 
 replication
 {
@@ -1366,7 +1373,7 @@ function BloodHit(vector BloodHitLocation, vector Momentum)
 		spawn(class'BloodImpactMaker',self,,BloodHitLocation+BloodOffset,Rotator(dir));
 	else// Do a special effect if you hit them in the head so they
 		// can see they did well
-		spawn(class'BloodImpactHeadShotMaker',self,,BloodHitLocation+BloodOffset,Rotator(dir));
+		spawn(class'BloodImpactHeadShotMaker',self,,BloodHitLocation+BloodOffset,Rotator(dir));	 
 
 
 	//log(self$" blood hit "$bloodhitvar);
@@ -1440,7 +1447,16 @@ function PlayHit(float Damage, vector HitLocation, class<DamageType> damageType,
 		if (bIsAutomaton)
 			SparkHit(HitLocation, Momentum, 0);
 		else if(class'P2Player'.static.BloodMode())
+		{
+			// Added by Man Chrzan: xPatch 2.0 ED Blood Effects
+			//if(ClassIsChildOf(DamageType, class'BulletDamage'))
+			//	bIsBulletHit = true;
+			//else
+			//	bIsBulletHit = false;
+			// end
+			
 			BloodHit(HitLocation, Momentum);
+		}
 		else
 			DustHit(HitLocation, Momentum);
 	}
@@ -1621,17 +1637,22 @@ function name FindBodyPart(vector HitPoint)
 function bool HandleSpecialShots(int Damage, vector HitLocation, vector Momentum, out class<DamageType> ThisDamage,
 							vector XYdir, Pawn InstigatedBy, out int returndamage, out byte HeadShot)
 {
-	local float PercentUpBody, ZDist, DistToMe;
+	local float PercentUpBody, ZDist, DistToMe, BoostDamage;
 
 	// Only let the player get special head shots
 	// Projectile weapons
-	if(FPSPawn(InstigatedBy).bPlayer)
+	if(FPSPawn(InstigatedBy).bPlayer
+		|| (P2GameInfoSingle(Level.Game) != None && P2GameInfoSingle(Level.Game).InMasochistMode()))	// xPatch: Ludicurous difficulty
 	{
 		if(Health > 0)
 		{
 			if(ThisDamage == class'ShotgunDamage'
 				|| ThisDamage == class'RifleDamage'
-				|| ThisDamage == class'BulletDamage')
+				|| ThisDamage == class'BulletDamage'
+				|| ClassIsChildOf(ThisDamage, class'SuperRifleDamage')	// xPatch
+				|| ThisDamage == class'SuperShotgunDamage'				// xPatch
+				|| ThisDamage == class'SuperBulletDamage')				// xPatch
+
 			{
 				// For if no damage is done
 				if(TakesShotgunHeadShot == 0.0
@@ -1656,7 +1677,8 @@ function bool HandleSpecialShots(int Damage, vector HitLocation, vector Momentum
 					if((DistToMe < DISTANCE_TO_PUNCTURE_HEAD
 							|| (P2GameInfo(Level.Game) != None
 								&& P2GameInfo(Level.Game).PlayerGetsHeadShots()))
-						&& ThisDamage == class'BulletDamage')
+						&& (ThisDamage == class'BulletDamage'
+							|| ThisDamage == class'SuperBulletDamage'))	// xPatch: Super one too.
 					// Is close enough with a pistol and behind them to puncture head with a pistol
 					{
 						// Check a little more accurately, if you actually hit the head or not
@@ -1669,7 +1691,19 @@ function bool HandleSpecialShots(int Damage, vector HitLocation, vector Momentum
 							// We've hit the head, now reduce the damage, if necessary
 							if(!(P2GameInfo(Level.Game) != None
 								&& P2GameInfo(Level.Game).PlayerGetsHeadShots()))
-								returndamage = TakesPistolHeadShot*HealthMax;
+							{
+								// xPatch: Actually, make super one 2x more effective.
+								if(ThisDamage == class'SuperBulletDamage')
+								{
+									BoostDamage = TakesPistolHeadShot * 2;
+									if(BoostDamage > 1.00)
+										BoostDamage = 1.00;
+										
+									returndamage = BoostDamage*HealthMax;
+								}
+								else
+									returndamage = TakesPistolHeadShot*HealthMax;
+							}
 							else
 								returndamage = HealthMax;
 							// if this kills them, puncture the head
@@ -1688,7 +1722,13 @@ function bool HandleSpecialShots(int Damage, vector HitLocation, vector Momentum
 								}
 
 								if(class'P2Player'.static.BloodMode())
-									PunctureHead(HitLocation, Momentum);
+								{
+									// xPatch: Super one explodes it instead.
+									if(ThisDamage == class'SuperBulletDamage')
+										ExplodeHead(HitLocation, Momentum);
+									else
+										PunctureHead(HitLocation, Momentum);
+								}
 							}
 							HeadShot = 1;
 							return true;
@@ -1698,8 +1738,8 @@ function bool HandleSpecialShots(int Damage, vector HitLocation, vector Momentum
 						if(ZDist > 0)
 							return false;
 					}
-					else if(DistToMe < DISTANCE_TO_EXPLODE_HEAD
-						&& ThisDamage == class'ShotgunDamage')
+					else if((DistToMe < DISTANCE_TO_EXPLODE_HEAD && ThisDamage == class'ShotgunDamage')
+								|| ThisDamage == class'SuperShotgunDamage')	// xPatch: SuperShotgunDamage Fix
 					// Is close enough with a shotgun to explode the head
 					{
 						// Check a little more accurately, if you actually hit the head or not
@@ -1708,7 +1748,18 @@ function bool HandleSpecialShots(int Damage, vector HitLocation, vector Momentum
 							// We've hit the head, now reduce the damage, if necessary
 							if(!(P2GameInfo(Level.Game) != None
 								&& P2GameInfo(Level.Game).PlayerGetsHeadShots()))
-								returndamage = TakesShotgunHeadShot*HealthMax;
+							{
+								// xPatch: Change for Headshots option
+								if(P2GameInfoSingle(Level.Game).xManager.bSPHeadshots)
+								{
+									if(TakesShotgunHeadShot >= 0.5)
+										returndamage = HealthMax; 
+									else
+										returndamage = Damage * 4;
+								}
+								else // End
+									returndamage = TakesShotgunHeadShot*HealthMax;
+							}
 							else
 								returndamage = HealthMax;
 
@@ -1738,27 +1789,36 @@ function bool HandleSpecialShots(int Damage, vector HitLocation, vector Momentum
 						if(ZDist > 0)
 							return false;
 					}
-					else if(ThisDamage == class'RifleDamage')
+					else if(ThisDamage == class'RifleDamage'
+							|| ClassIsChildOf(ThisDamage, class'SuperRifleDamage'))	// xPatch: handle the Super version too.
 					// Sniper rifle round to the head punctures your head
 					{
 						// We've hit the head, now reduce the damage, if necessary
-						//returndamage = TakesRifleHeadShot*HealthMax;
-						returndamage = HealthMax;
+						returndamage = TakesRifleHeadShot*HealthMax;	// Restored by Man Chrzan: xPatch 2.0
+						//returndamage = HealthMax;						// Why someone made it insta-kill everything?
 						// if this kills them, puncture the head
 						if(returndamage >= Health
-								&& bHeadCanComeOff)
+							&& bHeadCanComeOff)
 						{
 							// record special kill
 							if(P2GameInfoSingle(Level.Game) != None
 								&& P2GameInfoSingle(Level.Game).TheGameState != None
 								&& P2Pawn(InstigatedBy) != None
-								&& P2Pawn(InstigatedBy).bPlayer)
+								&& P2Pawn(InstigatedBy).bPlayer
+								&& (ThisDamage == class'RifleDamage' // xPatch: Don't record Rifle Headshots for SuperRifleDamage extensions
+									|| ThisDamage == class'SuperRifleDamage'))	// like the new MinigunDamage for Paradise Lost.
 							{
 								P2GameInfoSingle(Level.Game).TheGameState.RifleHeadShot++;
 							}
 
 							if(class'P2Player'.static.BloodMode())
-								PunctureHead(HitLocation, Momentum);
+							{
+								// xPatch: Super one explodes, normal one punctures.
+								if(ClassIsChildOf(ThisDamage, class'SuperRifleDamage'))
+									ExplodeHead(HitLocation, Momentum);
+								else
+									PunctureHead(HitLocation, Momentum);
+							}
 						}
 						HeadShot = 1;
 						return true;
@@ -1924,6 +1984,7 @@ function int ModifyDamageByBodyLocation( int Damage, Pawn InstigatedBy,
 	local vector XYdir, MyRot;
 	local float dotcheck;
 	local float PercentUpBody, ZDist;
+	local float diffoffset, critprc;
 
 	if(Controller != None
 		&& Controller.bGodMode)
@@ -1967,7 +2028,12 @@ function int ModifyDamageByBodyLocation( int Damage, Pawn InstigatedBy,
 			else
 				Damage = TakesMachinegunDamage*Damage;
 		}
-
+		
+		// xPatch: Tell if it's a headshot but don't change the damage.
+		// Done so we can spawn STP Headshot FX in Singleplayer if enabled.
+		if(IsMPHeadshot(hitlocation) && Class'EffectMaker'.default.bSTPBloodFX)	
+			bReceivedHeadShot=true;
+			
 		// Multiply damage from dude by a certain factor
 		Damage = FPSPawn(InstigatedBy).DamageMult*Damage;
 
@@ -1998,11 +2064,51 @@ function int ModifyDamageByBodyLocation( int Damage, Pawn InstigatedBy,
 			returndamage = Damage*abs(dotcheck);
 			//log(self$" second-- vect to target "$xydir$" hitpoint to center "$momentum$" dot "$dotcheck$" new damage "$returndamage);
 		}
-
+		
+		// xPatch: Optional Singleplayer Headshots!	
+		if(P2GameInfoSingle(Level.Game).xManager.bSPHeadshots)
+		{										
+			// We will reuse a multiplayer headshot detection.
+			if ( IsMPHeadshot(hitlocation) )
+			{
+				// We hit non-player pawn
+				if(!Controller.bIsPlayer )
+					returndamage = P2Pawn(InstigatedBy).GetHeadShotDamageMP(ThisDamage, Damage);
+				else // We hit the player
+				{
+					diffoffset = P2GameInfo(Level.Game).GetDifficultyOffset();
+					critprc = 0.25;
+					
+					// Depending on difficulty increase the headshot chance a little for NPCs
+					// diffoffset = 1 -> critprc 0.30 (+0.05), diffoffset = 10 -> critprc = 0.75 (+0.50) etc.
+					if(diffoffset > 0)
+						critprc = critprc + (0.05 * diffoffset);
+						
+					if( FRand() < critprc)
+						returndamage = P2Pawn(InstigatedBy).GetHeadShotDamageMP(ThisDamage, Damage);
+				}
+					
+			}
+		}
+		// END
 
 		// Check to ensure the damage takes at least one PERCENT off your health
 		if(returndamage < OneUnitInHealth)
 			returndamage = OneUnitInHealth;
+			
+				
+		// xPatch: handle this new damage type too (for Revolver).
+		// It doesn't use any TakesSomethingHeadShot so do it here.
+		if (ClassIsChildOf(ThisDamage, class'SuperBulletDamage'))
+		{
+			if(IsMPHeadshot(hitlocation)
+				&& returndamage >= Health
+				&& bHeadCanComeOff)
+			{
+				if(class'P2Player'.static.BloodMode())
+					ExplodeHead(HitLocation, Momentum);
+			}
+		}
 
 		return returndamage;
 	}
@@ -3693,6 +3799,17 @@ state Dying
 			else
 				SetTimer(REMOVE_DEAD_TIME, false);
 		}
+		// xPatch: Singleplayer version
+		else
+		{	
+			if ( !PlayerCanSeeMe() && P2GameInfo(Level.Game).BodiesLifetimeMax != 0 )
+				Destroy();
+			else if( !PlayerCanSeeMe() && P2GameInfo(Level.Game).CanRemoveThisBody(self) )
+				Destroy();
+			else
+				SetTimer(REMOVE_DEAD_TIME_SP, false);
+		}
+		// End
 	}
 
 	///////////////////////////////////////////////////////////////////////////////
@@ -3807,7 +3924,7 @@ state Dying
 	{
 		local P2Pawn CheckP;
 		local PersonController Personc;
-
+		
 		//ErikFOV Change: Fix problem
 		if (bPendingDelete || bDeleteMe)
 			return;
@@ -3902,9 +4019,29 @@ state Dying
 				{
 					if(bReportDeath)
 					{
-						MyMarker = spawn(class'DeadBodyMarker',self,,Location);
-						if(P2GameInfo(Level.Game) != None)
-							P2GameInfo(Level.Game).AddDeadBody(self);
+						// xPatch: DeadBodyMarker-less method for the hard difficulties
+						if(NoDeadBodyMarker())
+						{
+							// if lifetime method is not used we use the body count
+							if(P2GameInfo(Level.Game).BodiesLifetimeMax == 0)
+							{
+								P2GameInfo(Level.Game).AddDeadBody(self);
+								SetTimer(REMOVE_DEAD_START_TIME_SP, false);
+							}
+						}
+						else // End
+						{
+							MyMarker = spawn(class'DeadBodyMarker',self,,Location);
+							if(P2GameInfo(Level.Game) != None)
+								P2GameInfo(Level.Game).AddDeadBody(self);
+						}
+							
+						// xPatch: remove bodies multiplayer way if enabled
+						if(P2GameInfo(Level.Game).BodiesLifetimeMax != 0)
+						{
+							SetTimer(P2GameInfo(Level.Game).BodiesLifetimeMax, false);
+							//log("xPatch Log: "$self$" will be removed within "$P2GameInfo(Level.Game).BodiesLifetimeMax);
+						}
 					}
 				}
 				else	// Make sure they know it's a dead dude
@@ -3924,6 +4061,17 @@ WaitToResetFire:
 	Sleep(FIRE_RESET_TIME);
 	MyBodyFire=None;
 Begin:
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// xPatch: To reduce crashes on super hard difficulties where a lot is going  
+// on -- don't spawn dead body markers at all. They are not that useful on  
+// these since aggresive NPCs don't panic when they see bodies anyway.
+///////////////////////////////////////////////////////////////////////////////
+function bool NoDeadBodyMarker()
+{
+	return (P2GameInfo(Level.Game) != None && P2GameInfo(Level.Game).TheyHateMeMode()
+		&& (P2GameInfo(Level.Game).InHestonmode() || P2GameInfo(Level.Game).InInsanemode() || P2GameInfo(Level.Game).InLudicrousMode()));
 }
 
 /*

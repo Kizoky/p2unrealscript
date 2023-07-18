@@ -3,6 +3,10 @@
 // Copyright 2002 RWS, Inc.  All Rights Reserved.
 //
 // High-level RWS AI controllers for humans. (not animals)
+//
+// Man Chrzan: edited for xPatch 
+// - Added Ignore HitByBaton to some states
+// - Fixed crying audio overlaping while on fire
 ///////////////////////////////////////////////////////////////////////////////
 class PersonController extends LambController;
 
@@ -6863,7 +6867,7 @@ state BeingShocked
 		MarkerIsHere, CheckObservePawnLooks, RespondToCopBother, DecideToListen, HandleFireInWay,
 		AnthraxPoisoning, InterestIsAnnoyingUs, GetHitByDeadThing, HandlePlayerSightReaction,
 		CanHelpOthers, Trigger, RocketIsAfterMe, SetupSideStep, SetupBackStep, SetupMoveForRunner, 
-		AllowOldState, CheckForNormalDoorUse, DoGetKnockedOut, TookNutShot, BlindedByFlashBang;
+		AllowOldState, CheckForNormalDoorUse, DoGetKnockedOut, TookNutShot, BlindedByFlashBang, HitByBaton;
 
 	///////////////////////////////////////////////////////////////////////////////
 	// You're continuing to get electricuted
@@ -7210,7 +7214,7 @@ Begin:
 ///////////////////////////////////////////////////////////////////////////////
 state FallAfterShocked extends BeingShocked
 {
-	ignores GetShocked, BodyJuiceSquirtedOnMe, GettingDousedInGas;
+	ignores GetShocked, BodyJuiceSquirtedOnMe, GettingDousedInGas, HitByBaton;
 
 	///////////////////////////////////////////////////////////////////////////////
 	// stop at the animation end, and go about as before
@@ -11071,17 +11075,18 @@ state PrepDeathCrawl
 		if ( (Other == None) || (Damage <= 0))
 			return;
 		//local vector dir;
-		if(Other == Pawn)
-		{
+		//if(Other == Pawn)
+		//{
 			if(ScreamState == SCREAM_STATE_NONE)
-				bDoCry=true;
-		}
-		else
-			bDoCry=true;
+				bDoCry=true;	
+		//}
+		//else 
+		//	bDoCry=true;
 
 		if(bDoCry)
 		{
-			PrintDialogue("Waaaahhaa... boohoo");
+			//PrintDialogue("Waaaahhaa... boohoo");
+			ScreamState = SCREAM_STATE_ACTIVE; // xPatch: Bug Fix
 			SayTime = Say(MyPawn.myDialog.lCrying);
 			// Instead of using the timer for the TryToScream/TimeToScream system,
 			// just use this to know when we can scream again from our own pain
@@ -13533,17 +13538,18 @@ state DeathCrawlFromAttacker extends WalkToTarget
 		if ( (Other == None) || (Damage <= 0))
 			return;
 		//local vector dir;
-		if(Other == Pawn)
-		{
+		//if(Other == Pawn)
+		//{
 			if(ScreamState == SCREAM_STATE_NONE)
-				bDoCry=true;
-		}
-		else
-			bDoCry=true;
+				bDoCry=true;	
+		//}
+		//else 
+		//	bDoCry=true;
 
 		if(bDoCry)
 		{
-			PrintDialogue("Waaaahhaa... boohoo");
+			//PrintDialogue("Waaaahhaa... boohoo");
+			ScreamState = SCREAM_STATE_ACTIVE; // xPatch: Bug Fix
 			SayTime = Say(MyPawn.myDialog.lCrying);
 			// Instead of using the timer for the TryToScream/TimeToScream system,
 			// just use this to know when we can scream again from our own pain
@@ -13928,6 +13934,8 @@ Begin:
 ///////////////////////////////////////////////////////////////////////////////
 state CowerInABallShocked extends CowerInABall
 {
+	ignores HitByBaton;
+	
 	///////////////////////////////////////////////////////////////////////////////
 	// If you get shocked in this position just vibrate more
 	///////////////////////////////////////////////////////////////////////////////

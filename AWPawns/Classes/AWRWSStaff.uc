@@ -61,4 +61,5 @@ defaultproperties
 	RandomizedBoltons(3)=BoltonDef'BoltonDefShades4'
 	RandomizedBoltons(4)=BoltonDef'BoltonDefBallcap_RWS'
 	RandomizedBoltons(5)=None
+	bAllowRandomGuns=True	// xPatch
  }

@@ -73,7 +73,7 @@ defaultproperties
 	Cajones=1.0
 	Stomach=0.9
 	TakesShotgunHeadShot=	0.4
-	TakesRifleHeadShot=		0.5
+	TakesRifleHeadShot=		1.0 //0.5
 	TakesShovelHeadShot=	0.5
 	TakesOnFireDamage=		0.1
 	TakesAnthraxDamage=		0.7
@@ -83,4 +83,5 @@ defaultproperties
 	bCellUser=False
 	BlockMeleeFreq=0.6
 	ControllerClass=class'FanaticController'
+	bAllowRandomGuns=True	// xPatch
 	}

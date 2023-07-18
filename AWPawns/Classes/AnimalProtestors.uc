@@ -26,4 +26,5 @@ defaultproperties
 	Skins(0)=Texture'ChameleonSkins.MeatProtestors.XX__151__Avg_M_SS_Pants'
 	ControllerClass=Class'AWPawns.AWBystanderController'
 	RandomizedBoltons(0)=None
+	bAllowRandomGuns=True	// xPatch
 }

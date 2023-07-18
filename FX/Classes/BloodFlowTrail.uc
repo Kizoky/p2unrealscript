@@ -10,7 +10,7 @@ defaultproperties
         UseDirectionAs=PTDU_Normal
         FadeOutStartTime=25.000000
         FadeOut=True
-        MaxParticles=15
+        MaxParticles=35
         RespawnDeadParticles=False
         UseSizeScale=True
 		UniformSize=True

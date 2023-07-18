@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 // MacheteProjectile.
-// Copyright 2003 Running With Scissors, Inc.  All Rights Reserved.
+// Copyright 2023 Running With Scissors Studios LLC.  All Rights Reserved.
 //
 // Flying, spinning machete
 //
@@ -38,6 +38,8 @@ var Sound MacheteHitBody;
 var Sound MacheteHitBot;
 var Sound MacheteHitSkel;
 
+var bool bLudicrousMachete;		// if true this machete was made on Ludicrous difficulty
+
 const WAIT_THROWER_TOUCH	=	0.2;	// wait this long to be touched by the Thrower and picked up again
 const FLOOR_Z				=	0.5;
 
@@ -65,6 +67,7 @@ simulated function PostBeginPlay()
 	Velocity = GetThrownVelocity(Instigator, Rotation, 0.4);
 
 	UpdateRotation();
+	SetupBloodSkin();	//xPatch
 
 	RotationRate.Yaw = StartSpinMag;
 
@@ -141,6 +144,11 @@ function MakePickup()
 {
 	local P2WeaponPickup newmac;
 	local vector usemom;
+	
+	// xPatch: Never allow a pickup to spawn from it.
+	// This bug would make getting machete way too easy (from NPCs).
+	if(bLudicrousMachete && !PersonPawn(Instigator).bPlayer)
+		return;
 
 	newmac = spawn(PickupClass, Owner,,Location);
 	// Turn into a pickup in that orientation
@@ -344,6 +352,7 @@ simulated function ProcessTouch(Actor Other, Vector HitLocation)
 							{
 								Other.TakeDamage( Damage, instigator, Location, MomentumTransfer * Normal(Velocity), MyDamageType);
 								smoke1 = spawn(class'SmokeHitPuffMelee',Owner,,Location);
+								SetupBloodSkin(); // xPatch 
 								if(smoke1 != None)
 								{
 									if (P2MocapPawn(Other) != None)
@@ -402,7 +411,7 @@ simulated function ProcessTouch(Actor Other, Vector HitLocation)
 function TouchThrower()
 {
 	local P2WeaponPickup mpick;
-	local bool bGaveBack;
+	local bool bGaveBack, bKeepPickup;
 	local MacheteWeapon machweap;
 
 	machweap = MacheteWeapon(Instigator.Weapon);
@@ -413,6 +422,11 @@ function TouchThrower()
 			// caught it, so delete our flying version
 			Destroy();
 	}
+	
+	// xPatch: Ludicrous difficulty bug fix
+	if(bLudicrousMachete 
+		&& PersonPawn(Instigator).bPlayer)
+		bKeepPickup = True;
 
 	if(!bGaveBack) // Make a pickup inside the player and hope he touches it
 	{
@@ -424,11 +438,15 @@ function TouchThrower()
 			mpick.RespawnTime=0.0; // Don't allow this to respawn
 			mpick.GotoState('Pickup');
 			mpick.Touch(Instigator);
-			mpick.Destroy();
+			if(bKeepPickup)
+				mpick.SetPhysics(PHYS_Falling);
+			else
+				mpick.Destroy();
 			// Conditional destroy if we're a single player game--it gets better
 			// service. A server/client game will always destroy the projectile.
 			if(mpick == None
 				|| mpick.bDeleteMe
+				|| bKeepPickup
 				|| Level.NetMode == NM_DedicatedServer)
 				Destroy();
 		}
@@ -619,6 +637,23 @@ Begin:
 	else
 		ReturnRatio=ReturnRatioMax;
 }
+
+
+///////////////////////////////////////////////////////////////////////////////
+// xPatch 
+///////////////////////////////////////////////////////////////////////////////
+function SetupBloodSkin()
+{
+	local MacheteWeapon machweap;
+	machweap = MacheteWeapon(Instigator.Weapon);
+	
+	if(machweap != None && machweap.BloodTextureIndex != 0)
+	{
+		Skins[0] = machweap.BloodTextures[machweap.BloodTextureIndex - 1];
+	}
+}
+
+
 
 defaultproperties
 {

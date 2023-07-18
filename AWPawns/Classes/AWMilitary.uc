@@ -99,7 +99,7 @@ defaultproperties
 	WillUseCover=0.200000
 	Stomach=0.900000
 	TakesShotgunHeadShot=0.400000
-	TakesRifleHeadShot=0.350000
+	TakesRifleHeadShot=1.0 //0.350000
 	TakesShovelHeadShot=0.600000
 	TakesOnFireDamage=0.600000
 	TakesAnthraxDamage=0.500000

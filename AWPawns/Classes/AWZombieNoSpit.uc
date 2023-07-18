@@ -15,4 +15,10 @@ defaultproperties
      PreSledgeAttackFreq=1.000000
      PreSledgeFleeFreq=1.000000
 	ControllerClass=class'AWZombieController'
+	
+	// Man Chrzan: xPatch
+	 OldHeadSkin=Texture'AW_Characters.Zombie_Heads.Zombie_head_F06'
+     OldHeadMesh=SkeletalMesh'heads.FemSH'
+	 OldBodyMesh=SkeletalMesh'AWCharacters.Zombie_Fem_LS_Pants'
+     OldBodySkin=Texture'AW_Characters.Zombie_Skins.Zombie_skin_F06'
 }

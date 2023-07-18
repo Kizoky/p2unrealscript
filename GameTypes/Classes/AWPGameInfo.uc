@@ -15,6 +15,7 @@ class AWPGameInfo extends GameSinglePlayer;
 // Public Vars
 ///////////////////////////////////////////////////////////////////////////////
 var() string WeekendStartURL, SundayUrl;
+var() array<string> DynamicMainMenuURL;	// xPatch: Makes us return to the AW Menu if it's weekend etc :D
 
 ///////////////////////////////////////////////////////////////////////////////
 // Internal Vars
@@ -76,6 +77,8 @@ function StartWeekend(PlayerController Player)
 	SendPlayerTo(Player, WeekendStartURL);
 }
 
+// NOTE: StartNextDayURL is defined in Days now, just like Paradise Lost.
+/*
 ///////////////////////////////////////////////////////////////////////////////
 // Send player to the next day
 ///////////////////////////////////////////////////////////////////////////////
@@ -102,6 +105,54 @@ function SendPlayerToNextDay(PlayerController player)
 		QuitGame();
 	}
 }
+*/
+
+///////////////////////////////////////////////////////////////////////////////
+// Change the sky based on the day, using a material trigger
+///////////////////////////////////////////////////////////////////////////////
+function ChangeSkyByDay()
+{
+	local MaterialTrigger mattrig;
+	local int Day;
+	
+	// xPatch: Fix for the saturday skybox looking like if it was the apocalypse.
+	if (IsWeekend())
+		Day = 1;
+	else
+		Day = TheGameState.CurrentDay;
+		
+	// Find the skybox trigger, and trigger it to the correct day
+	foreach AllActors(class'MaterialTrigger', mattrig, SKY_BOX_TRIGGER)
+		break;
+
+	if(mattrig != None)
+	{
+		// If your in the normal week, just set the skybox by the day number
+		if(!TheGameState.bIsApocalypse)
+			mattrig.SetCurrentMaterialSwitch(Day);
+		else// Apocalypse is expected to be one past the last day.
+			mattrig.SetCurrentMaterialSwitch(Day+1);
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// xPatch: Update Main Menu depending on the time of week.
+///////////////////////////////////////////////////////////////////////////////
+function UpdateMainMenu()
+{
+	local string NewMenuURL;
+	
+	if(ParseLevelName(Level.GetLocalURL()) != MainMenuURL)
+	{
+		if(IsWeekend())
+			NewMenuURL = DynamicMainMenuURL[1];
+		else
+			NewMenuURL = DynamicMainMenuURL[0];
+		
+		default.MainMenuURL = NewMenuURL;
+		MainMenuURL = NewMenuURL;
+	}
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Default properties
@@ -124,17 +175,20 @@ defaultproperties
 
     WeekendStartURL="MovieIntro.fuk"
 	SundayURL="VincesHouse.fuk#Pad1?peer"
+	
+	DynamicMainMenuURL[0]="Startup"
+	DynamicMainMenuURL[1]="AWStartup"
 
     DefaultPlayerClassName="GameTypes.AWPostalDude"
     PlayerControllerClassName="GameTypes.AWDudePlayer"
 	ApocalypseTex="AW7Tex.Misc.ApocalypseNewspaper"
 	ChameleonClass=class'ChameleonPlus'
-	HudType="GameTypes.AWWrapHUD"
+	HUDType="GameTypes.AWWrapHUD"
 	StatsScreenClassName="GameTypes.AWPStatsScreen"
 	GameStateClass=class'AWGameState'
-	MenuTitleTex="RWSProductTex.Postal2Complete"
+	MenuTitleTex="P2Misc.Logos.postal2underlined"
 
-	GameName="POSTAL 2: A Week in Paradise"
-    GameNameShort="A Week in Paradise"
+	GameName="POSTAL 2: A Week In Paradise"
+    GameNameShort="A Week In Paradise"
 	GameDescription="The smash-hit POSTAL 2 mod that combines the free-roam action of POSTAL 2 with the slicing and dicing of Apocalypse Weekend, stringing all seven days together into one massive game."
 }

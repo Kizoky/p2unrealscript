@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 // AWTrigger
-// Copyright 2003 Running With Scissors, Inc.  All Rights Reserved.
+// Copyright 2023 Running With Scissors Studios LLC.  All Rights Reserved.
 //
 // Only trigger your event after you've been triggered a certain number of times.
 // And more stuff!

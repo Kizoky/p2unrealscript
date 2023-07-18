@@ -13,7 +13,7 @@ class CatInv extends P2PowerupInv;
 ///////////////////////////////////////////////////////////////////////////////
 // vars, consts
 ///////////////////////////////////////////////////////////////////////////////
-var /*travel*/ array<Material> UniqueSkins;		// Keep all the unique skins for each cat in this
+var travel array<Material> UniqueSkins;		// Keep all the unique skins for each cat in this
 											// inventory, and travel them
 var travel array<int> bWasCrazy;	// true if they huffed catnip and are crazy now
 
@@ -112,6 +112,8 @@ state Activated
 		local P2Weapon newgun;
 		local CatableWeapon oldweap;
 		local DualCatableWeapon dualoldweap, leftweap;
+//		local int IsTainted;	// xPatch: Tell the weapon if it was a crazy cat so we can spawn new unique CatRockets
+// 		NOTE: I decided to comment-out this right here and make this feature exclusive to ACTUAL experimental cats, not catnip treated ones.
 
 		CheckPawn = P2Pawn(Owner);
 		p2p = P2Player(CheckPawn.Controller);
@@ -139,6 +141,8 @@ state Activated
 				// Use one cat--could be last one
 				// and put the right skin on the gun
 				ReduceAmount(1, oldweap.CatSkin);
+				//ReduceAmount(1, oldweap.CatSkin,,IsTainted);
+				//oldweap.CrazyCatOnGun=IsTainted;
 				// Record that we used the cat
 				if(P2GameInfoSingle(Level.Game) != None
 					&& P2GameInfoSingle(Level.Game).TheGameState != None
@@ -149,14 +153,15 @@ state Activated
 						if(Level.NetMode != NM_DedicatedServer ) PlayerController(CheckPawn.Controller).GetEntryLevel().EvaluateAchievement(PlayerController(CheckPawn.Controller), 'CatSilencer');
 				}
 				// put this weapon down so we can stick the cat on it
-				p2p.NextWeapon();
+                /*p2p.NextWeapon();*/	// Change by Man Chrzan: xPatch 2.0
+				p2p.SwitchToHands();	// Fix for CatableWeapons playing next weapon's load sounds. (M16 playing MP5's cock sound) 
 			}
 			else // If no gore, put a message so they know you can't do that
 			{
 				p2p.ClientMessage(RemoveGoreHint);
 			}
 		}
-
+		
 		if (dualoldweap != none) {
 
             if (class'P2Player'.static.BloodMode()) {
@@ -167,7 +172,11 @@ state Activated
 
                     dualoldweap.bPutCatOnGun = true;
 				    dualoldweap.CatOnGun = 1;
-				    ReduceAmount(1, dualoldweap.CatSkin);
+					ReduceAmount(1, dualoldweap.CatSkin);
+					//ReduceAmount(1, dualoldweap.CatSkin,,IsTainted);
+					
+					//log(self@"activated cat was tainted"@IsTainted,'Debug');
+					//dualoldweap.CrazyCatOnGun=IsTainted;
 
 				    bAddedCatToOneOfTwo = true;
 
@@ -190,13 +199,17 @@ state Activated
 
                     leftweap.bPutCatOnGun = true;
 				    leftweap.CatOnGun = 1;
-				    ReduceAmount(1, leftweap.CatSkin);
+					ReduceAmount(1, dualoldweap.CatSkin);
+				    //ReduceAmount(1, dualoldweap.CatSkin,,IsTainted);
+					//log(self@"activated cat was tainted"@IsTainted,'Debug');
+					//leftweap.CrazyCatOnGun=IsTainted;
 
 				    bAddedCatToOneOfTwo = true;
                 }
 
 				if (bAddedCatToOneOfTwo)
-                    p2p.NextWeapon();
+                    /*p2p.NextWeapon();*/	// Change by Man Chrzan: xPatch 2.0
+					p2p.SwitchToHands();	// Fix for CatableWeapons playing next weapon's load sounds. (M16 playing MP5's cock sound) 
 			}
 			else
 				p2p.ClientMessage(RemoveGoreHint);

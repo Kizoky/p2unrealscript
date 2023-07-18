@@ -1,50 +1,20 @@
 //////////////////////////////////////////////////////////////////////////////
-// GrenadeAltProjectile.
-// Copyright 2003 Running With Scissors, Inc.  All Rights Reserved.
-//
-// This is the actual grenade that is dropped on the ground as mine/pickup
-//
-///////////////////////////////////////////////////////////////////////////////
-class DynamiteAltProjectile extends DynamiteProjectile;
-
-///////////////////////////////////////////////////////////////////////////////
+// DynamiteAltProjectile.
+// New re-written class, extend DynamiteProjectile.
+// Man Chrzan, 2021. 
 ///////////////////////////////////////////////////////////////////////////////
 
-function SetFuseTime(int fusetime)
+class DynamiteAltProjectile extends DynamiteProjectile;   
+
+simulated function HitByMatch()
 {
-	DetonateTime=DetonateTime;
-}
-
-
-simulated function PostBeginPlay()
-{
-	Super.PostBeginPlay();
-
-	if(DetonateTime > 0)
-	{
-		// Arm the grenade
-		SetTimer(DetonateTime,false);
-
-	}
-	
-
-///////////////////////////////////////////////////////////////////////////
- 	// Call this on client or single player
-	if ( Level.NetMode != NM_DedicatedServer)
-	{
-		wickfire = spawn(class'DynamiteSparkler', self,,Location);
-		wickfire.SetBase(self);
-		fusesound1();
-	}
-//////////////////////////////////////////////////////////////////////////
-
-
-
-
+	bArmed=True;
+	DetonateTime=5.00;
+	SetupDynamite(DetonateTime);
 }
 
 defaultproperties
 {
-     bArmed=False
-     DetonateTime=0.000000
+    bArmed=False
+	DetonateTime=0
 }

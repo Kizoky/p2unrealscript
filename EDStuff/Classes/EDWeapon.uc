@@ -7,8 +7,12 @@
  * here we also throw in selective fire capabilities
  *
  * @author Gordon Cheng
+ *
+ * @edited by Piotr S. 2022/09/14
+ * Lots of bug fixes, added "catabilty", restored the reloading 
+ * system for reloadable ED Weapons variants that can be now obtained with cheats or mods.
  */
-class EDWeapon extends P2DualWieldWeapon
+class EDWeapon extends DualCatableWeapon //P2DualWieldWeapon
     abstract;
 
 enum EFireMode
@@ -61,8 +65,17 @@ var array<name> ReloadAnims;
 var array<name> SwitchAnims;
 var localized array<string> FireModeStrings;
 
-var travel int MagazineCount;
+//var travel int MagazineCount;
 var travel EFireMode FireMode;
+
+// Network replication
+//
+replication
+{
+	// Things the server should send to the client.
+	reliable if( bNetOwner && bNetDirty && (Role==ROLE_Authority) )
+		FireMode, Notify_Fire, PlayPrepFire, PlayEndFire;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -79,6 +92,36 @@ function bool DoServerFireAgain(bool bForce)
 		);
 }
 
+simulated function Fire(float Value)
+{
+    if(!bReloadableWeapon)
+	{
+		Super.Fire(Value);
+		Return;
+	}
+	
+	if (ReloadCount == 0)
+	{
+		ClientForceFinish();
+		ServerForceFinish();
+		return;
+	}
+
+	if (!RepeatFire())
+		ServerFire();
+	else if ( StopFiringTime < Level.TimeSeconds + 0.3 )
+	{
+		StopFiringTime = Level.TimeSeconds + 0.6;
+		ServerRapidFire();
+	}
+
+    if ( Role < ROLE_Authority )
+	{
+		LocalFire();
+		GotoState('ClientFiring');
+	}
+}
+
 /** Overriden to take into consideration dual wielding inputs  */
 simulated function AltFire(float Value) {
 
@@ -90,15 +133,17 @@ simulated function AltFire(float Value) {
         super.AltFire(Value);
 }
 
-function ServerFire()
+simulated function ServerFire()
 {
 	local int i;
+	
+	// Double-fire glitch fix
+	LastFireTimeSeconds=Level.TimeSeconds;
 
     if (AmmoType == None)
 	    GiveAmmo(Pawn(Owner));
 
-	if (MagazineCount > 0
-		&& AmmoType.HasAmmo())
+    if (CanFire())
 	{
 		if (FireMode == FM_Auto && bThreeStageFire)
 		{
@@ -118,13 +163,16 @@ function ServerFire()
 		    else
 			    ProjectileFire();
 
-//		    MagazineCount--;
+		    if(bReloadableWeapon)
+				ReloadCount--;
+			//else
+			//	P2AmmoInv(AmmoType).UseAmmoForShot();
         }
 
 		LocalFire();
-
-		if (FireMode == FM_Semi || FireMode == FM_Burst)
-            Instigator.Controller.bFire = 0;
+			
+		//if (FireMode == FM_Semi || FireMode == FM_Burst)
+        //    Instigator.Controller.bFire = 0;
 	}
 }
 
@@ -212,10 +260,10 @@ simulated function float GetTraceAccuracy()
 
 simulated function bool NeedsToReload()
 {
-	// STUB no reloads
-	return false;
-
-//	return ( bForceReload || (Default.MagazineCount > 0) && (MagazineCount == 0) );
+	if(bReloadableWeapon)
+		return ( bForceReload || (Default.ReloadCount > 0) && (ReloadCount == 0) );
+	else
+		return false;
 }
 
 simulated function PlaySelect()
@@ -251,21 +299,55 @@ simulated function PlayPrepFire()
 {
     PlayAnim(PrepFireAnim, WeaponSpeedPrepFire);
 }
-
+/*
 simulated function PlayFiring()
 {
 	IncrementFlashCount();
 
-	// ED fire sounds are a bit too loud, tone it down here
+	// Change by Man Chrzan: 0.5 to 1.0 (sound stuttering fix)
     if(Level.Game == None || !FPSGameInfo(Level.Game).bIsSinglePlayer)
-		PlayOwnedSound(FireSound,SLOT_Interact,0.5,,,WeaponFirePitchStart + (FRand()*WeaponFirePitchRand),false);
+		PlayOwnedSound(FireSound,SLOT_Interact,1.0,,,WeaponFirePitchStart + (FRand()*WeaponFirePitchRand),false);
 	else
-		Instigator.PlaySound(FireSound, SLOT_None, 0.5, true, , WeaponFirePitchStart + (FRand()*WeaponFirePitchRand));
+		Instigator.PlaySound(FireSound, SLOT_None, 1.0, true, , WeaponFirePitchStart + (FRand()*WeaponFirePitchRand));
 
     if (FireMode == FM_Auto && bThreeStageFire)
         PlayAnim(LoopFireAnim, WeaponSpeedLoopFire, 0);
     else
+        PlayAnim(FireAnims[FireMode], GetFireAnimRate() + (WeaponSpeedShoot1Rand*FRand()), 0.	IncrementFlashCount();
+}
+*/
+///////////////////////////////////////////////////////////////////////////////
+// Fire the weapon --- Cat Version
+///////////////////////////////////////////////////////////////////////////////
+simulated function PlayFiring()
+{
+	local float UsePitch;
+	local vector StartTrace, X,Y,Z;
+
+	// Muzzle Flash
+	if (FireMode != FM_Burst)
+	{
+		SetupMuzzleFlashEmitter();
+		IncrementFlashCount();
+	}
+	
+	// Play Sounds
+    if(Level.Game == None || !FPSGameInfo(Level.Game).bIsSinglePlayer)
+		PlayOwnedSound(FireSound,SLOT_Interact,1.0,,,WeaponFirePitchStart + (FRand()*WeaponFirePitchRand),false);
+	else
+		Instigator.PlaySound(FireSound, SLOT_None, 1.0, true, , WeaponFirePitchStart + (FRand()*WeaponFirePitchRand));
+
+	// Play Animations
+    if (FireMode == FM_Auto && bThreeStageFire)
+        PlayAnim(LoopFireAnim, WeaponSpeedLoopFire, 0);
+    else
         PlayAnim(FireAnims[FireMode], GetFireAnimRate() + (WeaponSpeedShoot1Rand*FRand()), 0.05);
+	
+	// Cat Play Animations
+	if( Cat != None )
+		Cat.PlayAnim(CatFireAnim);
+	if (P2WeaponAttachment(ThirdPersonActor).CatSilencer3rd != None)
+		P2WeaponAttachment(ThirdPersonActor).CatSilencer3rd.PlayAnim(CatFireAnim);
 }
 
 simulated function PlayEndFire()
@@ -275,14 +357,11 @@ simulated function PlayEndFire()
 
 simulated function PlayPrepReload()
 {
-	// STUB
-//    PlayAnim(PrepReloadAnim, WeaponSpeedPrepReload);
+    PlayAnim(PrepReloadAnim, WeaponSpeedPrepReload);
 }
 
 simulated function PlayReloading()
 {
-	// STUB
-	/*
 	P2MocapPawn(Instigator).PlayWeaponReload(self);
 	Instigator.PlaySound(ReloadSound, SLOT_Misc, 1.0);
 
@@ -290,13 +369,11 @@ simulated function PlayReloading()
 	    PlayAnim(LoopReloadAnim, WeaponSpeedLoopReload);
     else
         PlayAnim(ReloadAnims[FireMode], WeaponSpeedReload, 0.05);
-	*/
 }
 
 simulated function PlayEndReload()
 {
-	// STUB
-    //PlayAnim(EndReloadAnim, WeaponSpeedEndReload);
+    PlayAnim(EndReloadAnim, WeaponSpeedEndReload);
 }
 
 simulated function PlayPump()
@@ -310,9 +387,11 @@ simulated function PlaySwitchAnim()
     PlayAnim(SwitchAnims[FireMode], WeaponSpeedSwitch, 0);
 }
 
-function ToggleFireMode()
+simulated function ToggleFireMode()
 {
-    switch (FireMode)
+    TurnOffHint();		//Added by Man Chrzan: xPatch 2.0
+	
+	switch (FireMode)
     {
         // If you want to implement burst fire, change the line below to this:
         //   FM_Semi:    FireMode = FM_Burst;
@@ -327,46 +406,69 @@ function ToggleFireMode()
     }
 }
 
+// Make sure FireMode is always the same for both dual wielded weapons
+simulated function BringUp() 
+{
+    Super.BringUp();
+	
+	if(EDWeapon(LeftWeapon) != None)
+		EDWeapon(LeftWeapon).FireMode=FireMode;
+}
+
+// For Burst Fire
 function Notify_Fire()
 {
-//    if (MagazineCount > 0)
-//    {
-        TraceFire(GetTraceAccuracy(), 0, 0);
-//        MagazineCount--;
+	if(CanFire())
+	{
+		TraceFire(GetTraceAccuracy(), 0, 0);
+		SetupMuzzleFlashEmitter();
+		IncrementFlashCount();
+		
+		if(bReloadableWeapon)
+			ReloadCount--;
+		//else
+		//	P2AmmoInv(AmmoType).UseAmmoForShot();
 
         if (Level.Game == None || !FPSGameInfo(Level.Game).bIsSinglePlayer)
             PlayOwnedSound(FireSound,SLOT_Interact,1.0,,,WeaponFirePitchStart + (FRand()*WeaponFirePitchRand),false);
         else
             Instigator.PlaySound(FireSound, SLOT_None, 1.0, true, , WeaponFirePitchStart + (FRand()*WeaponFirePitchRand));
-//    }
+	}
+}
+
+function Notify_ShakeEffect()
+{
+        local P2Player P;
+			
+		if ( Instigator != None)
+		{
+		if(Instigator.IsLocallyControlled() )
+			{
+			P = P2Player(Instigator.Controller);
+			if (P!=None)
+				{
+				if ( InstFlash != 0.0 )
+					P.ClientInstantFlash( InstFlash, InstFog);
+
+				P.ShakeView(ShakeRotMag, ShakeRotRate, ShakeRotTime,
+							ShakeOffsetMag, ShakeOffsetRate, ShakeOffsetTime);
+				}
+			}
+		}
+		if ( Affector != None )
+		Affector.FireEffect();
 }
 
 function Notify_InsertShell()
 {
-    MagazineCount++;
-    AmmoType.AmmoAmount--;
+    ReloadCount++;
+    if(!P2AmmoInv(AmmoType).bInfinite)
+	AmmoType.AmmoAmount--;
 }
 
 function Notify_skinflash_start()
 {
     AmbientGlow = 400;
-
-    if (FireMode == FM_Burst && MagazineCount > 0 && AmmoType.HasAmmo())
-    {
-        TraceFire(GetTraceAccuracy(), 0, 0);
-//        MagazineCount--;
-
-        if (Level.Game == None || !FPSGameInfo(Level.Game).bIsSinglePlayer)
-            PlayOwnedSound(FireSound,SLOT_Interact,1.0,,,WeaponFirePitchStart + (FRand()*WeaponFirePitchRand),false);
-        else
-            Instigator.PlaySound(FireSound, SLOT_None, 1.0, true, , WeaponFirePitchStart + (FRand()*WeaponFirePitchRand));
-
-        if (MagazineCount == 0)
-        {
-            PlayIdleAnim();
-            GotoState('Idle');
-        }
-    }
 }
 
 function Notify_skinflash_end()
@@ -386,8 +488,7 @@ function Finish()
 {
 	local bool bForce, bForceAlt;
 
-	/*
-	if (NeedsToReload() && P2AmmoInv(AmmoType).HasAmmoFinished())
+	if (NeedsToReload() && HasAmmo())
 	{
 		if (bThreeStageReload)
 		    GotoState('PrepReload');
@@ -396,7 +497,6 @@ function Finish()
 
 		return;
 	}
-	*/
 
 	bForce = bForceFire;
 	bForceAlt = bForceAltFire;
@@ -417,7 +517,8 @@ function Finish()
 
 	if (!Instigator.IsHumanControlled())
 	{
-		if (MagazineCount == 0 && !P2AmmoInv(AmmoType).HasAmmoFinished())
+		//if (MagazineCount == 0 && !P2AmmoInv(AmmoType).HasAmmoFinished())
+		if (!HasAmmo())
 		{
 			// AI find it's next best weapon
 			Instigator.Controller.SwitchToBestWeapon();
@@ -440,7 +541,8 @@ function Finish()
 		return;
 	}
 
-	if (MagazineCount == 0 && !P2AmmoInv(AmmoType).HasAmmoFinished() && Instigator.IsLocallyControlled())
+	//if (!P2AmmoInv(AmmoType).HasAmmoFinished() && Instigator.IsLocallyControlled())
+	if (!HasAmmo() && Instigator.IsLocallyControlled())
 	{
 		// If you autoswitch, you go to the next strongest weapon you have,
 		// if not, then go back to your hands.
@@ -470,8 +572,6 @@ function Finish()
 		GotoState('Idle');
 }
 
-// what is this even for
-/*
 simulated function ClientFinish()
 {
 	if ((Instigator == None) || (Instigator.Controller == None))
@@ -481,9 +581,7 @@ simulated function ClientFinish()
 		return;
 	}
 
-    if (
-		//NeedsToReload() &&
-		P2AmmoInv(AmmoType).HasAmmoFinished())
+    if (NeedsToReload() && HasAmmo())
 	{
 		if (bThreeStageReload)
 		    GotoState('PrepReload');
@@ -494,7 +592,7 @@ simulated function ClientFinish()
         return;
 	}
 
-	if (MagazineCount == 0 && !P2AmmoInv(AmmoType).HasAmmoFinished())
+	if ( !HasAmmo())
 	{
 		if (P2Player(Instigator.Controller) != None && P2Player(Instigator.Controller).bAutoSwitchOnEmpty)
 			Instigator.Controller.SwitchToBestWeapon();
@@ -531,13 +629,12 @@ simulated function ClientFinish()
 		}
 	}
 }
-*/
 
 simulated function ClientForceReload()
 {
 	bForceReload = true;
 
-	if (MagazineCount != default.MagazineCount && AmmoType.HasAmmo())
+	if (ReloadCount != default.ReloadCount && HasAmmo())
 	{
 	    if (bThreeStageReload)
 	        GotoState('PrepReload');
@@ -546,6 +643,22 @@ simulated function ClientForceReload()
     }
 }
 
+simulated function ServerForceReload()
+{
+	bForceReload = true;
+
+	PlayReloading();
+	
+	if (ReloadCount != default.ReloadCount && HasAmmo())
+	{
+	    if (bThreeStageReload)
+	        GotoState('PrepReload');
+        else
+            GotoState('Reloading');
+    }
+}
+
+
 ///////////////////////////////////////////////////////////////////////////////
 // Get firing mode as string "burst" "auto" etc.
 ///////////////////////////////////////////////////////////////////////////////
@@ -553,6 +666,8 @@ simulated function string GetFiringMode()
 {
 	if (bDisplayFireMode)
 		return FireModeStrings[FireMode];
+	else
+		return "";
 }
 
 /**
@@ -562,23 +677,35 @@ simulated function string GetFiringMode()
 state EquipDualWielding
 {
     function BeginState() {
-        ChangeWeaponHoldStyle();
+        
+		// Change by Man Chrzan: xPatch 2.0
+		if(bDisableDualWielding) 
+			GotoState('Idle');
+		
+		ChangeWeaponHoldStyle();
 
         PlaySelect();
 
-        FireMode = FM_Auto;
+        // Change by Man Chrzan: xPatch 2.0
+		// Don't force any FireModes. Use current one.
+		/* FireMode = FM_Auto; */
 
         if (bDualWielding && LeftWeapon != none) {
             LeftWeapon.BringUp();
             LeftWeapon.AttachToPawn(Instigator);
 
-            if (EDWeapon(LeftWeapon) != none)
-                EDWeapon(LeftWeapon).FireMode = FM_Auto;
+            // Change by Man Chrzan: xPatch 2.0
+			/* if (EDWeapon(LeftWeapon) != none)
+               EDWeapon(LeftWeapon).FireMode = FM_Auto; */
+			if (EDWeapon(LeftWeapon) != none)
+				EDWeapon(LeftWeapon).FireMode = FireMode;
+			// Change End
         }
 
         SetLeftArmVisibility();
     }
 }
+
 
 state PrepFire
 {
@@ -606,28 +733,43 @@ state LoopFire
 
     simulated function BeginState()
     {
+		local P2Player P;
+	
         PlayFiring();
+		
         TraceFire(GetTraceAccuracy(), 0, 0);
+		
+		if(bReloadableWeapon)
+			ReloadCount--;
+		//else
+		//	P2AmmoInv(AmmoType).UseAmmoForShot();
 
-//        MagazineCount--;
+		if ( Instigator != None)
+		{
+			if(Instigator.IsLocallyControlled() )
+			{
+				P = P2Player(Instigator.Controller);
+				if (P!=None)
+				{
+					if ( InstFlash != 0.0 )
+						P.ClientInstantFlash( InstFlash, InstFog);
+
+					P.ShakeView(ShakeRotMag, ShakeRotRate, ShakeRotTime,
+								ShakeOffsetMag, ShakeOffsetRate, ShakeOffsetTime);
+				}
+			}
+		}
+		if ( Affector != None )
+		Affector.FireEffect();
     }
 
     simulated function AnimEnd(int Channel)
     {
-        if (MagazineCount > 0 && Instigator != none && AmmoType.HasAmmo()) {
-            if ((RightWeapon != none && Instigator.PressingFire()) ||
-                 Instigator.PressingAltFire())
-                 BeginState();
-        }
+        if (CanFire() && Instigator.PressingFire() 
+		|| CanFire() && Instigator.PressingAltFire())	// Dual Wielding
+            BeginState();
         else
-		{
-			if (!AmmoType.HasAmmo())
-			{
-				ClientForceFinish();
-				ServerForceFinish();
-			}
             GotoState('EndFire');
-		}
     }
 }
 
@@ -654,7 +796,7 @@ state PrepReload
 {
     simulated function BeginState()
     {
-        if (MagazineCount == 0)
+        if (ReloadCount == 0)
             bPumpAfterReload = true;
 
         PlayPrepReload();
@@ -670,7 +812,7 @@ state LoopReload
 {
     simulated function Fire(float Value)
     {
-        if (MagazineCount > 0)
+        if (ReloadCount > 0)
         {
             if (bPumpAfterReload)
                 GotoState('EndReload');
@@ -686,7 +828,7 @@ state LoopReload
 
     simulated function AnimEnd(int Channel)
     {
-        if (MagazineCount != default.MagazineCount && AmmoType.HasAmmo())
+        if (ReloadCount != default.ReloadCount && HasAmmo())
             BeginState();
         else
             GotoState('EndReload');
@@ -731,9 +873,16 @@ state SwitchFireMode
 
 state NormalFire
 {
+	// Double-fire glitch fix
+	function AnimEnd(int Channel)
+	{
+		if (LastFireTimeSeconds != Level.TimeSeconds)
+			Super.AnimEnd(Channel);
+	}
+	
 	simulated function Fire(float F)
 	{
-		if (AmmoType == None || (/*MagazineCount == 0 && */!AmmoType.HasAmmo()))
+		if ( !HasAmmo() )
 		{
 			ClientForceFinish();
 			ServerForceFinish();
@@ -773,7 +922,7 @@ state Idle
 {
 	function ServerForceReload()
 	{
-		if (MagazineCount != default.MagazineCount && AmmoType.HasAmmo())
+		if (/*ReloadCount != default.ReloadCount &&*/ HasAmmo())
 		{
 			if (bThreeStageReload)
 			    GotoState('PrepReload');
@@ -796,7 +945,7 @@ state Idle
 			ShotCountReset();
 		if (Instigator.Weapon == self)
 			ClientIdleCheckFire();
-		if (!AmmoType.HasAmmo())
+		if (!HasAmmo())
 			NoAmmo();
 	}
 
@@ -808,17 +957,15 @@ state Idle
 Begin:
 	bPointing = false;
 
-	/*
-    if (NeedsToReload() false && P2AmmoInv(AmmoType).HasAmmoFinished())
+    if (NeedsToReload() && P2AmmoInv(AmmoType).HasAmmoFinished())
     {
 		if (bThreeStageReload)
 		    GotoState('PrepReload');
         else
             GotoState('Reloading');
     }
-	*/
 
-	if (MagazineCount == 0 && !P2AmmoInv(AmmoType).HasAmmoFinished())
+	if (ReloadCount == 0 && !P2AmmoInv(AmmoType).HasAmmoFinished())
 		Instigator.Controller.SwitchToBestWeapon();
 
     HandleDualFireFromIdle();
@@ -833,7 +980,7 @@ state Reloading
 
     simulated function BeginState()
     {
-        if (MagazineCount != default.MagazineCount && AmmoType.HasAmmo())
+        if (ReloadCount != default.ReloadCount && HasAmmo())
             PlayReloading();
         else
             GotoState('Idle');
@@ -843,12 +990,128 @@ state Reloading
     {
         local int TopUpAmount;
 
-        TopUpAmount = Min((default.MagazineCount - MagazineCount), AmmoType.AmmoAmount);
-        MagazineCount = MagazineCount + TopUpAmount;
-        AmmoType.AmmoAmount = AmmoType.AmmoAmount - TopUpAmount;
+        if(!P2AmmoInv(AmmoType).bInfinite)
+		{
+			TopUpAmount = Min((Default.ReloadCount - ReloadCount), AmmoType.AmmoAmount);
+			ReloadCount += TopUpAmount;
+			P2AmmoInv(AmmoType).UseAmmoForShot(TopUpAmount);
+		}
+		else
+			ReloadCount = Default.ReloadCount;
 
         GotoState('Idle');
     }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Added by Man Chrzan: Ammo Status and Stuff
+// To make things easier with reloadable and not-reloadable versions
+///////////////////////////////////////////////////////////////////////////////
+simulated function bool HasAmmo()
+{
+	if(P2AmmoInv(AmmoType) != None)
+	{
+		return (P2AmmoInv(AmmoType).bInfinite || AmmoType.AmmoAmount > 0 || ReloadCount > 0 );
+	}
+}
+
+simulated function bool CanFire()
+{
+	if(P2AmmoInv(AmmoType) != None)
+	{
+		if(bReloadableWeapon)
+			return (ReloadCount > 0);
+		else
+			return (AmmoType.AmmoAmount > 0);
+	}
+}
+
+state ClientFiring
+{
+	simulated function Fire(float F) 
+	{
+		//log(self$" fire client firing");
+		if ( !HasAmmo() )
+		{
+			ClientForceFinish();
+			ServerForceFinish();
+			return;
+		}
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Okay since MP5 and Glock now share new ammo class I guess I should do
+// something to prevent losing ammo when old saves are loaded.
+///////////////////////////////////////////////////////////////////////////////
+function FixOldAmmo(Class OldAmmoClass, Class<Ammunition> NewAmmoClass)
+{
+	local int OldAmmoAmount, NewAmmoAmount, GiveAmmo;
+	local Ammunition OldAmmoType, NewAmmoType;
+	local bool CreatedNewAmmoType;
+
+	if ( Pawn(Owner) == None )
+		return;
+	
+	// Fix ammo
+	if ( AmmoType != None && AmmoName == NewAmmoClass)
+	{
+		OldAmmoType = Ammunition(Pawn(Owner).FindInventoryType(OldAmmoClass));
+		NewAmmoType = Ammunition(Pawn(Owner).FindInventoryType(NewAmmoClass));
+		
+		if ( OldAmmoType != None )
+		{
+			// Keep our old ammo
+			OldAmmoAmount = OldAmmoType.AmmoAmount;
+			Log(self@"Old ammo:"@OldAmmoAmount);
+			
+			// Change AmmoType
+			Log(self@"Changing to new ammo type...");
+				
+			// Add new ammo type
+			if(NewAmmoType == None)
+			{
+				Log(self@"Spawning new ammo type");
+				AmmoType.Destroy();
+				AmmoType = None;
+				
+				AmmoType = Spawn(NewAmmoClass);				
+				Pawn(Owner).AddInventory(AmmoType);	
+				CreatedNewAmmoType = true;
+			}
+			else
+			{
+				Log(self@"Found existing new ammo type");
+				AmmoType = NewAmmoType;
+			}
+			
+			// Give us the ammo amount we had before back.
+			// But make sure we don't have get more than new max amount
+			if(OldAmmoAmount > NewAmmoClass.default.MaxAmmo)
+				NewAmmoAmount = NewAmmoClass.default.MaxAmmo;
+			else
+				NewAmmoAmount = OldAmmoAmount;
+
+			GiveAmmo = Min(NewAmmoAmount, NewAmmoClass.default.MaxAmmo);
+
+			if(CreatedNewAmmoType)
+			{
+				AmmoType.AmmoAmount = GiveAmmo;
+				Log(self@"New ammo:"@AmmoType.AmmoAmount);
+			}
+			else if(AmmoType.AmmoAmount < NewAmmoClass.default.MaxAmmo)
+			{
+				AmmoType.AmmoAmount += GiveAmmo;
+				
+				if(AmmoType.AmmoAmount > NewAmmoClass.default.MaxAmmo)
+					AmmoType.AmmoAmount = NewAmmoClass.default.MaxAmmo;
+					
+				Log(self@"New ammo:"@AmmoType.AmmoAmount);
+			}
+			
+			AmmoType.GotoState('');
+		}
+	}
 }
 
 defaultproperties
@@ -867,4 +1130,7 @@ defaultproperties
      FireModeStrings(0)="Semi"
      FireModeStrings(1)="Burst"
      FireModeStrings(2)="Auto"
+	 bThreeStageFire=False
+	 bSpawnMuzzleFlash=True
+	 ReloadCount=0
 }

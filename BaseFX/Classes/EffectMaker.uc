@@ -13,7 +13,10 @@
 // smoke, spawn sparks, make sounds...)
 //
 ///////////////////////////////////////////////////////////////////////////////
-class EffectMaker extends Actor;
+class EffectMaker extends Actor
+	config(xPatch);
+
+var globalconfig bool bSTPBloodFX;	// xPatch: MP blood in SP as an option
 
 var class<P2Emitter>	myemitterclass;
 var class<P2Emitter>	myemitterclassMP;
@@ -38,7 +41,8 @@ simulated function MakeMoreEffects()
 {
 	if(myemitterclassMP != None
 		&& (Level.Game == None
-			|| !FPSGameInfo(Level.Game).bIsSinglePlayer))
+			|| !FPSGameInfo(Level.Game).bIsSinglePlayer
+			|| bSTPBloodFX))	// xPatch
 		Spawn(myemitterclassMP,Owner,,Location, Rotation);
 	else if(myemitterclass != None)
 		Spawn(myemitterclass,,,Location, Rotation);

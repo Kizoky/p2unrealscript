@@ -6,13 +6,16 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-class NapalmWeapon extends P2Weapon;
+class NapalmWeapon extends P2DualWieldWeapon; //P2Weapon;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Vars, structs, consts
 ///////////////////////////////////////////////////////////////////////////////
 var travel bool bShowHint1;
 var bool bAltFired;
+
+var sound HandleSound;
+var sound CanisterSound;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Give hints about this item
@@ -62,9 +65,11 @@ simulated function PlayAltFiring()
 ///////////////////////////////////////////////////////////////////////////////
 simulated function PlayReloading()
 {
-	// temp speed up because with no animation, you can't tell you're
-	// why you can't shoot (becuase it's playing a reload anim)
-	PlayAnim('Shoot1Unload', WeaponSpeedReload, 0.05);
+	// Dual Wielding
+	if (bDualWielding || (RightWeapon != none && RightWeapon.bDualWielding)) 
+		PlayAnim('Holster', WeaponSpeedHolster, 0.05);
+	else
+		PlayAnim('Shoot1Unload', WeaponSpeedReload, 0.05);
 	Instigator.PlayOwnedSound(ReloadSound, SLOT_Misc, 1.0);
 }
 
@@ -135,6 +140,33 @@ function Notify_ShootNapalm()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Added by Man Chrzan: xPatch 2.0
+///////////////////////////////////////////////////////////////////////////////
+function Notify_CanisterSound()
+{
+    if (Level.Game == None || !FPSGameInfo(Level.Game).bIsSinglePlayer)
+            PlayOwnedSound(CanisterSound,SLOT_Interact,1.0,,,WeaponFirePitchStart + (FRand()*WeaponFirePitchRand),false);
+        else
+            Instigator.PlaySound(CanisterSound, SLOT_None, 1.0, true, , WeaponFirePitchStart + (FRand()*WeaponFirePitchRand));
+
+}
+
+function Notify_HandleSound()
+{
+    if (Level.Game == None || !FPSGameInfo(Level.Game).bIsSinglePlayer)
+            PlayOwnedSound(HandleSound,SLOT_Interact,1.0,,,WeaponFirePitchStart + (FRand()*WeaponFirePitchRand),false);
+        else
+            Instigator.PlaySound(HandleSound, SLOT_None, 1.0, true, , WeaponFirePitchStart + (FRand()*WeaponFirePitchRand));
+
+}
+
+// xPatch: Make sure that this gun is not extension!
+function bool CanSwapHands()
+{
+	return (Class == Class'NapalmWeapon');
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Default properties
 ///////////////////////////////////////////////////////////////////////////////
 defaultproperties
@@ -146,7 +178,7 @@ defaultproperties
 	ErrandPickupClass = class'NapalmPickupErrand'
 	AttachmentClass=class'NapalmAttachment'
 
-//	Mesh=Mesh'FP_Weapons.FP_Dude_Napalm'
+	OldMesh=Mesh'FP_Weapons.FP_Dude_Napalm'
 	Mesh=Mesh'MP_Weapons.MP_LS_Napalm'
 //	Skins[0]=Texture'WeaponSkins.Dude_Hands'
 	Skins[0]=Texture'MP_FPArms.LS_arms.LS_hands_dude'
@@ -179,7 +211,8 @@ defaultproperties
 	AutoSwitchPriority=10
 	InventoryGroup=10
 	GroupOffset=1
-	BobDamping=0.975000
+//	BobDamping=0.975000
+	BobDamping=1.12 
 	ReloadCount=0
 	TraceAccuracy=0.3
 	ShotCountMaxForNotify=0
@@ -191,7 +224,7 @@ defaultproperties
 	WeaponSpeedReload  = 0.5
 	WeaponSpeedShoot1  = 0.9
 	WeaponSpeedShoot1Rand=0.1
-	WeaponSpeedShoot2  = 0.5
+	WeaponSpeedShoot2  = 1.0
 	WeaponSpeedShoot2Rand=0.1
 
 	AimError=300
@@ -205,4 +238,9 @@ defaultproperties
 	bShowHints=true
 	HudHint1="Press %KEY_Fire% for a straight ahead shot."
 	HudHint2="Press %KEY_AltFire% and be careful with this in-doors."
+	
+	// xPatch:
+	CanisterSound=Sound'WeaponSounds.napalm_beattop'
+	HandleSound=Sound'WeaponSounds.napalm_lockhandle'
+	bDisableDualWielding=True
 	}

@@ -182,7 +182,8 @@ simulated state Streaming
 			}
 		}
 		///steam 12/10/2016
-		if( AmmoType != None && AmmoType.HasAmmo() )
+		if( AmmoType != None && AmmoType.HasAmmo() 
+			&& gaspour != None ) // Change by Man Chrzan: Possible Crash Fix
 		{
 			SnapGasPourToGun();
 			ReduceAmmo(DeltaTime);
@@ -244,6 +245,12 @@ state AltFireState extends NormalFire
 		}
 }
 
+// xPatch: Make sure that this gun is not extension!
+function bool CanSwapHands()
+{
+	return (Class == Class'GasCanWeapon');
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // Default properties
@@ -258,7 +265,7 @@ defaultproperties
 	AttachmentClass=class'GasCanAttachment'
 	bMeleeWeapon=true
 
-//	Mesh=Mesh'FP_Weapons.FP_Dude_GasCan'
+	OldMesh=Mesh'FP_Weapons.FP_Dude_GasCan'
 	Mesh=Mesh'MP_Weapons.MP_LS_GasCan'
 
 //	Skins[0]=Texture'WeaponSkins.Dude_Hands'
@@ -288,8 +295,10 @@ defaultproperties
 	AIRating=0.15
 	AutoSwitchPriority=5
 	InventoryGroup=5
-	GroupOffset=1
-	BobDamping=0.975000
+	GroupOffset=2
+	//BobDamping=0.975000
+	BobDamping=1.12 
+	
 	ReloadCount=0
 	ViolenceRank=1
 	bBumpStartsFight=false

@@ -1,15 +1,17 @@
 // CatRocketGrenade
-// Cat rockets shot by the grenade launcher in enhanced mode.
+// Cat rockets shot by the Cat-Silenced Grenade Launcher
 class CatRocketGrenade extends CatRocket;
 
 const FORCE_RAD_CHECK		= 50;
 
 var() float LifeTime;				// After this much time we explode even if we haven't hit anything
 var() array<Material> CatSkins;		// Skins for cat
+var() int MaxBounces;
 
 simulated event PostBeginPlay()
 {
-	Skins[0] = CatSkins[Rand(CatSkins.Length - 1)];
+	// Don't use random skins, use one of the cat we had in inventory.
+	//Skins[0] = CatSkins[Rand(CatSkins.Length - 1)];
 	Super.PostBeginPlay();
 	SetTimer(LifeTime, false);
 }
@@ -47,6 +49,24 @@ simulated function GenExplosion(vector HitLocation, vector HitNormal, Actor Othe
  	Destroy();
 }
 
+function WallExplosion( vector HitNormal, actor Wall )
+{
+	local GrenadeExplosion exp;	
+	local vector WallHitPoint;
+	
+	// Draw a blood splat on the ground
+	if(class'P2Player'.static.BloodMode())
+	{
+		spawn(class'BloodMachineGunSplatMaker',self,,Location,rotator(HitNormal));
+		spawn(class'GrenadeExplosion',self,,Location,rotator(HitNormal));
+	}
+	// Make a sound
+	PlaySound(BouncingSound, , 1.0, , , 0.96 + FRand()*0.08);
+	
+	Destroy();
+
+}
+
 auto state Flying
 {
 	simulated function ProcessTouch (Actor Other, Vector HitLocation)
@@ -59,15 +79,29 @@ auto state Flying
 		else if (Other != instigator) // explode on everything else
 			GenExplosion(HitLocation,Normal(HitLocation-Other.Location), Other);
 	}
+	
+	simulated function HitWall (vector HitNormal, actor Wall)
+	{
+		// Bounce off static things, if you're supposed to
+		if(BounceCount < MaxBounces
+			&& bDoBounces)
+		{
+			BounceOffSomething(HitNormal, Wall);
+		}
+		else 
+			WallExplosion(HitNormal, Wall);
+	}
 }
 
 defaultproperties
 {
-	bDoBounces=True
-	LifeSpan=0
-	LifeTime=30
-	CatSkins[0]=Texture'AnimalSkins.Cat_Black'
-	CatSkins[1]=Texture'AnimalSkins.Cat_Grey'
-	CatSkins[2]=Texture'AnimalSkins.Cat_Orange'
-	CatSkins[3]=Texture'AnimalSkins.Cat_Siamese'
+	 bDoBounces=False
+     LifeSpan=0
+	 Lifetime=30
+//	 CatSkins[0]=Texture'AnimalSkins.Cat_Black'
+//	 CatSkins[1]=Texture'AnimalSkins.Cat_Grey'
+//   CatSkins[2]=Texture'AnimalSkins.Cat_Orange'
+//	 CatSkins[3]=Texture'AnimalSkins.Cat_Siamese'
+	 speed=1200.000000
+	 MaxBounces=3
 }

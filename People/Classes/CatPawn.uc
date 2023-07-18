@@ -171,7 +171,8 @@ function StopGrindBlood()
 function bool IsCrazy()
 {
 	return (AWCatPawn(Self) != None
-		|| P2GameInfoSingle(Level.Game).IsWeekend()
+		//|| P2GameInfoSingle(Level.Game).IsWeekend()
+		|| P2GameInfoSingle(Level.Game).CrazyCats() // xPatch: new function to allow it outside of weekend too.
 		|| bHighOnCatnip);
 }
 
@@ -450,6 +451,17 @@ function PreBeginPlay()
 		&& !P2GameInfoSingle(Level.Game).IsWeekend())
 		bPersistent = true;
 	*/
+	
+	// xPatch: Classic Game - Never allow tornado-cats during M-F.
+	if(P2GameInfoSingle(Level.Game) != None 
+		&& P2GameInfoSingle(Level.Game).InClassicMode()
+		&& !P2GameInfoSingle(Level.Game).IsWeekend())
+	{
+		AttackFreq = 0.0;
+		DervishTimeMax = 0.0;
+		if(ControllerClass == Class'AWCatController')
+			ControllerClass = Class'CatController';
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////

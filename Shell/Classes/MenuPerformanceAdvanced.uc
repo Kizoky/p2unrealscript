@@ -12,6 +12,7 @@
 // Might want to let user know that smoke and fire changes will only affect
 // new fire.
 //
+// Man Chrzan: xPatch - Restored cut performance options
 ///////////////////////////////////////////////////////////////////////////////
 class MenuPerformanceAdvanced extends ShellMenuCW;
 
@@ -183,6 +184,25 @@ var localized string BoltonText, BoltonHelp;
 const BoltonCheckBoxPath = "GameTypes.ChameleonPlus bUseExtendedBoltons";
 var localized string BoltonChangedWarningTitle, BoltonChangedWarningText;
 
+// xPatch: Bodies Lifetime 
+var UWindowHSliderControl BodiesLifetimeSlider;
+var localized string BodiesLifetimeText;
+var localized string BodiesLifetimeHelp;
+const BodiesLifetimePath = "Postal2Game.P2GameInfo BodiesLifetimeMax";
+
+// xPatch: Limbs Lifetime 
+var UWindowHSliderControl LimbsLifetimeSlider;
+var localized string LimbsLifetimeText;
+var localized string LimbsLifetimeHelp;
+const LimbsLifetimePath = "Postal2Game.P2GameInfo LimbsLifetimeMax";
+
+// xPatch: Explosion Dismemberment
+var UWindowCheckbox ExplosionDismembermentCheckbox;
+var localized string ExplosionDismembermentText;
+var localized string ExplosionDismembermentHelp;
+const ExplosionDismembermentPath = "Postal2Game.P2GameInfo bEnableExplosionDismemberment";
+
+
 // Needed to turn off shadows if they're not on d3d (for now!)
 //const RenderDevicePath = "ini:Engine.Engine RenderDevice";
 
@@ -226,12 +246,12 @@ function CreateMenuContents()
 	GenEndSlider   = AddSlider(GenEndText,   GenEndHelp,   ItemFont, 0, 1);
 	GenEndSlider  .SetRange(c_fMinFogMeters, c_fMaxFogMeters, c_fFogStepMeters);	// Have to reset range to set step.  Can reach in to Step field but this function makes sure the value is set to a step.
 	InfiniteViewCheckbox = AddCheckbox(InfiniteViewText, InfiniteViewHelp, ItemFont);	// 01/19/03 JMI Added to disable fog.
-	//TextureDetailWorldSlider = AddSlider(TextureDetailWorldText, TextureDetailWorldHelp, ItemFont, 1, 3);	// Don't allow lower than 1 or engine will crash
-	//TextureDetailWorldSlider.SetVals(astrDetailVals4);
-	//TextureDetailSkinSlider = AddSlider(TextureDetailSkinText, TextureDetailSkinHelp, ItemFont, 1, 3);	// Don't allow lower than 1 or engine will crash
-	//TextureDetailSkinSlider.SetVals(astrDetailVals4);
-	//TextureDetailLightmapSlider = AddSlider(TextureDetailLightmapText, TextureDetailLightmapHelp, ItemFont, 1, 3);	// Don't allow lower than 1 or engine will crash
-	//TextureDetailLightmapSlider.SetVals(astrDetailVals4);
+	TextureDetailWorldSlider = AddSlider(TextureDetailWorldText, TextureDetailWorldHelp, ItemFont, 1, 3);	// Don't allow lower than 1 or engine will crash
+	TextureDetailWorldSlider.SetVals(astrDetailVals4);
+	TextureDetailSkinSlider = AddSlider(TextureDetailSkinText, TextureDetailSkinHelp, ItemFont, 1, 3);	// Don't allow lower than 1 or engine will crash
+	TextureDetailSkinSlider.SetVals(astrDetailVals4);
+	TextureDetailLightmapSlider = AddSlider(TextureDetailLightmapText, TextureDetailLightmapHelp, ItemFont, 1, 3);	// Don't allow lower than 1 or engine will crash
+	TextureDetailLightmapSlider.SetVals(astrDetailVals4);
 	//GameDetailCheckbox = AddCheckbox(GameDetailText, GameDetailHelp, ItemFont);
 	//WorldDetailSlider = AddSlider(WorldDetailSliderText, WorldDetailSliderHelp, ItemFont, 0, 1);
 	//ShadowSlider = AddSlider(ShadowText, ShadowHelp, ItemFont, 0, 2);
@@ -242,18 +262,24 @@ function CreateMenuContents()
 	BloodSpoutCheckbox = AddCheckbox(BloodSpoutText, BloodSpoutHelp, ItemFont);
 	DecalSlider = AddSlider(DecalText, DecalHelp, ItemFont, 0, 10);
 	FluidSlider = AddSlider(FluidText, FluidHelp, ItemFont, 1, 11);
-	//ProjectorsCheckbox = AddCheckbox(ProjectorsText, ProjectorsHelp, ItemFont);
+	ProjectorsCheckbox = AddCheckbox(ProjectorsText, ProjectorsHelp, ItemFont);
 	PawnSlider = AddSlider(PawnText, PawnHelp, ItemFont, 0, 30);
 	bChangedPawnSlider = false;
-	BodiesSlider = AddSlider(BodiesSliderText, BodiesSliderHelp, ItemFont, 0, 200);
+	BodiesSlider = AddSlider(BodiesSliderText, BodiesSliderHelp, ItemFont, 0, 30);
+	// xPatch: New sliders
+	BodiesLifetimeSlider = AddSlider(BodiesLifetimeText, BodiesLifetimeHelp, ItemFont, 0, 120);	
+	LimbsLifetimeSlider = AddSlider(LimbsLifetimeText, LimbsLifetimeHelp, ItemFont, 5, 60);	
+	// End
 	RagdollSlider = AddSlider(RagdollText, RagdollHelp, ItemFont, 0, 10);
 	AnisotropyCombo = AddComboBox(AnisotropyText, AnisotropyHelp, ItemFont);
     FOVSlider = AddSlider(FOVText, FOVHelp, ItemFont, 80, 110);
     DetailTextureCheckbox = AddCheckbox(DetailTextureText, DetailTextureHelp, ItemFont);
     DismembermentCheckbox = AddCheckbox(DismembermentText, DismembermentHelp, ItemFont);
+	ExplosionDismembermentCheckbox = AddCheckbox(ExplosionDismembermentText, ExplosionDismembermentHelp, ItemFont);	// xPatch: New dismemberment mechanic
     DismembermentPCheckbox = AddCheckbox(DismembermentPText, DismembermentPHelp, ItemFont);
     BoltonCheckbox = AddCheckbox(BoltonText, BoltonHelp, ItemFont);
-	//SimpleShadowsCheckbox = AddCheckbox(SimpleShadowsText, SimpleShadowsHelp, ItemFont);
+	if (FPSPlayer(GetPlayerOwner()).bEnableDebugMenu)
+		SimpleShadowsCheckbox = AddCheckbox(SimpleShadowsText, SimpleShadowsHelp, ItemFont);
 	
 	// 02/16/03 JMI Moved to bottom--this is where the other quantitative values are and this is one
 	//				we prefer they don't turn off so it's last.
@@ -303,7 +329,24 @@ function SetDefaultValues()
 
 	// Now that we've restored the values, update the UI.
 	LoadValues();
+	
+	// Update FOV and Tex detail
+	GetPlayerOwner().ConsoleCommand("fov" @FOVSlider.GetValue());  
+	GetPlayerOwner().ConsoleCommand("flush");
 	}
+
+///////////////////////////////////////////////////////////////////////////////
+// Restore default values.
+///////////////////////////////////////////////////////////////////////////////
+function RestoreDefaultValues()
+{
+	local int iIter;
+	for (iIter = 0; iIter < aDefaultPaths.Length; iIter++)
+	{
+		log("set"@aDefaultPaths[iIter]@aDefaultValues[iIter] );
+		GetPlayerOwner().ConsoleCommand("set"@aDefaultPaths[iIter]@aDefaultValues[iIter] );
+	}
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Load all values from ini files
@@ -319,7 +362,8 @@ function LoadValues()
 	// Store the values that need to be restored when the restore choice is chosen.
 	// Note that we initialize the array here b/c the defaultproperties doesn't support
 	// constants which is ridiculous.
-	aDefaultPaths[iDef++] = GenFogStartPath;
+	if(!bDefaultsStored) {
+	aDefaultPaths[iDef++] = GenFogStartPath;			
 	aDefaultPaths[iDef++] = GenFogEndPath;
 	aDefaultPaths[iDef++] = SnipeFogStartPath;
 	aDefaultPaths[iDef++] = SnipeFogEndPath;
@@ -337,9 +381,24 @@ function LoadValues()
 	aDefaultPaths[iDef++] = DismembermentCheckBoxPath;
 	aDefaultPaths[iDef++] = DismembermentPCheckBoxPath;
 	aDefaultPaths[iDef++] = BoltonCheckBoxPath;
+// Man Chrzan: 
+	// Cut Options
+	aDefaultPaths[iDef++] = TextureDetailWorldSliderPath ;
+	aDefaultPaths[iDef++] = TextureDetailWorldSliderPath2;
+	aDefaultPaths[iDef++] = TextureDetailSkinSliderPath;
+	aDefaultPaths[iDef++] = TextureDetailSkinSliderPath2;
+	aDefaultPaths[iDef++] = TextureDetailLightmapSliderPath;
+	aDefaultPaths[iDef++] = ProjectorsCheckboxPath;
+	// xPatch - New Options
+	aDefaultPaths[iDef++] = BodiesLifetimePath;
+	aDefaultPaths[iDef++] = LimbsLifetimePath;
+	aDefaultPaths[iDef++] = ExplosionDismembermentPath;
+// End	
 	StoreDefaultValues();
-
-	bUpdate = False;
+	bDefaultsStored=True;
+	}
+	
+	bUpdate = False;	
 	bAsk = false;
 
 	val = float(GetPlayerOwner().ConsoleCommand("get" @ GenFogEndPath));
@@ -374,7 +433,7 @@ function LoadValues()
 	// Value 0 or 200
 	val = float(GetPlayerOwner().ConsoleCommand("get" @ BodiesSliderPath));
 	BodiesSlider.SetValue(val);
-
+	
 	// Value 0-10
 	val = float(GetPlayerOwner().ConsoleCommand("get" @ RagdollSliderPath));
 	RagdollSlider.SetValue(val);
@@ -406,6 +465,45 @@ function LoadValues()
 	// Value is bool
 	flag = bool(GetPlayerOwner().ConsoleCommand("get" @ BoltonCheckBoxPath));
 	BoltonCheckBox.SetValue(Flag);
+	
+// Man Chrzan: 
+	// Cut Options:
+	// Value is detail string
+	detail = GetPlayerOwner().ConsoleCommand("get" @ TextureDetailWorldSliderPath);
+	val = DetailNameToVal(detail);
+	TextureDetailWorldSlider.SetValue(val);
+
+	// Value is detail string
+	detail = GetPlayerOwner().ConsoleCommand("get" @ TextureDetailSkinSliderPath);
+	val = DetailNameToVal(detail);
+	TextureDetailSkinSlider.SetValue(val);
+
+	// Value is detail string
+	detail = GetPlayerOwner().ConsoleCommand("get" @ TextureDetailLightmapSliderPath);
+	val = DetailNameToVal(detail);
+	TextureDetailLightmapSlider.SetValue(val);
+	
+	// Value 0 or 1
+	flag = bool(GetPlayerOwner().ConsoleCommand("get" @ ProjectorsCheckboxPath));
+	ProjectorsCheckbox.SetValue(flag);
+
+	// Shadows Value
+	flag = bool(GetPlayerOwner().ConsoleCommand("get" @ SimpleShadowsCheckboxPath));
+	SimpleShadowsCheckbox.SetValue(Flag);
+		
+	// xPatch Options:
+	// Bodies Lifetime
+	val = float(GetPlayerOwner().ConsoleCommand("get" @ BodiesLifetimePath));
+	BodiesLifetimeSlider.SetValue(val);
+	
+	// Limbs Lifetime
+	val = float(GetPlayerOwner().ConsoleCommand("get" @ LimbsLifetimePath));
+	LimbsLifetimeSlider.SetValue(val);
+	
+	// Explosion Dismemberment
+	flag = bool(GetPlayerOwner().ConsoleCommand("get" @ ExplosionDismembermentPath));
+	ExplosionDismembermentCheckBox.SetValue(Flag);
+// End
 
 	bUpdate = True;
 	bAsk    = true;
@@ -445,15 +543,15 @@ function Notify(UWindowDialogControl C, byte E)
 				//case WorldDetailSlider:
 				//	WorldDetailSliderChanged();
 				//	break;
-				//case TextureDetailWorldSlider:
-					//TextureDetailWorldSliderChanged();
-					//break;
-				//case TextureDetailSkinSlider:
-					//TextureDetailSkinSliderChanged();
-					//break;
-				//case TextureDetailLightmapSlider:
-					//TextureDetailLightmapSliderChanged();
-					//break;
+				case TextureDetailWorldSlider:
+					TextureDetailWorldSliderChanged();
+					break;
+				case TextureDetailSkinSlider:
+					TextureDetailSkinSliderChanged();
+					break;
+				case TextureDetailLightmapSlider:
+					TextureDetailLightmapSliderChanged();
+					break;
 				//case GameDetailCheckbox:
 				//	GameDetailCheckboxChanged();
 				//	break;
@@ -502,6 +600,17 @@ function Notify(UWindowDialogControl C, byte E)
 				case BoltonCheckbox:
 					BoltonCheckBoxChanged();
 					break;
+				// xPatch:
+				case BodiesLifetimeSlider:
+					LifespanSliderChanged(BodiesLifetimePath, BodiesLifetimeSlider.GetValue());
+					break;
+				case LimbsLifetimeSlider:
+					LifespanSliderChanged(LimbsLifetimePath, LimbsLifetimeSlider.GetValue());
+					break;	
+				case ExplosionDismembermentCheckbox:
+					ExplosionDismembermentCheckboxChanged();
+					break;
+				// End
 				}
 			break;
 		case DE_Click:
@@ -707,7 +816,7 @@ function DynamicLightsCheckboxChanged()
 		{
 		if (DynamicLightsCheckbox.bChecked)
 			val = 1;
-		GetPlayerOwner().ConsoleCommand("set" @ DynamicLightsCheckboxPath @ val);
+		GetPlayerOwner().ConsoleCommand("set" @ DynamicLightsCheckPath @ val);
 		}
 	}
 */
@@ -818,6 +927,18 @@ function BoltonCheckBoxChanged()
 		ShowWarning(BoltonChangedWarningTitle, BoltonChangedWarningText);
 	}
 }
+// xPatch:
+function LifespanSliderChanged(string ConfigPath, float Value)
+{
+	if (bUpdate)
+		GetPlayerOwner().ConsoleCommand("set" @ ConfigPath @ Value);
+}
+function ExplosionDismembermentCheckboxChanged()
+{
+	if (bUpdate)
+		GetPlayerOwner().ConsoleCommand("set" @ ExplosionDismembermentPath @ ExplosionDismembermentCheckbox.bChecked);
+}
+// End
 
 ///////////////////////////////////////////////////////////////////////////////
 // default properties
@@ -899,12 +1020,12 @@ defaultproperties
 	TitleSpacingY=5.000000
 	ItemHeight=22.000000
 	ItemSpacingY=0.000000
-	HintLines=3
+	HintLines=4
 	astrTextureDetailNames(0)="UltraLow"
 	astrTextureDetailNames(1)="Low"
 	astrTextureDetailNames(2)="Medium"
 	astrTextureDetailNames(3)="High"
-	bDefaultsStored=True
+	bDefaultsStored=False //True
 	aDefaultValues(0)="1000"
 	aDefaultValues(1)="8000"
 	aDefaultValues(2)="1000"
@@ -915,7 +1036,7 @@ defaultproperties
 	aDefaultValues(7)="4"
 	aDefaultValues(8)="5"
 	aDefaultValues(9)="15"
-	aDefaultValues(10)="25"
+	aDefaultValues(10)="15" // was 25
 	aDefaultValues(11)="10"
 	aDefaultValues(12)="1"
 	aDefaultValues(13)="85"
@@ -923,6 +1044,25 @@ defaultproperties
 	aDefaultValues(15)="True"
 	aDefaultValues(16)="True"
 	aDefaultValues(17)="True"
+	// xPatch
+	aDefaultValues(18)="High"
+	aDefaultValues(19)="High" 
+	aDefaultValues(20)="High"
+	aDefaultValues(21)="High"
+	aDefaultValues(22)="High"
+	aDefaultValues(23)="True"
+	aDefaultValues(24)="0"		// Corpses
+	aDefaultValues(25)="60" 	// Limbs
+	aDefaultValues(26)="True" 	// Explosion Dism.
+	
+	BodiesLifetimeText="Corpse Lifetime"
+	BodiesLifetimeHelp="Number of seconds before a corpse is removed. Set to low value if you experience crashes. NOTE: If set to 0, bodies are removed according to the Corpse Population setting."
+	LimbsLifetimeText="Limb Lifetime"
+	LimbsLifetimeHelp="Number of seconds before dismembered limbs and heads are removed. Lower if you experience crashes."
+	ExplosionDismembermentText="Explosion Impact Dismemberment"
+	ExplosionDismembermentHelp="Allows explosions to cause dismemberment. Turn off to improve performance."
+	// End
+	
 	AnisotropyLevel(0)="1"
 	AnisotropyLevel(1)="2"
 	AnisotropyLevel(2)="4"

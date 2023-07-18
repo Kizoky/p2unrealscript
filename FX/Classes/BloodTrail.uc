@@ -33,7 +33,7 @@ defaultproperties
         ColorScale(1)=(RelativeTime=1.000000,Color=(A=255,B=100,G=100,R=100))
         UseDirectionAs=PTDU_Normal
         FadeOut=True
-        MaxParticles=20
+        MaxParticles=50
         RespawnDeadParticles=False
         UseSizeScale=True
 		UniformSize=True

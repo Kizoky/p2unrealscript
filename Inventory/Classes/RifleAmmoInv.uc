@@ -3,6 +3,9 @@
 ///////////////////////////////////////////////////////////////////////////////
 class RifleAmmoInv extends P2AmmoInv;
 
+var class<P2Projectile> SilentProjectileClass;
+var class<DamageType> DamageTypeEnhanced;
+
 ///////////////////////////////////////////////////////////////////////////////
 // Add in the instigator
 ///////////////////////////////////////////////////////////////////////////////
@@ -20,9 +23,23 @@ function SpawnRifleProjectile(vector Start, vector Dir)
 	//log(self$" spawned rifle proj "$rp$" at "$rp.Location$" player loc "$Instigator.Location$" speed "$rp.Velocity$" rot "$Instigator.Rotation);
 }
 
+function SpawnSilentRifleProjectile(vector Start, vector Dir)
+{
+	local RifleProjectile rp;
+
+	UseAmmoForShot();
+
+	rp = RifleProjectile(spawn(SilentProjectileClass,Instigator,, Start));
+	rp.SetVelocity(Dir);
+	//log(self$" spawned rifle proj "$rp$" at "$rp.Location$" player loc "$Instigator.Location$" speed "$rp.Velocity$" rot "$Instigator.Rotation);
+}
+
+
+
 defaultproperties
 	{
 	ProjectileClass=class'RifleProjectile'
+	SilentProjectileClass=class'RifleProjectileSilent'
 	PickupClass=class'RifleAmmoPickup'
 	bInstantHit=false
 	WarnTargetPct=+0.2
@@ -33,5 +50,6 @@ defaultproperties
 	DamageAmount=25
 	MomentumHitMag=10000
 	DamageTypeInflicted=class'RifleDamage'
+	DamageTypeEnhanced=class'SuperRifleDamage'
 	Texture=Texture'HUDPack.Icons.Icon_Weapon_Rifle'
 	}

@@ -70,13 +70,17 @@ struct RandomDropDef
 };
 
 var (RandomDrops) export editinline array<RandomDropDef> RandomDrops;	// List of possible random drops, see above for config.
+
 // These are arrays of weapon class names that are handed out to bystanders during certain difficulty modes.
 var array<string> 	RandomLieberWeapons,		// Melee or other "sissy" weapons given out in Liebermode
 					RandomHestonWeapons,		// Guns given out in Hestonworld
 					RandomInsaneWeapons,		// Guns and powerful weapons given out in Insane-o
 					RandomRareWeapons,			// Rare weapons to be given out in Insane-o
-					RandomMeleeWeapons,			// Not used
-					RandomLudicrousWeapons;		// Insanely powerful weapons to be given out in Ludicrous mode (custom difficulty only)
+					RandomMeleeWeapons,			// Melee weapons (custom difficulty only)
+					RandomLudicrousWeapons,		// Ludicrously strong weapons for Ludicrous diffculty
+					RandomLudicrousWeaponsRare,
+					RandomLudicrousWeaponsSuperRare,
+					RandomMassDestructionWeapons;
 
 const HEAD_MOVE_Z_UP_BIG_TEMP_VARIABLE	=	5;
 const EASY_HEAD_HIT						=	2.5;
@@ -113,6 +117,33 @@ const MELEE_BLOCK_MAX_HESTON = 0.50;
 
 const MELEE_BLOCK_MIN_INSANE = 0.50;
 const MELEE_BLOCK_MAX_INSANE = 1.00;
+
+// xPatch: New consts for Ludicrous difficulty
+const LUDICROUS_RARE_WEAPON_CHANCE = 0.25;
+const LUDICROUS_SUPER_RARE_WEAPON_CHANCE = 0.08;
+const LUDICROUS_MELEE_BLOCK_MIN	= 0.75;
+const LUDICROUS_ADVANCED_FIRE = 0.50;
+const LUDICROUS_DUAL_WIELD = 0.35;
+const CRACKOLA_DROP_LUDICROUS = 0.15;
+
+// xPatch: New variables
+var (RandomDrops)bool		NoRandomDrops; 		// If set to true NPC will not perform any random item drops.
+var (RandomDrops)RandomDrop	GuranteedDrop; 		// Set if you want the NPC to drop a specified item upon death.
+var (RandomWeapons)bool		bAllowRandomGuns;	// Weapons can be replaced if the xPatch option is enabled and it's not Classic Game.
+var (RandomWeapons)bool		bForceRandomGuns;	// Foreces replacement ignoring everything.
+
+struct ReplacementsDef
+{
+	var() class<P2Weapon> RandomWeapon;		// Class of weapon we replace with
+	var string RandomWeaponStr;			// For dynamic load if we can't access it via class.
+};
+struct RandomGunsDef
+{
+	var() export editinline array<ReplacementsDef> Replacements;
+	var() class<P2Weapon> DefaultWeapon;		// Class of default weapon we want to be replaced
+	var() float Chance;							// Chance of this default weapon being replaced (0.0 = never, 0.5 = 50% of the time, 1.0 = always)	
+};
+var (RandomWeapons) export editinline array<RandomGunsDef> RandomGuns;
 
 // Defined in P2MoCapPawn.
 /*
@@ -177,11 +208,11 @@ function Inventory CreateInventoryByClass(class<Inventory> MakeMe,
 	//debuglog(self@"create inventory"@MakeMe@CreatedNow);
 
 	p2weapclass = class<P2Weapon>(MakeMe);
-
+	
 	// If you're in Liebermode and this is a violent weapon, change
 	// it to a weak one (but don't bother the player)
 	if(p2weapclass != None
-		&& P2GameInfo(Level.Game).InLiebermode()
+		&& (P2GameInfo(Level.Game).InLiebermode() || P2GameInfo(Level.Game).InMeeleMode())
 		&& p2weapclass.default.ViolenceRank >= class'PistolWeapon'.default.ViolenceRank
 		&& !bPlayer
 		&& !bIgnoreDifficulty)
@@ -200,6 +231,8 @@ function Inventory CreateInventoryByClass(class<Inventory> MakeMe,
 		}
 		if (bHasMelee)
 			return None;
+		else if(P2GameInfo(Level.Game).InMeeleMode())
+			return CreateInventory(RandomMeleeWeapons[Rand(RandomMeleeWeapons.Length)]);
 		else
 			return CreateInventory(RandomLieberWeapons[Rand(RandomLieberWeapons.Length)]);
 
@@ -389,7 +422,7 @@ function ResetGotDefaultInventory( )
 ///////////////////////////////////////////////////////////////////////////////
 function AddDefaultInventory()
 {
-	local int i, randpick;
+	local int i, j, randpick;
 	local Inventory thisinv;
 	local P2PowerupInv pinv;
 	local P2Weapon p2weap;
@@ -398,6 +431,14 @@ function AddDefaultInventory()
 	local int Count;
 	local float TestBlockMeleeFreq;
 	local bool bHasMeleeWeapon;
+	// xPatch: 
+	local xPatchManager xManager;
+	local bool ClassicWeapons;
+	local float randchance;
+	
+	xManager = P2GameInfoSingle(Level.Game).xManager;
+	if(P2GameInfoSingle(Level.Game).InClassicMode() || xManager.bAlwaysOGWeapons)
+		ClassicWeapons = True;
 
 	// Only let this be called once
 	if (!bGotDefaultInventory)
@@ -434,27 +475,94 @@ function AddDefaultInventory()
 		}
 		
 		bHasMeleeWeapon = false;
-
-		// DISABLED bystander fists 4/29. They cause more problems than they're worth.
-		/*
+		
+		// xPatch: Isn't it weird that The Dude is the only one using the new weapons?
+		// I mean, in normal diffculties. Let's add some more guns vareity, for bystanders mostly.
+		if( (bAllowRandomGuns && xManager.bRandomGuns && !ClassicWeapons) || bForceRandomGuns )
+		{
+			if(!bPlayer && RandomGuns.Length != 0 && BaseEquipment.Length != 0)
+			{
+				// Go through pawn's equipment
+				for( i = 0 ; i < BaseEquipment.Length ; i++ )
+				{	
+					if(BaseEquipment[i].weaponclass != None)
+					{
+						// Go through RandomGuns array
+						for( j = 0 ; j < RandomGuns.Length ; j++ )
+						{
+							// See if pawn have default weapon we want to replace
+							if( BaseEquipment[i].weaponclass == RandomGuns[j].DefaultWeapon )
+							{
+								// Check the chance for replacement
+								randchance = RandomGuns[j].Chance;
+								if (FRand() <= randchance)
+								{
+									// Pick random replacement
+									randpick = RandomGuns[j].Replacements.Length;
+									randpick = Rand(randpick);
+									
+									// Use RandomWeapon (class) if defined. 
+									if(RandomGuns[j].Replacements[randpick].RandomWeapon != None)
+										p2weapclass = RandomGuns[j].Replacements[randpick].RandomWeapon;
+									// If not do Dynamic Load of RandomWeaponStr.
+									else if(RandomGuns[j].Replacements[randpick].RandomWeaponStr != "")
+										p2weapclass = class<P2Weapon>(DynamicLoadObject(RandomGuns[j].Replacements[randpick].RandomWeaponStr, class'Class'));
+										
+									// And finally replace it
+									BaseEquipment[i].weaponclass = p2weapclass;
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		
+		// xPatch: Classic Mode
+		if(ClassicWeapons && !bPlayer)
+			ReplaceToClassicInventory();	
+			
+		// xPatch: Meele Mode (Custom Difficulty)
+		// Clean up their BaseEquipment, they will get only melee.
+		if(P2GameInfo(Level.Game).InMeeleMode()
+			&& !bPlayer)
+		{
+			for ( i=0; i<BaseEquipment.Length; i++ )
+			{
+				if (BaseEquipment[i].weaponclass != None)
+				{
+					//log(self$" base equipment "$i$" weap "$BaseEquipment[i].weaponclass);
+					p2weapclass = class<P2Weapon>(BaseEquipment[i].weaponclass);
+					// If you're in Liebermode and this is a violent weapon, change
+					if(p2weapclass != None) //&& !p2weapclass.default.bMeleeWeapon)
+						BaseEquipment[i].weaponclass = None;
+				}
+			}
+		}
+		
+		// xPatch: Restored this function so it can be used on custom maps by modders. 
+		// It's disabled by default now and should not cause any problems anyway.
+		
 		// If they have a lot of balls, give them some fists for punching
 		// Only do this if they don't have a melee weapon already.
-		if (bAllowBareHands
-			&& Cajones >= 0.4
+		if (bAllowBareHands)
+		{
+			if (Cajones >= 0.4
 			&& BaseEquipment.Length < 2
 			&& !P2GameInfo(Level.Game).InLiebermode()	// Don't give out the fists in lieber mode, it screws with the melee weapon check and causes general weirdness
 			&& !Controller.IsA('MuggerController')		// Don't give to muggers, they'll try to hold you up with fists instead
 			&& !IsA('Gary') && !IsA('AWGary') && !IsA('AWScaredGary')	// Don't give to Gary
 			&& Level.TimeSeconds == 0					// Don't give to PawnSpawner-spawned pawns - it tends to screw with the equipment PawnSpawners give them.
 			)
-		{
+			{
 			BaseEquipment.Insert(0,1);
 			BaseEquipment[0].WeaponClass = class'Inventory.FistsWeapon';
 			CloseWeaponIndex = 0;
 			FarWeaponIndex = 1;
 			WeapChangeDist = 100;
+			}
 		}
-		*/
+		
 
 		// Add in the extra stuff now
 		for ( i=0; i<BaseEquipment.Length; i++ )
@@ -482,6 +590,7 @@ function AddDefaultInventory()
 					else
 					{
 						BaseEquipment[i].weaponclass = class<P2Weapon>(DynamicLoadObject(RandomLieberWeapons[Rand(RandomLieberWeapons.Length)],class'Class'));
+						
 						/*
 						randpick = Rand(3);
 						switch(randpick)
@@ -525,13 +634,32 @@ function AddDefaultInventory()
 				}
 			}
 		}
+		
+		// xPatch: Meele Mode (Custom Difficulty)
+		// Melee weapons for everyone, yaay!
+		if(P2GameInfo(Level.Game).InMeeleMode()
+			&& !bPlayer)
+		{
+			CreateInventoryForDifficulty(RandomMeleeWeapons[Rand(RandomMeleeWeapons.Length)]);
+				
+			// And bump them up to be ready to fight
+			if(PainThreshold < 1.0)
+				PainThreshold = 1.0;
+			if(Cajones < 1.0)
+				Cajones = 1.0;
+			TestBlockMeleeFreq=RandRange(MELEE_BLOCK_MIN_HESTON, MELEE_BLOCK_MAX_HESTON);
+			if (BlockMeleeFreq < TestBlockMeleeFreq)
+				BlockMeleeFreq = TestBlockMeleeFreq;
+		}
 
 		// If you're in heston mode, no matter what, always give them some more random guns
 		// (unless you're the player)
 		if(P2GameInfo(Level.Game).InHestonMode()
 			&& !bPlayer)
 		{
-			CreateInventory(RandomHestonWeapons[Rand(RandomHestonWeapons.Length)]);
+			// Change by Man Chrzan: xPatch 3.0
+			/*CreateInventory(RandomHestonWeapons[Rand(RandomHestonWeapons.Length)]);*/
+			CreateInventoryForDifficulty(RandomHestonWeapons[Rand(RandomHestonWeapons.Length)]);
 
 			// And bump them up to be ready to fight
 			if(PainThreshold < 1.0)
@@ -548,10 +676,11 @@ function AddDefaultInventory()
 		if(P2GameInfo(Level.Game).InInsaneMode()
 			&& !bPlayer)
 		{
+			// Change by Man Chrzan: xPatch 3.0 
 			if (FRand() <= INSANE_RARE_WEAPON_CHANCE)
-				CreateInventory(RandomRareWeapons[Rand(RandomRareWeapons.Length)]);
+				CreateInventoryForDifficulty(RandomRareWeapons[Rand(RandomRareWeapons.Length)]);
 			else
-				CreateInventory(RandomInsaneWeapons[Rand(RandomInsaneWeapons.Length)]);
+				CreateInventoryForDifficulty(RandomInsaneWeapons[Rand(RandomInsaneWeapons.Length)]);
 
 			// And bump them up to be ready to fight
 			if(PainThreshold < 1.0)
@@ -568,21 +697,61 @@ function AddDefaultInventory()
 		if(P2GameInfo(Level.Game).InLudicrousMode()
 			&& !bPlayer)
 		{
-			CreateInventory(RandomHestonWeapons[Rand(RandomHestonWeapons.Length)]);
-			CreateInventory(RandomInsaneWeapons[Rand(RandomInsaneWeapons.Length)]);
-			if (FRand() <= INSANE_RARE_WEAPON_CHANCE * 2)
-				CreateInventory(RandomRareWeapons[Rand(RandomRareWeapons.Length)]);
-			if (FRand() <= INSANE_RARE_WEAPON_CHANCE)
-				CreateInventory(RandomLudicrousWeapons[Rand(RandomLudicrousWeapons.Length)]);
-			
+			// Give them one of our awesome ludicrous weapons.			
+			if (FRand() <= LUDICROUS_SUPER_RARE_WEAPON_CHANCE)
+				CreateInventoryForDifficulty(RandomLudicrousWeaponsSuperRare[Rand(RandomLudicrousWeaponsSuperRare.Length)]);
+			else if (FRand() <= LUDICROUS_RARE_WEAPON_CHANCE)
+				CreateInventoryForDifficulty(RandomLudicrousWeaponsRare[Rand(RandomLudicrousWeaponsRare.Length)]);
+			else
+				CreateInventoryForDifficulty(RandomLudicrousWeapons[Rand(RandomLudicrousWeapons.Length)]);
+
 			// And bump them up to be ready to fight
 			if(PainThreshold < 1.0)
 				PainThreshold = 1.0;
 			if(Cajones < 1.0)
 				Cajones = 1.0;
-			TestBlockMeleeFreq=RandRange(MELEE_BLOCK_MIN_INSANE, MELEE_BLOCK_MAX_INSANE);
+			TestBlockMeleeFreq=RandRange(LUDICROUS_MELEE_BLOCK_MIN, 1.00);
 			if (BlockMeleeFreq < TestBlockMeleeFreq)
 				BlockMeleeFreq = TestBlockMeleeFreq;
+				
+			// Allows them to burst fire etc.
+			if (FRand() <= LUDICROUS_ADVANCED_FIRE)
+				bAdvancedFiring=True;
+			
+			// Make them dual wield too, hahaha! (not in classic mode though)
+			if (!ClassicWeapons && FRand() <= LUDICROUS_DUAL_WIELD)
+				bForceDualWield = True;
+				
+			// Oh, and make them walk with the guns ready too!
+			bRiotMode=True;
+		}
+		
+		// A silly Custom Difficulty mode
+		if(P2GameInfo(Level.Game).InNukeMode())
+		{
+			if(!bPlayer)
+			{
+				// Give them some weapons of mass destruction.
+				CreateInventoryForDifficulty(RandomMassDestructionWeapons[Rand(RandomMassDestructionWeapons.Length)]);
+
+				// And bump them up to be ready to fight
+				if(PainThreshold < 1.0)
+					PainThreshold = 1.0;
+				if(Cajones < 1.0)
+					Cajones = 1.0;
+				TestBlockMeleeFreq=RandRange(MELEE_BLOCK_MIN_HESTON, MELEE_BLOCK_MAX_HESTON);
+				if (BlockMeleeFreq < TestBlockMeleeFreq)
+					BlockMeleeFreq = TestBlockMeleeFreq;
+					
+				// Allows them to burst fire etc.
+				if (FRand() <= LUDICROUS_ADVANCED_FIRE)
+					bAdvancedFiring=True;
+			}
+			else // Player gets it too, hell yeah!
+			{
+				for ( i=0; i<RandomMassDestructionWeapons.Length; i++ )
+					CreateInventoryForDifficulty(RandomMassDestructionWeapons[i]);
+			}
 		}
 		
 		// If an NPC, give an NPC urethra
@@ -685,9 +854,9 @@ function AddDefaultInventory()
 				}
 			}
 		}
-		// If they're in Impossible mode, put them all on the same gang and make them even more tough
+		// If they're in Impossible (or Ludicrous) mode, put them all on the same gang and make them even more tough
 		if (P2GameInfo(Level.Game).InNightmareMode()
-			&& P2GameInfo(Level.Game).InInsaneMode()
+			&& (P2GameInfo(Level.Game).InInsaneMode() || P2GameInfo(Level.Game).InLudicrousMode())
 			&& !bPlayer)
 		{
 			Gang = IMPOSSIBLE_GANG_NAME;
@@ -704,7 +873,7 @@ function AddDefaultInventory()
 			Glaucoma = FMin(Glaucoma, 0.5);
 			TakesOnFireDamage = FMin(TakesOnFireDamage, 0.5);
 			TakesShotgunHeadShot = FMin(TakesShotgunHeadShot, 0.75);
-			TakesRifleHeadShot = FMin(TakesRifleHeadShot, 0.75);
+			//TakesRifleHeadShot = FMin(TakesRifleHeadShot, 0.75);
 			TakesShovelHeadShot = FMin(TakesShovelHeadShot, 0.75);
 			TakesAnthraxDamage = FMin(TakesAnthraxDamage, 0.75);
 			TakesShockerDamage = FMin(TakesShockerDamage, 0.75);
@@ -720,13 +889,95 @@ function AddDefaultInventory()
 			//log(self$" new health "$usedam);
 			HealthMax = usedam;
 			Health = HealthMax;
-		}
+		}	
 		//log(self$" initting for new level, game info diff "$P2GameInfoSingle(Level.Game).GameDifficulty$" game state diff "$P2GameInfoSingle(Level.Game).TheGameState.GameDifficulty$" GET game state diff "$P2GameInfoSingle(Level.Game).GetGameDifficulty());
 	}
 	//else
 	//{
 	//	Log(self$" PersonPawn.AddDefaultInventory() is being bypassed because inventory was added already");
 	//}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// xPatch: Allows us to replace new weapons to old ones in Classic Game
+///////////////////////////////////////////////////////////////////////////////
+function ReplaceToClassicInventory()
+{
+	local int i, j;
+	local xPatchManager xManager;
+	local class<P2Weapon> p2weapclass;
+	local class<P2Weapon> AWweapclass[3];
+	
+	xManager = P2GameInfoSingle(Level.Game).xManager;
+	
+			for( i = 0 ; i < BaseEquipment.Length ; i++ )
+			{
+				// Replace weapons using the list from P2GameInfoSingle
+				if(BaseEquipment[i].weaponclass != None)
+				{
+					if( P2GameInfoSingle(Level.Game).ClassicModeReplace.Length != 0 )
+					{
+						for( j = 0 ; j < P2GameInfoSingle(Level.Game).ClassicModeReplace.Length ; j++ )
+						{
+							p2weapclass = class<P2Weapon>(DynamicLoadObject(P2GameInfoSingle(Level.Game).ClassicModeReplace[j].OldClass, class'Class'));
+							if( p2weapclass != None && p2weapclass == BaseEquipment[i].weaponclass && !xManager.IsException(P2GameInfoSingle(Level.Game).ClassicModeReplace[j].OldClass))
+							{
+								BaseEquipment[i].weaponclass = class<P2Weapon>(DynamicLoadObject(P2GameInfoSingle(Level.Game).ClassicModeReplace[j].NewClass,class'Class'));
+							}
+						}
+					}
+				}
+
+				// Extra check for AW Weapons
+				if((xManager.bAlwaysOGWeapons && xManager.bNoAWWeaponsRG) 
+					|| (P2GameInfoSingle(Level.Game).InClassicMode() && xManager.bNoAWWeapons))
+				{	
+					AWweapclass[0] = class<P2Weapon>(DynamicLoadObject("AWInventory.MacheteWeapon", class'Class'));
+					AWweapclass[1] = class<P2Weapon>(DynamicLoadObject("AWInventory.SledgeWeapon", class'Class'));
+					AWweapclass[2] = class<P2Weapon>(DynamicLoadObject("AWInventory.ScytheWeapon", class'Class'));
+						
+					// Don't let them have AW weapons
+					if(BaseEquipment[i].weaponclass == AWweapclass[0] 
+						|| BaseEquipment[i].weaponclass == AWweapclass[1] 
+						|| BaseEquipment[i].weaponclass == AWweapclass[2])
+						BaseEquipment[i].weaponclass = class'ShovelWeapon';
+				}		
+			}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// xPatch: CreateInventory but check for Classic Game mode first.
+///////////////////////////////////////////////////////////////////////////////
+function Inventory CreateInventoryForDifficulty(string WeaponClassName)
+{
+	local int i;
+	local bool bException;
+	local string OldClassName, NewClassName;
+	local P2GameInfoSingle GameSingle;
+	local xPatchManager xManager;
+
+	GameSingle = P2GameInfoSingle(Level.Game);
+	xManager = GameSingle.xManager;
+
+	if(GameSingle != None && GameSingle.InClassicMode())
+	{
+		if(GameSingle.ClassicModeReplace.Length != 0)
+		{
+			for( i = 0 ; i < GameSingle.ClassicModeReplace.Length ; i++ )
+			{
+				OldClassName = GameSingle.ClassicModeReplace[i].OldClass;
+				NewClassName = GameSingle.ClassicModeReplace[i].NewClass;
+				
+				if(xManager != None && xManager.IsException(OldClassName))
+					bException = True;
+				
+				if(WeaponClassName == OldClassName && !bException)
+					WeaponClassName = NewClassName;
+			}
+		}
+	}
+	
+	return CreateInventory(WeaponClassName);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1454,10 +1705,36 @@ function PerformRandomDrops()
 	local Pickup P;
 	local Vector ThrowLocation, ThrowVelocity, X, Y, Z;
 	local Rotator ThrowRotation;
+	local class<Pickup> PickItemClass;
+	local StaticMesh PickDropMesh;
 	
 	psg = P2GameInfoSingle(Level.Game);
 	if (psg == None)
 		return;
+		
+	// xPatch: new little feature for modders mostly, guranteed drop!
+	if(GuranteedDrop.DropClass != None)
+	{
+		// Figure out how much of this thing to drop
+		DropAmount = Int(RandRange(GuranteedDrop.DropAmount.Min, GuranteedDrop.DropAmount.Max));
+		
+		// Randomize the static mesh, if any
+		if (GuranteedDrop.DropMesh.Length > 0)
+			PickDropMesh = GuranteedDrop.DropMesh[Rand(GuranteedDrop.DropMesh.Length)];
+			
+		DropItem(GuranteedDrop.DropClass, DropAmount, PickDropMesh);
+	}
+	
+	// xPatch: Sometimes we don't want to allow dropping random items at all
+	if (P2GameInfo(Level.Game).InVeteranMode() || NoRandomDrops || psg.InClassicMode())
+	{
+		// But, maybe give them crackola to reward the player 
+		// for the dual-wielder enemy kill, fuckers pack a punch
+		if(bForceDualWield && FRand() <= CRACKOLA_DROP_LUDICROUS)
+			DropItem(Class'CrackColaPickup', 1);
+
+		return;
+	}
 	
 	for (i = 0; i < RandomDrops.Length; i++)
 	{
@@ -1534,20 +1811,48 @@ function PerformRandomDrops()
 		
 		// Choose one of the possible drops
 		j = Rand(Drop.DropItem.Length);
-		P = Spawn(Drop.DropItem[j].DropClass,,,ThrowLocation,ThrowRotation);
+		PickItemClass = Drop.DropItem[j].DropClass;
+		
+		// Randomize the static mesh, if any
+		if (Drop.DropItem[j].DropMesh.Length > 0)
+			PickDropMesh = Drop.DropItem[j].DropMesh[Rand(Drop.DropItem[j].DropMesh.Length)];
+			
+		// Figure out how much of this thing to drop
+		DropAmount = Int(RandRange(Drop.DropItem[j].DropAmount.Min, Drop.DropItem[j].DropAmount.Max));
+		
+		// And finally spawn the thing
+		DropItem(PickItemClass, DropAmount, PickDropMesh);
+	}
+}
+
+// xPatch: Moved the spawning part into a new function so it can be done not only at random.
+function DropItem(class<Pickup> ItemClass, int DropAmount, optional StaticMesh DropMesh)
+{
+	local RandomDropDef Drop;
+	local Pickup P;
+	local Vector ThrowLocation, ThrowVelocity, X, Y, Z;
+	local Rotator ThrowRotation;
+	
+	if(ItemClass != None && DropAmount != 0)
+	{			
+		// If we've gotten this far, we can drop the item
+		ThrowVelocity = Vector(Rotation);
+		ThrowRotation = Rotation;
+		ThrowRotation.Yaw = FRand() * 65535;
+		GetAxes(ThrowRotation, X, Y, Z);
+		ThrowLocation = Location + 0.3 * CollisionRadius * X + CollisionRadius * Z;
+
+		P = Spawn(ItemClass,,,ThrowLocation,ThrowRotation);
 		
 		// If it didn't spawn, try directly at the pawn's location
 		if (P == None)
-			P = Spawn(Drop.DropItem[j].DropClass,,,Location,ThrowRotation);
+			P = Spawn(ItemClass,,,Location,ThrowRotation);
 			
 		if (P != None)
 		{
-			// Randomize the static mesh, if any
-			if (Drop.DropItem[j].DropMesh.Length > 0)
-				P.SetStaticMesh(Drop.DropItem[j].DropMesh[Rand(Drop.DropItem[j].DropMesh.Length)]);
-			
-			// Figure out how much of this thing to drop
-			DropAmount = Int(RandRange(Drop.DropItem[j].DropAmount.Min, Drop.DropItem[j].DropAmount.Max));
+			// use specified static mesh, if any
+			if(DropMesh != None)
+				P.SetStaticMesh(DropMesh);
 			
 			// Specific inits for the dropped item
 			if (Ammo(P) != None)
@@ -1568,6 +1873,7 @@ function PerformRandomDrops()
 				if (DropAmount > 0)
 					P2PowerupPickup(P).AmountToAdd = DropAmount;
 				P2PowerupPickup(P).bAllowMovement = true;
+				P2PowerupPickup(P).bRanomDrop = true;	// xPatch: Crash Fix
 			}
 			
 			// Now send it flying
@@ -1875,10 +2181,9 @@ defaultproperties
 	ADJUST_RELATIVE_HEAD_Y=0
 	ADJUST_RELATIVE_HEAD_Z=0
 
-	RandomLieberWeapons(0)="AWPStuff.DustersWeapon"
+	RandomLieberWeapons(0)="Inventory.FistsWeapon"
 	RandomLieberWeapons(1)="Inventory.BatonWeapon"
 	RandomLieberWeapons(2)="Inventory.ShovelWeapon"
-	//RandomLieberWeapons(3)="AWPStuff.BaseballBatWeapon"
 	RandomHestonWeapons(0)="Inventory.PistolWeapon"
 	RandomHestonWeapons(1)="EDStuff.GSelectWeapon"
 	RandomHestonWeapons(2)="Inventory.ShotgunWeapon"
@@ -1896,27 +2201,58 @@ defaultproperties
 	RandomRareWeapons(0)="EDStuff.GrenadeLauncherWeapon"
 	RandomRareWeapons(1)="Inventory.LauncherWeapon"
 	RandomRareWeapons(2)="Inventory.NapalmWeapon"
-	RandomMeleeWeapons(0)="AWPStuff.DustersWeapon"
-	RandomMeleeWeapons(1)="AWInventory.MacheteWeapon"
-	RandomMeleeWeapons(2)="AWInventory.ScytheWeapon"
-	RandomMeleeWeapons(3)="EDStuff.ShearsWeapon"
-	RandomMeleeWeapons(4)="Inventory.ShovelWeapon"
-	RandomMeleeWeapons(5)="AWInventory.SledgeWeapon"
-	RandomMeleeWeapons(6)="EDStuff.AxeWeapon"
-	RandomMeleeWeapons(7)="AWPStuff.BaseballBatWeapon"	
-	RandomLudicrousWeapons(0)="Inventory.CowHeadWeapon"
-	RandomLudicrousWeapons(1)="Inventory.PlagueWeapon"
-	RandomLudicrousWeapons(2)="AWPStuff.SawnOffWeapon"
+	RandomRareWeapons(3)="AWPStuff.SawnOffWeapon"
+	RandomMeleeWeapons(0)="AWInventory.MacheteWeapon"
+	RandomMeleeWeapons(1)="AWInventory.ScytheWeapon"
+	RandomMeleeWeapons(2)="AWInventory.SledgeWeapon"
+	RandomMeleeWeapons(3)="EDStuff.AxeWeapon"
+	RandomMeleeWeapons(4)="EDStuff.ShearsWeapon"
+	RandomMeleeWeapons(5)="AWPStuff.DustersWeapon"
+	RandomMeleeWeapons(6)="Inventory.BatonWeapon"
+	RandomMeleeWeapons(7)="Inventory.ShovelWeapon"
+	RandomMeleeWeapons(8)="EDStuff.BaliWeapon"
+	RandomMeleeWeapons(9)="AWPStuff.BaseballBatWeapon"
 	ColemansCrewSkin=Texture'ChameleonSkins.Special.Colemans_Crew'
-	bAllowBareHands=true
+	bAllowBareHands=False //true
 	GibsClass=class'PawnExplosion'
 	HandsClassEnhanced="Postal2Extras.P2EHandsWeapon"
 	HandsClassNormal="Inventory.HandsWeapon"
 	UrethraClass=class'NPCUrethraWeapon'
 	
+	// xPatch Changes: 
+	// - Commented out money (it's already handled by other function, it was causing double-money drops)
+	// - Added random crackola drop (enhanced game)
 	RandomDrops[0]=(DropItem=((DropClass=class'DogTreatPickup')),DropRate=0.1,DropInExpertMode=1)
 	RandomDrops[1]=(DropItem=((DropClass=class'DonutPickup',DropMesh=(StaticMesh'Timb_mesh.fast_food.donut1_timb',StaticMesh'Timb_mesh.fast_food.donut2_timb',StaticMesh'Timb_mesh.fast_food.donut3_timb',StaticMesh'Timb_mesh.fast_food.donut4_timb',StaticMesh'Timb_mesh.fast_food.donut5_timb',))),DropRate=0.2,DropInExpertMode=1)
 	RandomDrops[2]=(DropItem=((DropClass=class'PizzaPickup')),DropRate=0.15,DropInExpertMode=1)
-	RandomDrops[3]=(DropItem=((DropClass=class'MoneyPickup',DropAmount=(Min=5,Max=15))),DropRate=0.1)
-	RandomDrops[4]=(DropItem=((DropClass=class'FastFoodPickup'),(DropClass=class'PizzaPickup'),(DropClass=class'DonutPickup',DropMesh=(StaticMesh'Timb_mesh.fast_food.donut1_timb',StaticMesh'Timb_mesh.fast_food.donut2_timb',StaticMesh'Timb_mesh.fast_food.donut3_timb',StaticMesh'Timb_mesh.fast_food.donut4_timb',StaticMesh'Timb_mesh.fast_food.donut5_timb',))),DropRate=0.1)
+	//RandomDrops[3]=(DropItem=((DropClass=class'MoneyPickup',DropAmount=(Min=5,Max=15))),DropRate=0.1)
+	RandomDrops[3]=(DropItem=((DropClass=class'FastFoodPickup'),(DropClass=class'PizzaPickup'),(DropClass=class'DonutPickup',DropMesh=(StaticMesh'Timb_mesh.fast_food.donut1_timb',StaticMesh'Timb_mesh.fast_food.donut2_timb',StaticMesh'Timb_mesh.fast_food.donut3_timb',StaticMesh'Timb_mesh.fast_food.donut4_timb',StaticMesh'Timb_mesh.fast_food.donut5_timb',))),DropRate=0.1)
+	RandomDrops[4]=(DropItem=((DropClass=class'CrackColaPickup')),DropRate=0.05,DropInEnhancedMode=1)	
+
+	// xPatch: Ranom Guns
+	bAllowRandomGuns=False	// We set it True for generic Bystanders and few other pawns, everyone else still uses their default inventory.
+	RandomGuns[0]=(Replacements=((RandomWeaponStr="EDStuff.GselectWeapon")),DefaultWeapon=class'PistolWeapon',Chance=0.35)
+	RandomGuns[1]=(Replacements=((RandomWeaponStr="EDStuff.MP5Weapon_NPC")),DefaultWeapon=class'MachineGunWeapon',Chance=0.25)
+
+	// xPatch: Ludicrous Mode
+	RandomLudicrousWeapons(0)="Inventory.PistolWeapon"
+	RandomLudicrousWeapons(1)="EDStuff.GSelectWeapon"
+	RandomLudicrousWeapons(2)="Inventory.ShotgunWeapon"
+	RandomLudicrousWeapons(3)="AWPStuff.SawnOffWeapon"
+	RandomLudicrousWeapons(4)="Inventory.MachineGunWeapon"
+	RandomLudicrousWeapons(5)="EDStuff.MP5Weapon"
+	RandomLudicrousWeapons(6)="EDStuff.MP5Weapon_NPC"
+	RandomLudicrousWeapons(7)="AWInventory.MacheteWeapon"
+	RandomLudicrousWeaponsRare(0)="EDStuff.GrenadeLauncherWeapon"
+	RandomLudicrousWeaponsRare(1)="Inventory.LauncherWeapon"
+	RandomLudicrousWeaponsRare(2)="Inventory.CowHeadWeapon"
+	RandomLudicrousWeaponsRare(3)="Inventory.PlagueWeapon"
+	RandomLudicrousWeaponsSuperRare(0)="Inventory.NapalmWeapon"
+	RandomLudicrousWeaponsSuperRare(1)="AWPStuff.NukeWeapon"
+	RandomLudicrousWeaponsSuperRare(2)="Inventory.RifleWeapon"
+	
+	RandomMassDestructionWeapons(0)="EDStuff.GrenadeLauncherWeapon"
+	RandomMassDestructionWeapons(1)="Inventory.LauncherWeapon"
+	RandomMassDestructionWeapons(2)="Inventory.PlagueWeapon"
+	RandomMassDestructionWeapons(3)="AWPStuff.NukeWeapon"
 }

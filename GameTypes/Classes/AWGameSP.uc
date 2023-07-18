@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 // Apocalypse Weekend Single Player game info
-// Copyright 2003 Running With Scissors, Inc.  All Rights Reserved.
+// Copyright 2023 Running With Scissors Studios LLC.  All Rights Reserved.
 //
 // Game info that drives the add on pack.
 //
@@ -46,6 +46,8 @@ function RecordEnding()
 	ConsoleCommand("set "@TimesBeatenAWPath@TimesBeatenAW);
 }	
 
+// NOTE: Not needed anymore, we have days with StartDayURL
+/*
 ///////////////////////////////////////////////////////////////////////////////
 // Send player to the next day
 ///////////////////////////////////////////////////////////////////////////////
@@ -69,6 +71,7 @@ function SendPlayerToNextDay(PlayerController player)
 		QuitGame();
 	}
 }
+*/
 
 defaultproperties
 {
@@ -86,13 +89,15 @@ defaultproperties
 	Begin Object Class=DayBase Name=DayBase8
 		Description="Saturday"
 		UniqueName="DAY_A"
+		StartDayURL="MovieIntro.fuk"	// xPatch
 		ExcludeDays(0)="DEMO"
 		LoadTex="aw_textures.loading_sat"
 		DudeStartComment="DudeDialog.dude_map_exit1"
 		Errands(0)=ErrandBase'SaturdayErrand'
 		PlayerInvList(0)=(InvClassName="Inventory.MoneyInv",NeededAmount=50)
-		PlayerInvList(1)=(InvClassName="Inventory.HandsWeapon")
-		PlayerInvList(2)=(InvClassName="Inventory.StatInv")
+//		PlayerInvList(1)=(InvClassName="Inventory.HandsWeapon")					// Change by Man Chrzan: xPatch 2.0
+//		PlayerInvList(2)=(InvClassName="Inventory.StatInv")						// Fix for getting 2 HandsWeapons in AW
+		PlayerInvList(1)=(InvClassName="Inventory.StatInv")
 		TakeFromPlayerList(0)=(InvClassName="Inventory.NewspaperInv")
 		TakeFromPlayerList(1)=(InvClassName="Inventory.MapInv")
 		Name="DayBase8"
@@ -101,6 +106,7 @@ defaultproperties
 	Begin Object Class=DayBase Name=DayBase9
 		Description="Sunday"
 		UniqueName="DAY_B"
+		StartDayURL="VincesHouse.fuk"		// xPatch
 		ExcludeDays(0)="DEMO"
 		LoadTex="aw_textures.loading_sun"
 		DudeStartComment="DudeDialog.dude_map_exit1"
@@ -113,7 +119,7 @@ defaultproperties
 	End Object
 	Days(1)=DayBase'DayBase9'
 	IntroURL="MovieIntro.fuk"
-	StartFirstDayURL="custest.fuk"
+	StartFirstDayURL="Hospital.fuk" 			// Change by Man Chrzan: xPatch 2.0 for Skip Intro option.
 	StartNextDayURL="custest.fuk"
 	SundayURL="VincesHouse.fuk#Pad1?peer"
 	MatSwaps(0)=(OrigMat=Texture'Josh-textures.signs.game_banner_2',NewMat=Texture'Josh-textures.signs.game_banner_5')
@@ -126,4 +132,8 @@ defaultproperties
 	StatsScreenClassName="GameTypes.AWStatsScreen"
 	ChameleonClass=class'ChameleonPlus'
 	MainMenuURL="AWstartup"
+	
+	// For localization
+	DayNames[0]="Saturday"
+	DayNames[1]="Sunday"
 }

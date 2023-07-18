@@ -71,7 +71,7 @@ defaultproperties
 
 	TitleHeight = 100
 	TitleSpacingY = 0
-	TitleTexture = Texture'RWSProductTex.Postal2Complete'
+	TitleTexture = Texture'P2Misc.Logos.postal2underlined'
 
 	ItemHeight = 50
 	ItemSpacingY = 5

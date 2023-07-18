@@ -1172,9 +1172,12 @@ function FillInLines()
 	Addto(lChampPhotoReaction,					"BMaleDialog.bm_seecarnage_sweetlordnoV2", 1);
 	Addto(lChampPhotoReaction,					"BMaleDialog.bm_seecarnage_sweetlordnoV1", 2);
 
-	Clear(lPhoto_FindWiseWang);
-	Addto(lPhoto_FindWiseWang,					"PL-Dialog.MondayA.BMale-SpeakToTheWiseMan", 1);
-
+	if(bParadiseLost) // xPatch: Crash Fix
+	{
+		Clear(lPhoto_FindWiseWang);
+		Addto(lPhoto_FindWiseWang,					"PL-Dialog.MondayA.BMale-SpeakToTheWiseMan", 1);
+	}
+	
 	Clear(lcallsecurity);
 	Addto(lcallsecurity,							"BMaleDialog.bm_callthepolice", 1);
 	
@@ -1189,4 +1192,5 @@ function FillInLines()
 defaultproperties
 {
 	VolumeMult=0.80
+	bCheckDLCDialog=True
 }

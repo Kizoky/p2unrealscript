@@ -101,6 +101,7 @@ function ExtraSetup(P2MocapPawn P)
 	local vector NewScale;
 	local bool bOk, bWhitelisted, bFound;
 	local float seed;
+	local int loopcount;
 
 	//log(self@"AW7Chameleon :: Pick for"@P@"gender"@ReqGender,'Debug');
 	//log(self@"Calling Super.Pick",'Debug');
@@ -405,7 +406,7 @@ function ExtraSetup(P2MocapPawn P)
 				{
 					AWPerson(P).TakesSledgeDamage /= 4.0;
 					P.TakesShotgunHeadShot /= 4.0;
-					P.TakesRifleHeadShot /= 4.0;
+					P.TakesRifleHeadShot /= 2.0;	// Change by Man Chrzan: 4.0 to 2.0
 					P.TakesShovelHeadShot /= 4.0;
 					P.TakesPistolHeadShot /= 4.0;
 				}
@@ -439,6 +440,13 @@ function ExtraSetup(P2MocapPawn P)
 	//	log(self@"Next bolton index is"@NextBolton);
 		if (NextBolton == -1)
 			break;
+			
+		// xPatch: Runaway loop Crash Fix
+		if (loopcount > 1000)	
+			break;
+		
+		loopcount++;
+		// End
 	}
 	
 	// Assign new dialog class.
@@ -573,6 +581,11 @@ static function Mesh GetMesh(P2MocapPawn P, String MeshName)
 			return Default.VariantMesh[i].NewMesh[ChameleonPlus(MyCham).MyRandRange(0,Default.VariantMesh[i].NewMesh.Length - 1)];
 			
 	return ReturnMesh;
+}
+
+function bool UseExtendedBoltons()
+{
+	return bUseExtendedBoltons;
 }
 	
 ///////////////////////////////////////////////////////////////////////////////

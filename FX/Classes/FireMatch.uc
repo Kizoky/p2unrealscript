@@ -8,7 +8,7 @@ var float UseColRad;
 var bool bFluidBeenHurt;
 var bool bPawnBeenHurt;
 var bool bHitSomething;
-
+var float StartLightRadius, StartLightBrightness;
 
 const DAMPEN_MULT	=	0.15;
 const MIN_BOUNCE_SPEED	=	60;
@@ -107,7 +107,8 @@ state Fading
 	{
 		Emitters[0].StartSizeRange.X.Max+=(SizeChange*DeltaTime);
 		Emitters[0].StartSizeRange.X.Min+=(SizeChange*DeltaTime);
-
+		LightRadius+=(StartLightRadius*DeltaTime);					// xPatch
+		LightBrightness+=(StartLightBrightness*DeltaTime);			// xPatch
 		// Don't hurt stuff here, in this state
 	}
 	
@@ -115,6 +116,8 @@ state Fading
 	{
 		SetTimer(FadeTime, false);
 		SizeChange=-Emitters[0].StartSizeRange.X.Min/(FadeTime+1);
+		StartLightRadius=-default.LightRadius/(FadeTime+1);			// xPatch
+		StartLightBrightness=-default.LightBrightness/(FadeTime+1);	// xPatch
 	}
 }
 
@@ -253,6 +256,12 @@ function Touch(Actor Other)
 	{
 		PeoplePart(Other).HitByMatch(FPSPawn(Owner));
 	}
+	// xPatch
+	else if(P2Projectile(Other) != None)
+	{
+		P2Projectile(Other).HitByMatch();
+	}
+	// End
 	else if(Prop(Other) != None)
 	{
 		if(VSize(Velocity) == 0
@@ -360,6 +369,15 @@ defaultproperties
 	// Change by NickP: MP fix
 	bReplicateMovement=true
 	bUpdateSimulatedPosition=true
+	// End
+	
+	// xPatch:
+	 LightType=LT_SubtlePulse
+     LightBrightness=90.000000
+     LightHue=43
+     LightSaturation=132
+     LightRadius=15.000000
+     LightPeriod=20
 	// End
 
 	 DamageDistMag=1500;

@@ -21,8 +21,11 @@ defaultproperties
         StartLocationRange=(X=(Min=-1.000000,Max=1.000000),Y=(Min=-1.000000,Max=1.000000))
         UseSizeScale=True
         UseRegularSizeScale=False
-        SizeScale(0)=(RelativeSize=0.100000)
-        SizeScale(1)=(RelativeTime=1.000000,RelativeSize=1.000000)
+		// Changed by Man Chrzan: xPatch 2.0
+        //SizeScale(0)=(RelativeSize=0.100000)
+        //SizeScale(1)=(RelativeTime=1.000000,RelativeSize=1.000000)
+		SizeScale(0)=(RelativeSize=0.300000) 
+        SizeScale(1)=(RelativeTime=1.000000,RelativeSize=3.000000) 
         StartSizeRange=(X=(Min=0.100000,Max=0.200000),Y=(Min=1.000000,Max=2.000000))
         Texture=Texture'nathans.Skins.softwhitedot'
         LifetimeRange=(Min=0.500000,Max=0.700000)

@@ -614,6 +614,7 @@ defaultproperties
     DebugFont=Font'P2Fonts.Fancy24'
 
     bNoHudReticle=false
+	bAllowMiddleFinger=True
 	FireSound=Sound'AW7Sounds.KarmaGun.object_throw'
 
 	bAllowHints=true

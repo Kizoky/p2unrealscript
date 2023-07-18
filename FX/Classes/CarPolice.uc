@@ -6,7 +6,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 class CarPolice extends CarExplodable;
 
-
 defaultproperties
 {
     StaticMesh=StaticMesh'P2R_Meshes_D.cars.PoliceCar_New'

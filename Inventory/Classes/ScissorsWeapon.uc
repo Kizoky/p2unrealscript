@@ -362,6 +362,12 @@ state DownWeapon
     }
 }
 
+// xPatch: Make sure that this gun is not extension!
+function bool CanSwapHands()
+{
+	return (Class == Class'ScissorsWeapon');
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Default properties
 ///////////////////////////////////////////////////////////////////////////////
@@ -375,7 +381,7 @@ defaultproperties
 	PickupClass=class'ScissorsPickup'
 	AttachmentClass=class'ScissorsAttachment'
 
-//	Mesh=Mesh'FP_Weapons.FP_Dude_Scissors'
+	OldMesh=Mesh'FP_Weapons.FP_Dude_Scissors'
 	Mesh=Mesh'MP_Weapons.MP_LS_Scissors'
 
 	Skins[0]=Texture'MP_FPArms.LS_arms.LS_hands_dude'
@@ -406,9 +412,10 @@ defaultproperties
 	CombatRating=1.8
 	AIRating=0.5
 	AutoSwitchPriority=6
-	InventoryGroup=6
-	GroupOffset=3
-	BobDamping=0.975000
+	InventoryGroup=7
+	GroupOffset=2
+	//BobDamping=0.975000
+	BobDamping=1.12 
 	ReloadCount=0
 	TraceAccuracy=0.1
 	ShotCountMaxForNotify=0
@@ -437,4 +444,8 @@ defaultproperties
 	HudHint2="ricocheting scissors."
 	bAllowHints=true
 	bShowHints=true
+	
+	bDropInVeteranMode=1
+	VeteranModeDropChance=1.00
+	bAllowMiddleFinger=True
 	}

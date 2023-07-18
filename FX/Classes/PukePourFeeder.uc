@@ -19,8 +19,11 @@ simulated function Destroyed()
 	// Null out head's puke stream
 	if (HeadOwner != None)
 		HeadOwner.ZeroPukeFeeder(Self);
-		
-	Super.Destroyed();
+
+// Change by Man Chrzan: Fix to keep puking after removing head, 
+// just as it was in v1409 and previous versions.
+//	Super.Destroyed();
+	Super(FluidPourFeederMP).Destroyed();
 }
 
 ///////////////////////////////////////////////////////////////////////////

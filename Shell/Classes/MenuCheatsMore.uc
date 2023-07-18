@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 // MenuCheatsMore.uc
-// Copyright 2003 Running With Scissors, Inc.  All Rights Reserved.
+// Copyright 2023 Running With Scissors Studios LLC.  All Rights Reserved.
 //
 // The More Cheats menu.
 //
@@ -17,6 +17,8 @@ var localized string CheatsExplainText;
 var localized string CheatsExplainText2;
 var ShellMenuChoice	 CheatsExplainChoice;
 var ShellMenuChoice	 CheatsExplainChoice2;
+
+var ShellMenuChoice	 NextChoice;
 
 const CHEATS_MAX	    		  =18;	//MAKE THIS match the numbers below please!
 var ShellMenuChoice	  CheatsChoice[CHEATS_MAX]; // Don't change this without changing the above
@@ -48,6 +50,7 @@ function CreateMenuContents()
 		CheatsChoice[i]		= AddChoice(CheatsText[i],	CheatsHelp[i],	ItemFont, ItemAlign);
 	}
 
+	NextChoice			= AddChoice(NextText, "", ItemFont, TitleAlign);
 	BackChoice			= AddChoice(BackText, "", ItemFont, TitleAlign, true);
 	}
 
@@ -63,6 +66,9 @@ function Notify(UWindowDialogControl C, byte E)
 			if (C != None)
 				switch (C)
 					{
+					case NextChoice:
+						GotoMenu(class'MenuCheatsEvenMore');
+						break;
 					case BackChoice:
 						GoBack();
 						break;

@@ -30,6 +30,15 @@ var Name				CurrentIdleAnim;
 var Name				CurrentDownAnim;
 var Sound				CurrentDialog;
 
+///////////////////////////////////////////////////////////////////////////////
+// Disable hint if we can't use middle finger
+///////////////////////////////////////////////////////////////////////////////
+function PostBeginPlay()
+{
+	Super.PostBeginPlay();
+	if(UsingOldHands() || !Level.Game.bIsSinglePlayer)
+		TurnOffHint();
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Mp only can you gesture
@@ -72,7 +81,21 @@ simulated function Fire( float Value )
 			GotoState('ClientFiring');
 		}
 	}
+	else // xPatch: Middle Finger is now shown by "firing" the hands.
+	{	
+		if (P2Player(Instigator.Controller) != None && !UsingOldHands())
+			P2Player(Instigator.Controller).FlipMiddleFinger();
+	}
+	
+	TurnOffHint();
 }
+
+function bool UsingOldHands()
+{
+	return 	(P2GameInfoSingle(Level.Game).InClassicMode() 
+				&& P2GameInfoSingle(Level.Game).xManager.bClassicHands);
+}
+
 simulated function AltFire( float Value )
 {
 	if(P2MocapPawn(Instigator) != None
@@ -97,12 +120,20 @@ simulated function PlayFiring()
 	if(Level.Game == None
 			|| !Level.Game.bIsSinglePlayer)
 		PlayAnim('Point', WeaponSpeedShoot1 + (WeaponSpeedShoot1Rand*FRand()), 0.05);
+	// Added by Man Chrzan: xPatch 2.0
+	// Paradise Lost "Fuck You" feature backport!
+	else
+		PlayAnim('pl_fuckyou', WeaponSpeedShoot1 + (WeaponSpeedShoot1Rand*FRand()), 0.05);
 }
 simulated function PlayAltFiring()
 {
 	if(Level.Game == None
 			|| !Level.Game.bIsSinglePlayer)
 		PlayAnim('Stay', WeaponSpeedShoot2 + (WeaponSpeedShoot1Rand*FRand()), 0.05);
+	// Added by Man Chrzan: xPatch 2.0
+	// Paradise Lost "Fuck You" feature backport!
+	else
+		PlayAnim('pl_fuckyoutwice', WeaponSpeedShoot2 + (WeaponSpeedShoot1Rand*FRand()), 0.05);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -293,11 +324,13 @@ defaultproperties
 	AttachmentClass=None
 	//class'HandsAttachment'
 
-	Mesh=Mesh'MP_Weapons.MP_LS_Nothing'
+	Mesh=SkeletalMesh'FUArms.pl_fuckyou_arms'		// Change by Man Chrzan: xPatch 2.0
+	//Mesh=Mesh'MP_Weapons.MP_LS_Nothing'			// "Fuck You" backport
 	//Mesh=Mesh'FP_Weapons.FP_Dude_Nothing'
 	Skins[0]=Texture'MP_FPArms.LS_arms.LS_hands_dude'
 	//Skins[0]=Texture'WeaponSkins.Dude_Hands'
-	FirstPersonMeshSuffix="Nothing"
+//	FirstPersonMeshSuffix="Nothing"					// Change by Man Chrzan: xPatch 2.0
+	FirstPersonMeshSuffix="pl_fuckyou_arms"			// "Fuck You" backport
 
 	aimerror=0.000000
 	//shakemag=0.000000
@@ -333,4 +366,7 @@ defaultproperties
 	DropWeaponHint1="They've seen your weapon!"
 	DropWeaponHint2="Press %KEY_ThrowWeapon% to drop it."
 	bCannotBeStolen=true
+	
+	// Added by Man Chrzan: xPatch 2.0
+	WeaponsPackageStr="FUArms"
 	}

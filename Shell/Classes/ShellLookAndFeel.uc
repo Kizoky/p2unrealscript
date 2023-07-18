@@ -22,6 +22,9 @@ class ShellLookAndFeel extends UWindowLookAndFeel;
 var() Color		NormalTextColor;	// Normal text
 var() Color		HighlightTextColor;	// Highlighted text
 var() Color		ShadowTextColor;	// Shadow behind text
+var() Color		SaveTextColor;		// xPatch
+var() Color     NormalBackgroundColor;
+var() Color     HighlightBackgroundColor;
 
 // Arrays correspond to the Font[10] array in UWindowRootWindow
 var() float		ShadowOffsetX[10];	// pixel offset
@@ -100,13 +103,26 @@ var float LastSoundTime;
 
 function Control_MouseEnter(UWindowDialogControl ctl)
 	{
-	ctl.SetTextColor(HighlightTextColor);
+	// xPatch: if it has custom color, keep it.
+	if(ctl.TextColor != NormalTextColor)
+		SaveTextColor = ctl.TextColor;
+	else 
+		SaveTextColor = NormalTextColor;
+
+	// and check if it has custom highlight color to use
+	if(ctl.HighlightTextColor != ctl.default.HighlightTextColor)
+		ctl.SetTextColor(ctl.HighlightTextColor);
+	else // xPatch: End
+		ctl.SetTextColor(HighlightTextColor);
+		
 	PlayEnterSound(ctl);
 	}
 
 function Control_MouseLeave(UWindowDialogControl ctl)
 	{
-	ctl.SetTextColor(NormalTextColor);
+	// xPatch: Restore previous color.
+	//ctl.SetTextColor(NormalTextColor);
+	ctl.SetTextColor(SaveTextColor);
 	if (MouseLeaveSound != None)
 		PlayThisLocalSound(ctl, MouseLeaveSound, MouseLeaveVolume);
 	}
@@ -1453,4 +1469,7 @@ defaultproperties
 	Pulldown_TextBorder=9
 
 	ColumnHeadingHeight=13
+    
+    NormalBackgroundColor=(R=255,G=255,B=255)
+    HighlightBackgroundColor=(R=255)
 }

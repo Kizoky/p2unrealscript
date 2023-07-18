@@ -26,7 +26,7 @@ defaultproperties
         FadeInEndTime=0.300000
         FadeIn=True
 	    FadeOut=True
-        MaxParticles=10
+        MaxParticles=25
         UseSizeScale=True
         UseRegularSizeScale=False
         SizeScale(0)=(RelativeSize=1.000000)
@@ -47,7 +47,7 @@ defaultproperties
         ColorScale(1)=(RelativeTime=1.000000,Color=(R=255))
         FadeOutStartTime=1.100000
         FadeOut=True
-        MaxParticles=10
+        MaxParticles=25
         SpinParticles=True
         SpinsPerSecondRange=(X=(Min=0.200000,Max=0.500000))
         UseSizeScale=True

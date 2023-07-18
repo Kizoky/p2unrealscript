@@ -28,7 +28,10 @@ var float	WaitTime;		// Time before actual change (in case dude is talking)
 
 var P2MoCapPawn.SBoltOn	Bolton;	// Optional bolton to set. Always goes in slot 7
 								// (dude doesn't have any boltons so it could probably go anywhere, but choosing 7 in case modders want to add boltons to their player pawns)
-var Vector BoltonRelativeLocation;	// Relative location for bolton								
+var Vector BoltonRelativeLocation;	// Relative location for bolton		
+
+var array<P2MoCapPawn.SBoltOn>	xBoltons;		// Array of boltons to set, we can set more than one this way. 
+var array<Vector> xBoltonsRelativeLocation;		// Relative location for boltons.											
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////

@@ -1,11 +1,17 @@
 ///////////////////////////////////////////////////////////////////////////////
 // MenuStart.uc
-// Copyright 2003 Running With Scissors, Inc.  All Rights Reserved.
+// Copyright 2023 Running With Scissors Studios LLC.  All Rights Reserved.
 //
 // Menu to force difficulty choice and to drive home the fact that it cannot be
 // changed after a game is started--aren't all games this way?
 //
 // 8-15 Kamek - add in P2/AW/AWP selection backport from AW7
+//
+// 2022-09-12 Piotr S. - Added Classic Game, Skip Intro and few 
+// minor changes / fixes. This class is used as a base from now on as 
+// the Game Mode selection and Difficulty + Checkboxes are saparated now. 
+//
+// 2022-09-26 Piotr S. - Added Day Selection
 ///////////////////////////////////////////////////////////////////////////////
 class MenuStart extends ShellMenuCW;
 
@@ -52,6 +58,23 @@ var string ExplainedDifficulty;	// Name of difficulty option we explained to the
 const DAY_SATURDAY = 5;
 const NIGHT_MODE_HOLIDAY = 'NightMode';
 
+// xPatch:
+var UWindowCheckBox ClassicGameCheckbox;
+var localized string ClassicGameText, ClassicGameHelp;
+
+var UWindowCheckBox SkipCheckbox;
+var localized string SkipText, SkipHelp;
+var bool bShouldForceMap;
+
+var UWindowComboControl DayCombo;
+var localized string DayComboText, DayComboHelp;
+var localized array<string> Days;
+var int MaxDays;	// Max days to show in this menu
+
+var class<P2GameInfoSingle> StartGameInfo;
+var name UNLOCK_DAYSELECT_ACHIEVEMENT;
+// End
+
 ///////////////////////////////////////////////////////////////////////////////
 // Create menu contents
 ///////////////////////////////////////////////////////////////////////////////
@@ -69,7 +92,11 @@ function CreateMenuContents()
 	GetGameSingle().bNoHolidays = false;
 	GetGameSingle().SaveConfig();
 	
-	if (GetGameSingle().IsHoliday('ANY_HOLIDAY'))
+	ItemFont = F_FancyM;	// Medium font for checkboxes
+	ItemHeight = 23;		// and closer to each other
+	
+	if (GetGameSingle().IsHoliday('ANY_HOLIDAY')
+		&& !GetGameSingle().IsHoliday('SeasonalAprilFools'))	// April Fools do not affect the game itself so ignore it.
 	{
 		NoHolidaysCheckbox = AddCheckbox(NoHolidaysText, NoHolidaysHelp, ItemFont);
 		NoHolidaysCheckbox.SetValue(False);
@@ -80,7 +107,16 @@ function CreateMenuContents()
 		EnhancedCheckbox = AddCheckbox(EnhancedText, EnhancedHelp, ItemFont);
 		EnhancedCheckbox.SetValue(False);
 	}
-
+	
+	ClassicGameCheckbox = AddCheckbox(ClassicGameText, ClassicGameHelp, ItemFont);
+	ClassicGameCheckbox.SetValue(False);
+	
+	SkipCheckbox = AddCheckbox(SkipText, SkipHelp, ItemFont);
+	SkipCheckbox.SetValue(False);
+	
+	ItemFont = F_FancyL;	// Back to normal
+	ItemHeight = 32;
+	
 //	StartChoice	= AddChoice(StartText,	"", ItemFont, TA_Left);
 	StartAW7 =		AddChoice(StartAW7Text,		StartAW7Help,		ItemFont,	TA_Left);
 //	StartAW7.bActive = False;
@@ -113,6 +149,17 @@ function LoadValues()
 	// words, we're only setting the initial values of the controls and we don't
 	// want that to count as a change.
 	bUpdate = False;
+	
+	// xPatch: Day Select
+	if (DayCombo != none)
+	{
+		DayCombo.Clear();
+
+		for(i=0; i<MaxDays; i++)
+			DayCombo.AddItem(Days[i]);
+		DayCombo.SetValue(Days[0]);
+	}
+	// End
 	
 	if (DifficultyCombo != none)
 		{
@@ -157,7 +204,8 @@ function PossibleConvertToNightMode(out String URL)
 	local int qmark,pound;
 	local string BaseURL,qmarkparams,poundparams;
 	
-	if (NoHolidaysCheckbox.GetValue())
+	if (NoHolidaysCheckbox != None 
+		&& NoHolidaysCheckbox.GetValue())
 		return;
 	
 	//log("Breaking down URL:"@URL);
@@ -198,21 +246,57 @@ function PossibleConvertToNightMode(out String URL)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Allows for use of enhanced mode
+// xPatch: Functions to start various days
+///////////////////////////////////////////////////////////////////////////////
+function int GetDayNumber()
+{
+	local string SelectedDay;
+	local int i;
+	
+	if(DayCombo != None)
+	{
+		SelectedDay = DayCombo.GetValue();
+		
+		//for (i=0; i<ArrayCount(Days); i++)
+		for (i=0; i<MaxDays; i++)
+		{
+			if (SelectedDay == Days[i])	
+				return i;
+		}
+	}
+	return 0;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Allows for use of enhanced mode, day selection and intro skip
 ///////////////////////////////////////////////////////////////////////////////
 function StartGame2(bool bEnhanced)
 {
 	local P2Player p2p;
 	local P2GameInfoSingle usegame;
-
+	local Texture LoadTex;
+	local int day, startday, i;
+	
 	usegame = GetGameSingle();
 	p2p = usegame.GetPlayer();
+	
+	// Setup difficulty
+	SetDiff();
+	
 	// Force sissy off on a new game
 	p2p.UnSissy();
 	P2RootWindow(Root).StartingGame();
 
 	// Stop any active SceneManager so player will have a pawn
 	usegame.StopSceneManagers();
+	
+	// xPatch: Okay so it seems like if the last game we played had different GameState
+	// than the new one we are starting currently causes some weird issues with the game. 
+	// Like the day selection option not changing the day, save being marked as cheated for "Testing maps via command line" 
+	// and other wierd stuff. Thankfully, changing the GameState here and now fixes these issues.
+	if(usegame.TheGameState != None && StartGameInfo != None)
+		usegame.ChangeGameState(StartGameInfo.Default.GameStateClass);
+	// End
 
 	usegame.PrepIniStartVals();
 	usegame.TheGameState.bEGameStart = bEnhanced;
@@ -221,6 +305,13 @@ function StartGame2(bool bEnhanced)
 	else
 		usegame.bNoHolidays = false;
 		
+	// xPatch: Classic Game
+	if (ClassicGameCheckbox != None)
+	{
+		usegame.bNoEDWeapons = ClassicGameCheckbox.GetValue();
+		usegame.TheGameState.bNoEDWeapons = ClassicGameCheckbox.GetValue(); 
+	}
+
 	// Turn off night mode if holidays are off
 	if (usegame.bNoHolidays)
 		usegame.TheGameState.bNightMode = false;
@@ -244,22 +335,91 @@ function StartGame2(bool bEnhanced)
 	usegame.TheGameState.bChangeDayPostTravel = true;
 	usegame.TheGameState.NextDay = 0;
 	
-	// Force game to display "Saturday" when loading on weekends.
+	// xPatch: This method gets bugged if we play P2, AW or Workshop Game and then return to main menu.
+	// Shows either wrong day or the texture is completly missing as it uses the game we played last to get load screens...
+/*  // Force game to display "Saturday" when loading on weekends.
 	if (DayToShowDuringLoad != 0)
 	{
 		usegame.bShowDayDuringLoad = True;
 		usegame.DayToShowDuringLoad = DayToShowDuringLoad;
 	}
+*/
+	// xPatch: Here's new and better method:
+	if (StartGameInfo != None)
+	{
+		// Use defined game info to always get correct loading texture of the first day
+		LoadTex = StartGameInfo.Default.Days[0].GetLoadTexture();
+	}
+	else // Should not happen -- but if does use AWPGameInfo (it has all 7 days) 
+	{	
+		if (DayToShowDuringLoad != 0)
+			LoadTex = class'AWPGameInfo'.Default.Days[DayToShowDuringLoad].GetLoadTexture();
+		else
+			LoadTex = class'AWPGameInfo'.Default.Days[0].GetLoadTexture();
+	}
 	
-//	PossibleConvertToNightMode(StartGameURL);
+	// xPatch: Starting from the selected day
+	if(DayCombo != None 
+		&& DayCombo.GetValue() != Days[0]
+		&& StartGameInfo != None)
+	{
+		day = GetDayNumber();
+		
+		if(day != 0)	// Monday should never happen here
+		{
+			// Get URL to Start the game from
+			if(StartGameInfo.default.Days[day].StartDayURL != "")
+				StartGameURL = StartGameInfo.default.Days[day].StartDayURL $ StartGameInfo.Static.GetStartURL(false);
+			else
+				StartGameURL = StartGameInfo.default.StartNextDayURL $ StartGameInfo.Static.GetStartURL(false);
+
+			// Night Mode
+			PossibleConvertToNightMode(StartGameURL);
+			
+			// Paradise Lost TWP Mode
+			PossibleConvertToSecondWeek(day);
+			
+			// Get loading texture for that day
+			LoadTex = StartGameInfo.Default.Days[day].GetLoadTexture();
+			
+			// Change to the selected day
+			usegame.TheGameState.bChangeDayPostTravel = true;
+			usegame.TheGameState.NextDay = day;
+			
+			// Properly setup the game
+			usegame.TheGameState.bStartDayPostTravel = True;
+			usegame.TheGameState.StartDay = day;
+		}
+	}
+	
+	// xPatch: Force map for intro skip
+	if (SkipCheckbox != None && bShouldForceMap)
+		usegame.TheGameState.bForceMap = SkipCheckbox.GetValue();
+	
+	// xPatch: Use loading texture we got
+	if (LoadTex != None)	
+	{
+		usegame.bShowDayDuringLoad = True;
+		usegame.ForcedLoadTex = LoadTex;
+	}
+	
+	//log("StartGameURL:"@StartGameURL);
+	//log("ForcedLoadTex:"@LoadTex);
 	
 	// Actually start the game with the first level
-	//usegame.bQuitting = true;	// discard gamestate
 	usegame.SendPlayerTo(p2p, StartGameURL$"?Mutator=?Workshop=0");
+}
+
+function PossibleConvertToSecondWeek(int Day)
+{
+	// STUB - Used in PLMenuStart_TwoWeeks.
 }
 
 function SeekritKodeEntered()
 {
+	GetGameSingle().bSeekritKodeEntered = True;
+	GetGameSingle().SaveConfig();
+	
 	GotoMenu(class'MenuSeekrit');
 }
 
@@ -338,6 +498,20 @@ function Notify(UWindowDialogControl C, byte E)
 					// Wait for them to arrow off the difficulty option, first.
 					DiffChanged(bUpdate, Root.bUsingJoystick);
 					break;
+				// xPatch: changing day disables skip intro.
+				case DayCombo:
+					if (SkipCheckbox != None)
+					{
+						if(DayCombo.GetValue() != Days[0])
+						{
+							SkipCheckbox.bDisabled = True;
+							SkipCheckbox.SetValue(False);
+						}
+						else
+							SkipCheckbox.bDisabled = False;
+					}
+					break;
+				// End
 				}
 			break;
 		case DE_Click:
@@ -358,8 +532,10 @@ function Notify(UWindowDialogControl C, byte E)
 							if(ShellRootWindow(Root).bVerified
 								&& ShellRootWindow(Root).bVerifiedPicked)
 								GetGameSingle().StartGame(true);
-							else  // Normal game, tell them about the keys
+							else if (!PlatformIsSteamDeck()) // Normal game, tell them about the keys
 								GotoMenu(class'MenuImageKeys');
+                            else
+                                GotoMenu(class'MenuImageKeys_SteamDeck');
 						}
 						else // Just return back to the game you were dealing with
 							// But save the difficulty and the game first
@@ -374,11 +550,14 @@ function Notify(UWindowDialogControl C, byte E)
 					break;
 				*/
 				case StartAW7:
-					StartURL = class'AWPGameInfo'.Static.GetStartURL(true);
+					StartGameInfo = class'AWPGameInfo';
+					StartURL = StartGameInfo.Static.GetStartURL(true, SkipCheckbox.GetValue());
 					PossibleConvertToNightMode(StartURL);
-					if (GetGameSingle().HinallyOver())
+					if (GetGameSingle().HinallyOver() && GetGameSingle().bShowedControls
+						|| (DayCombo != None && DayCombo.GetValue() != Days[0]))	// xPatch: we need to do day select in this menu
 					{
 						StartGameURL = StartURL;
+						bShouldForceMap = True;	// xPatch
 						StartGame2(EnhancedCheckbox.GetValue());
 						ShellRootWindow(Root).bLaunchedMultiplayer = false;
 					}
@@ -388,15 +567,27 @@ function Notify(UWindowDialogControl C, byte E)
 						ShellRootWindow(Root).bEnhancedMode = EnhancedCheckbox.GetValue();
 						ShellRootWindow(Root).bNoHolidays = NoHolidaysCheckbox.GetValue();
 						ShellRootWindow(Root).StartGameURL = StartURL;
-						GotoMenu(class'MenuImageKeys');
+						ShellRootWindow(Root).bNoEDWeapons = ClassicGameCheckbox.GetValue();	// xPatch
+						ShellRootWindow(Root).bForceMap = SkipCheckbox.GetValue();				// xPatch
+						ShellRootWindow(Root).StartGameInfo = StartGameInfo;					// xPatch
+						
+						SetDiff();
+						
+                        if (PlatformIsSteamDeck())
+                            GotoMenu(class'MenuImageKeys_SteamDeck');
+                        else
+                            GotoMenu(class'MenuImageKeys');
 					}
 					break;
 				case StartMF:
-					StartURL = class'GameSinglePlayer'.Static.GetStartURL(true);
+					StartGameInfo = class'GameSinglePlayer';
+					StartURL = StartGameInfo.Static.GetStartURL(true, SkipCheckbox.GetValue());
 					PossibleConvertToNightMode(StartURL);
-					if (GetGameSingle().HinallyOver())
+					if (GetGameSingle().HinallyOver() && GetGameSingle().bShowedControls
+						|| (DayCombo != None && DayCombo.GetValue() != Days[0]))	// xPatch: we need to do day select in this menu
 					{
 						StartGameURL = StartURL;
+						bShouldForceMap = True;	// xPatch
 						StartGame2(EnhancedCheckbox.GetValue());
 						ShellRootWindow(Root).bLaunchedMultiplayer = false;
 					}
@@ -406,17 +597,29 @@ function Notify(UWindowDialogControl C, byte E)
 						ShellRootWindow(Root).bEnhancedMode = EnhancedCheckbox.GetValue();
 						ShellRootWindow(Root).bNoHolidays = NoHolidaysCheckbox.GetValue();
 						ShellRootWindow(Root).StartGameURL = StartURL;
-						GotoMenu(class'MenuImageKeys');
+						ShellRootWindow(Root).bNoEDWeapons = ClassicGameCheckbox.GetValue();	// xPatch
+						ShellRootWindow(Root).bForceMap = SkipCheckbox.GetValue();				// xPatch
+						ShellRootWindow(Root).StartGameInfo = StartGameInfo;					// xPatch
+						
+						SetDiff();
+						
+                        if (PlatformIsSteamDeck())
+                            GotoMenu(class'MenuImageKeys_SteamDeck');
+                        else
+                            GotoMenu(class'MenuImageKeys');
 					}
 					break;
 				case StartWeekend:
-					StartURL = class'AWGameSPFinal'.Static.GetStartURL(true);
+					StartGameInfo = class'AWGameSPFinal';
+					StartURL = StartGameInfo.Static.GetStartURL(true, SkipCheckbox.GetValue());
 					PossibleConvertToNightMode(StartURL);
-					if (GetGameSingle().HinallyOver())
+					if (GetGameSingle().HinallyOver() && GetGameSingle().bShowedControls
+						|| (DayCombo != None && DayCombo.GetValue() != Days[0]))	// xPatch: we need to do day select in this menu
 					{
 						// During weekend, show "Saturday" instead of "Monday" on the title card
 						DayToShowDuringLoad = DAY_SATURDAY;
 						StartGameURL = StartURL;
+						bShouldForceMap = False;	// xPatch: Never force map in AW
 						StartGame2(EnhancedCheckbox.GetValue());
 						ShellRootWindow(Root).bLaunchedMultiplayer = false;
 					}
@@ -427,7 +630,16 @@ function Notify(UWindowDialogControl C, byte E)
 						ShellRootWindow(Root).bNoHolidays = NoHolidaysCheckbox.GetValue();
 						ShellRootWindow(Root).StartGameURL = StartURL;
 						ShellRootWindow(Root).DayToShowDuringLoad = DAY_SATURDAY;
-						GotoMenu(class'MenuImageKeys');
+						ShellRootWindow(Root).bNoEDWeapons = ClassicGameCheckbox.GetValue();	// xPatch
+						ShellRootWindow(Root).bForceMap = False;								// xPatch: Never force map in AW
+						ShellRootWindow(Root).StartGameInfo = StartGameInfo;					// xPatch
+						
+						SetDiff();
+						
+                        if (PlatformIsSteamDeck())
+                            GotoMenu(class'MenuImageKeys_SteamDeck');
+                        else
+                            GotoMenu(class'MenuImageKeys');
 					}
 					break;					
 				case StartWorkshop:
@@ -487,18 +699,20 @@ defaultproperties
 	{
 	TitleSpacingY = 15
 
-	MenuWidth  = 375
-	MenuHeight = 400
+//	MenuWidth  = 375
+	MenuWidth  = 475
+//	MenuHeight = 400
 	ItemSpacingY = 15
+	HintLines=7
 
 	TitleText	= "Select Game Mode"
 
 	StartGameAW7="intro.fuk?Game=GameTypes.AWPGameInfo"
 	StartGameWeekend="MovieIntro.fuk?Game=GameTypes.AWGameSPFinal"
 	StartGameMF="intro.fuk?Game=GameTypes.GameSinglePlayer"
-	StartAW7Help="Play all seven days"
-	StartMFHelp="Play Monday through Friday only"
-	StartWeekendHelp="Play Saturday and Sunday only"
+	StartAW7Help="Play all seven days."
+	StartMFHelp="Play Monday through Friday only."
+	StartWeekendHelp="Play Saturday and Sunday only."
 	StartWorkshopHelp="Launch a browser for playing Workshop content."
 	StartCustomHelp="Launch a browser for playing custom content."
 	StartAW7Text="A Week In Paradise"
@@ -507,7 +721,7 @@ defaultproperties
 	StartWorkshopText="Workshop..."
 	StartCustomText="Custom..."
 	EnhancedText="Enhanced Game"
-	EnhancedHelp="Play the Enhanced Game"
+	EnhancedHelp="This mode has more power-ups, several enhanced weapons, and some useful inventory items right from the start.\\nNOTICE: Speedrun achievements cannot be unlocked in this mode."
 	SeekritKode[0]=38
 	SeekritKode[1]=38
 	SeekritKode[2]=40
@@ -523,4 +737,22 @@ defaultproperties
 	WaitforWorkshopText="Wait for all Workshop content to initialize before attempting to start a Workshop game."
 	NoHolidaysText="No Holidays"
 	NoHolidaysHelp="Starts a new game without any special holiday events."
-	}
+	
+	// xPatch
+	SkipText="Skip Intro"
+	SkipHelp="Skips intro movie and immediately begins the game."
+	ClassicGameText="Classic Mode"
+	ClassicGameHelp="Disables some of the updated content to give that early 2003 feel."
+	
+	DayComboText = "Select Day"
+	DayComboHelp = "Select day you want to start the game with.\\nNOTICE: Achievements for beating the game in certain ways cannot be unlocked when you don't start from the first day."
+	Days[0] = "Monday"
+	Days[1] = "Tuesday"
+	Days[2] = "Wednesday"
+	Days[3] = "Thursday"
+	Days[4] = "Friday"
+	Days[5] = "Saturday"
+	Days[6] = "Sunday"
+	
+	UNLOCK_DAYSELECT_ACHIEVEMENT = SundayComplete
+}

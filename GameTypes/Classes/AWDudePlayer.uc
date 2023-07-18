@@ -78,6 +78,10 @@ event TravelPostAccept()
 	if(AWDude(Pawn).GaryHeads > 0
 		&& !P2GameInfoSingle(Level.Game).bLoadedSavedGame)
 		bWaitForGaryHeads = true;
+		
+	// Restore funzerking
+	if ((P2GameInfoSingle(Level.Game).TheGameState).bDualWield)
+		RestoreCheat("DualWield");
 }
 
 // Previously the gary heads were set up immediately in TravelPostAccept.
@@ -217,9 +221,11 @@ function HeadAdded()
 		AWDude(Pawn).GaryHeads++;
 		//log(self$" added, num "$AWDude(Pawn).GaryHeads);
 		P2Hud(myHUD).DoGaryEffects();
-		// Make sure he won't swap to a new weapon on pickup
+		
+		// Change by Man Chrzan: xPatch 2.0 Allow weapon switch in gary head mode
+/*		// Make sure he won't swap to a new weapon on pickup
 		bOldSwitchOnPickup = bNeverSwitchOnPickup;
-		bNeverSwitchOnPickup = true;
+		bNeverSwitchOnPickup = true;	*/
 	}
 }
 
@@ -238,15 +244,26 @@ function HeadRemoved()
 			// Yank weapon
 			GWeap = GaryHeadWeapon(AWDude(Pawn).FindInventoryType(GWeapClass));
 			if(GWeap != None)
-				GWeap.RemoveMe();
+			{
+				// If we are currently using Gary Heads switch to hands 
+				if (GaryHeadWeapon(Pawn.Weapon) != None)
+					GWeap.RemoveMe();
+				else // Remove it without switching		
+					GWeap.RemoveMe2();
+			}
+				
 			// Stop hud effects
 			P2Hud(myHUD).StopGaryEffects();
-			// Return switch status back
-			bNeverSwitchOnPickup = bOldSwitchOnPickup;
+			
+			// Change by Man Chrzan: xPatch 2.0 Allow weapon switch in gary head mode
+/*			// Return switch status back
+			bNeverSwitchOnPickup = bOldSwitchOnPickup;	*/
 		}
 	}
 }
 
+// Change by Man Chrzan: xPatch 2.0 Allow weapon switch in gary head mode
+/*
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 exec function PrevWeapon()
@@ -295,6 +312,7 @@ exec function SwitchToLastWeaponInGroup(int GroupNum)
 	if(AWDude(Pawn).GaryHeads == 0)
 		Super.SwitchToLastWeaponInGroup(GroupNum);
 }
+*/
 
 ///////////////////////////////////////////////////////////////////////////////
 // Same as Engine.PlayerController version except we
@@ -484,7 +502,8 @@ state Dead
 
 defaultproperties
 {
-     HeadStartClass=Class'AWEffects.InjuryStartEffects'
+	AltSkin=texture'ben_skins.Weapons.napalmGun_ben'
+	 HeadStartClass=Class'AWEffects.InjuryStartEffects'
      HeadFlowClass=Class'AWEffects.InjuryFlowEffects'
      StartHeadSound=Sound'LevelSoundsFo.Misc.ringing'
      EndHeadSound=Sound'LevelSoundsFo.Misc.ringing'
@@ -505,6 +524,7 @@ defaultproperties
      DudeBladeKill(4)=Sound'AWDialog.Dude.Dude_UseBlade_1'
      DudeBladeKill(5)=Sound'AWDialog.Dude.Dude_UseBlade_2'
      DudeBladeKill(6)=Sound'AWDialog.Dude.Dude_UseBlade_3'
+	 DudeBladeKill(7)=Sound'AWDialog.Dude.Dude_UseBlade_4'				// Added by Man Chrzan: xPatch 2.0
      DudeMacheteThrow(0)=Sound'AWDialog.Dude.Dude_AltBlade_1'
      DudeMacheteThrow(1)=Sound'AWDialog.Dude.Dude_AltBlade_2'
      DudeMacheteThrow(2)=Sound'AWDialog.Dude.Dude_AltBlade_3'
@@ -512,6 +532,11 @@ defaultproperties
      DudeMacheteCatch(1)=Sound'AWDialog.Dude.Dude_Machete_Fingers'
      DudeMacheteCatch(2)=Sound'AWDialog.Dude.Dude_Machete_ImGood'
      DudeMacheteCatch(3)=Sound'AWDialog.Dude.Dude_Machete_ThereItIs'
+	 DudeZombieKill(0)=Sound'AWDialog.Dude.Dude_Zombies_1'				// Added by Man Chrzan: xPatch 2.0
+	 DudeZombieKill(1)=Sound'AWDialog.Dude.Dude_Zombies_2'				// Added by Man Chrzan: xPatch 2.0
+	 DudeZombieKill(2)=Sound'AWDialog.Dude.Dude_Zombies_3'				// Added by Man Chrzan: xPatch 2.0
+	 DudeZombieKill(3)=Sound'AWDialog.Dude.Dude_Zombies_4'				// Added by Man Chrzan: xPatch 2.0
+	 DudeZombieKill(4)=Sound'AWDialog.Dude.Dude_Zombies_5'				// Added by Man Chrzan: xPatch 2.0
      GarySkins(0)=Texture'ChameleonSkins.Special.Gary'
      GarySkins(1)=Texture'MPSkins.BlueTeam.MB__136__Mini_M_Jacket_Pants'
      GarySkins(2)=Texture'MPSkins.RedTeam.MB__137__Mini_M_Jacket_Pants'
@@ -532,5 +557,5 @@ defaultproperties
      FireDeathHints1(0)="That sure looks hot. I bet it hurts too."
      FireDeathHints1(1)="Did you know there's a way to put yourself out"
      FireDeathHints1(2)="when you're on fire? Yup... there sure is."
-     FireDeathHints1(3)="Try thinking with your lower half next time."
+     FireDeathHints1(3)="Try thinking with your lower half next time."	 
 }

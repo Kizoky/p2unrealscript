@@ -7,6 +7,7 @@ var UWindowDialogClientWindow	NotifyWindow;
 var string Text;
 var int Font;
 var color TextColor;
+var color HighlightTextColor;	// xPatch
 var TextAlign Align;
 var float TextX, TextY;		// changed by BeforePaint functions
 var bool bHasKeyboardFocus;
@@ -64,6 +65,12 @@ function SetTextColor(color NewColor)
 	TextColor = NewColor;
 }
 
+// xPatch
+function SetHighlightTextColor(color NewHighlight)
+{
+	HighlightTextColor = NewHighlight;
+}
+// End
 
 function Register(UWindowDialogClientWindow	W)
 {

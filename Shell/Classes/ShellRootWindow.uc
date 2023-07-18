@@ -101,6 +101,11 @@ var localized string			WorkshopStatus;
 var string DefaultStartupMapName;
 // End
 
+// Added by Man Chrzan: xPatch 
+var class<P2GameInfoSingle> StartGameInfo;
+var bool bNoEDWeapons;
+var bool bForceMap;
+
 ///////////////////////////////////////////////////////////////////////////////
 // Get startup map
 ///////////////////////////////////////////////////////////////////////////////
@@ -124,10 +129,10 @@ event Initialized()
 
 	// Insert install info into the log to make tech support a little easier
 	// Leave version out of the description until we can access the LevelInfo
-	InstalledDescription = InstalledTitle$": "$InstalledType$"-"$GetCountryCode();
+	InstalledDescription = InstalledTitle$": "$InstalledType$"-"$InstalledCountry;		// xPatch: Changed GetCountryCode to InstalledCountry, possible crash fix
 
 	Log(InstalledDescription$"-"$InstalledVersion);
-
+	
 	bVirgin = true;
 	}
 
@@ -482,7 +487,8 @@ function ShowMenu()
 	CurrentLevel = ParseLevelName(Root.GetLevel().GetLocalURL());
 	if(Right(CurrentLevel, 4) ~= ".fuk")
 		CurrentLevel = Left(CurrentLevel, Len(CurrentLevel) - 4);
-	if(CurrentLevel ~= GetStartupMap())
+	if(CurrentLevel ~= GetStartupMap()
+		|| Left(CurrentLevel, 7) ~= "Startup") // xPatch: Change to allow anything with "Startup" in the name to work as Main Menu.
 		bGameMenu = false;
 	else
 		bGameMenu = true;
@@ -500,6 +506,13 @@ function ShowMenu()
 	DP = DudePlayer(GetPlayerOwner());
 	if (DP != None)
 		DP.HideWeaponSelector();
+		
+	// xPatch: We started the game, get the country code (once) and do the localization check.
+	if(bWasVirgin)
+		{
+			InstalledCountry = GetCountryCode();
+			GetGameSingle().CountryCodeCheck(InstalledCountry);
+		}
 	}
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -826,8 +839,8 @@ function PostRender(canvas Canvas)
 //		DrawPreMsg(Canvas);
 
 		// Display info about installed game
-		if (MyMenu.class == GetMainMenuClass() || MyMenu.class == class'MenuGame')
-			{
+		if (MyMenu.class == GetMainMenuClass() /*|| MyMenu.class == Class'GameMenu'*/)	// xPatch: For some reason displaying installation info in GameMenu crashes the game very often.
+			{																			// I have no clue what exactly causes it. Not showing it there is the only solution for now...
 			MyFont.DrawTextEx(
 				Canvas,
 				Canvas.ClipX,
@@ -1425,6 +1438,14 @@ function execMenuButton()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// xPatch: 
+///////////////////////////////////////////////////////////////////////////////
+function bool IsParadiseLost()
+{
+	return false;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Default properties
 ///////////////////////////////////////////////////////////////////////////////
 defaultproperties
@@ -1449,7 +1470,7 @@ defaultproperties
 	ConnectingMessage="JOINING"
 	LoadingMessage="LOADING"
 //	StartupMapName="Startup"
-	EngineVersion="5025"
+	EngineVersion="5100"
 	HotfixText=""
 	bBuildDateAsHotfixText=false
 	WorkshopStatus="Workshop Status:"

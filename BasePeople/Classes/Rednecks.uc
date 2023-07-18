@@ -79,4 +79,5 @@ defaultproperties
 	RandomizedBoltons(4)=BoltonDef'BoltonDef_CowboyHat_RedNeck'
 	RandomizedBoltons(5)=BoltonDef'BoltonDef_Cigarette_RedNeck'
 	RandomizedBoltons(6)=None
+	bAllowRandomGuns=True	// xPatch
 	}

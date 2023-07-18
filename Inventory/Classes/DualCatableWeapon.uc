@@ -20,6 +20,7 @@ const MAX_MOAN_SOUNDS		=	3.0;
 var bool bPutCatOnGun;			// A cat is getting slapped on us
 var travel int  CatOnGun;		// A cat is stuck on the end of this gun, to act as silencer
 var Mesh CatMesh;				// Mesh to use with cat on gun
+var Mesh OldCatMesh;			// Old Mesh to use with cat on gun 
 var Texture MFBloodTexture;		// bloody muzzle flash
 var travel Texture CatSkin;		// Texture the cat on the gun has
 var travel int CatAmmoLeft;		// How many shots we've taken with the cat, when this reaches
@@ -45,6 +46,19 @@ var travel byte BounceCat;		// Cheat that makes cats bounce off walls (not peopl
 
 const CAT_PITCH_INCREASE	=	0.03;
 
+// xPatch
+var class<P2Emitter> BloodMFClass; 
+var class<xCatSilencer> CatSilencerClass;
+var bool bAttachCat;
+var bool bCatStateControl;
+var xCatSilencer Cat;
+var() Name CatIdleAnim, CatFireAnim;
+var() name CatBoneName;
+var() vector CatRelativeLocation;
+var() rotator CatRelativeRotation;
+var float CatScale;
+var travel int  CrazyCatOnGun;		// A cat is stuck on the end of this gun, and it's not a normal cat!
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // If you toss out a gun with a cat on it,
@@ -64,6 +78,9 @@ function DropFrom(vector StartLocation)
 			tempcat.Destroy();
 		}
 	}
+	
+	// xPatch
+	RemoveCat();
 
 	Super.DropFrom(StartLocation);
 }
@@ -73,8 +90,57 @@ function DropFrom(vector StartLocation)
 ///////////////////////////////////////////////////////////////////////////////
 function SwapCatOn()
 {
-	LinkMesh( CatMesh, true);
-
+	// Man Chrzan: xPatch
+	if (P2WeaponAttachment(ThirdPersonActor) != None)
+	{
+		P2WeaponAttachment(ThirdPersonActor).SwapCatOn();
+		P2WeaponAttachment(ThirdPersonActor).CatSilencer3rd.AmbientGlow = AmbientGlow;
+		P2WeaponAttachment(ThirdPersonActor).CatSilencer3rd.bStateControl = bCatStateControl;
+		P2WeaponAttachment(ThirdPersonActor).CatSilencer3rd.IdleAnim = CatIdleAnim;
+		P2WeaponAttachment(ThirdPersonActor).CatSilencer3rd.PlayIdleAnim();
+		P2WeaponAttachment(ThirdPersonActor).CatSilencer3rd.Skins[0] = CatSkin;
+	}
+	
+	// Cat Attachment
+	if(bAttachCat)
+	{
+		if(DoSwapHands())
+			SwapHandsOld();
+		else
+			SwapHandsNew();
+		
+		if(Cat == None)
+		{
+			Cat = spawn(CatSilencerClass, Owner);
+			AttachToBone(Cat, CatBoneName);
+			Cat.SetRelativeLocation(CatRelativeLocation);
+			Cat.SetRelativeRotation(CatRelativeRotation);
+			Cat.SetDrawScale(CatScale); 
+			Cat.AmbientGlow = AmbientGlow;
+			Cat.bStateControl = bCatStateControl;
+			Cat.IdleAnim = CatIdleAnim;
+			Cat.PlayIdleAnim();
+			Cat.Skins[0] = CatSkin;
+		}
+	}
+	else // Cat Weapon Mesh
+	{
+		if(DoSwapHands())
+		{
+			if(OldCatMesh != None)
+				LinkMesh( OldCatMesh, true);
+				
+			bOldHands = True;
+		}
+		else 
+		{
+			if(CatMesh != None)
+				LinkMesh( CatMesh, true);
+				
+			bOldHands = False;
+		}
+	}
+	
 	SetLeftArmVisibility();
 
 	if(class'P2Player'.static.BloodMode())
@@ -91,7 +157,8 @@ function SwapCatOn()
 	PawnHitMarkerMade = class'PawnBeatenMarker';
 
 	// Put the correct cat skin on the gun, always in the last slot
-	Skins[CatSkinIndex] = CatSkin;
+	if(!bAttachCat) // xPatch: Only if it's not xCatSilencer method
+		Skins[CatSkinIndex] = CatSkin;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -99,7 +166,25 @@ function SwapCatOn()
 ///////////////////////////////////////////////////////////////////////////////
 function SwapCatOff()
 {
-	LinkMesh( default.Mesh);
+	// Man Chrzan: xPatch
+	if (P2WeaponAttachment(ThirdPersonActor) != None)
+		P2WeaponAttachment(ThirdPersonActor).SwapCatOff();
+		
+	if(bAttachCat)
+		RemoveCat();
+
+	if(DoSwapHands())
+	{
+		LinkMesh( OldMesh, true);
+		bOldHands = True;
+	}
+	else 
+	{
+		LinkMesh( default.Mesh);
+		bOldHands = False;
+	}
+	// End
+		
 	SetLeftArmVisibility();
 
 	MFTexture = default.MFTexture;
@@ -147,10 +232,14 @@ function ToggleRepeatCatGun(bool bOn)
 ///////////////////////////////////////////////////////////////////////////////
 function bool ReadyForCat()
 {
-	return (AmmoType.HasAmmo()
+	// Don't allow xCatSilencer in Dual Wielding - it's broken 
+	if ( bAttachCat && (bDualWielding || (RightWeapon != none && RightWeapon.bDualWielding)))
+		return false;
+	else
+		return (AmmoType.HasAmmo()
 			&& CatOnGun==0
 			&& !bPutCatOnGun
-			&& IsInState('Idle'));
+			&& IsInState('Idle'));	
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -204,6 +293,14 @@ function ShootOffCat()
 		catr.Skins[0] = CatSkin;
 		if(BounceCat != 0)
 			catr.bDoBounces=true;
+		// xPatch: Crazy Cats!!!
+		if((P2GameInfoSingle(Level.Game) != None 
+			&& P2GameInfoSingle(Level.Game).CrazyCats())	
+			|| CrazyCatOnGun != 0)
+		{
+			catr.bCrazyCat=true;
+			CrazyCatOnGun = 0;
+		}
 	}
 }
 
@@ -252,6 +349,8 @@ simulated function PlayFiring()
 	// Normal playfiring for P2Weapon, but we pitch the fire sound for a cat, higher and
 	// higher with each shot, if we're shooting with a cat.
 	IncrementFlashCount();
+	
+	
 
 	// Play it here (instead of in the attachment) in SP games
 	if(Level.Game != None
@@ -261,6 +360,13 @@ simulated function PlayFiring()
 	PlayAnim('Shoot1', WeaponSpeedShoot1 + (WeaponSpeedShoot1Rand*FRand()), 0.05);
 
 	SetupMuzzleFlash();
+	
+	// Man Chrzan: xPatch
+	SetupMuzzleFlashEmitter(); 
+	if( Cat != None )
+		Cat.PlayAnim(CatFireAnim);
+	if (P2WeaponAttachment(ThirdPersonActor).CatSilencer3rd != None)
+		P2WeaponAttachment(ThirdPersonActor).CatSilencer3rd.PlayAnim(CatFireAnim);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -311,6 +417,8 @@ simulated function SetRightHandedMesh()
 		SwapCatOn();
 	else
 		SwapCatOff();
+		
+	SwapHandsSkin();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -397,6 +505,77 @@ state Idle
 	}
 }
 
+//=====================================================================================
+// Added by Man Chrzan: xPatch
+// Muzzle Flash Setup & Cat Silencer Effects
+//=====================================================================================
+simulated function SetupMuzzleFlashEmitter() 
+{
+	if (Instigator.IsHumanControlled() && bSpawnMuzzleFlash && MFType != 2)
+	{
+		// We have cat on gun
+		if(CatOnGun == 1)
+		{
+			// Use blood effects
+			if(BloodMFClass != None)
+				PlayFireEffects(BloodMFClass);
+		}
+		else
+			Super.SetupMuzzleFlashEmitter();
+	}
+}
+
+function PlayIdleAnim()
+{
+	Super.PlayIdleAnim();
+	
+	if(bCatStateControl)
+	{
+		if(Cat != None)
+			Cat.PlayIdleAnim();
+		if (P2WeaponAttachment(ThirdPersonActor).CatSilencer3rd != None)
+			P2WeaponAttachment(ThirdPersonActor).CatSilencer3rd.PlayAnim(CatFireAnim);
+	}
+}
+
+function PlayDownAnim()
+{
+	Super.PlayDownAnim();
+	
+	if(bCatStateControl)
+	{
+		if(Cat != None)
+			Cat.PlayIdleAnim();
+		if (P2WeaponAttachment(ThirdPersonActor).CatSilencer3rd != None)
+			P2WeaponAttachment(ThirdPersonActor).CatSilencer3rd.PlayAnim(CatFireAnim);
+	}
+}
+
+// Detach xCatSilencer when droped, died, etc...
+simulated function RemoveCat()
+{
+	if(Cat != None)
+	{
+		DetachFromBone(Cat);
+		Cat.Destroy();
+		Cat = None;
+	}
+}
+
+// Weapon got destroyed
+simulated function Destroyed()
+{
+	RemoveCat();
+	Super.Destroyed();
+}
+
+// Debug
+exec function catpos()
+{
+	Cat.SetRelativeLocation(CatRelativeLocation);
+	Cat.SetRelativeRotation(CatRelativeRotation);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Default properties
 ///////////////////////////////////////////////////////////////////////////////
@@ -412,4 +591,11 @@ defaultproperties
 	ShotMarkerMade=class'GunfireMarker'
 	BulletHitMarkerMade=class'BulletHitMarker'
 	PawnHitMarkerMade=class'PawnShotMarker'
+	
+	// xPatch
+	CatSilencerClass=Class'xCatSilencer'
+	BloodMFClass=class'FX2.MuzzleFlashCatBloodAlt' 	//class'FX2.MuzzleFlashCatBlood'
+	CatIdleAnim="idle_sg"  //"idle_mg"
+	CatFireAnim="shoot_sg"	//"shoot_mg"
+	CatScale=1.0
 	}

@@ -38,6 +38,19 @@ simulated function float RateHealingPower()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+function EatingFood()
+{
+	local P2MocapPawn CheckPawn;
+	local P2Player p2p;
+
+	CheckPawn = P2MocapPawn(Owner);
+	p2p = P2Player(CheckPawn.Controller);
+
+	p2p.EatingFood();
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Add this in
 // We can send in the skin of the new types being added.
 ///////////////////////////////////////////////////////////////////////////////
@@ -123,6 +136,7 @@ state Activated
 		{
 			TurnOffHints();	// When you use it, turn off the hints
 
+			EatingFood();
 			ReduceAmount(1);
 			// Kamek 4-29
 			// If they're wearing cop clothes reward them for it.

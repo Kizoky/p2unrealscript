@@ -26,6 +26,19 @@ function DropFrom(vector StartLocation)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+function EatingFood()
+{
+	local P2MocapPawn CheckPawn;
+	local P2Player p2p;
+
+	CheckPawn = P2MocapPawn(Owner);
+	p2p = P2Player(CheckPawn.Controller);
+
+	p2p.EatingFood();
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Active state: this inventory item is armed and ready to rock!
 ///////////////////////////////////////////////////////////////////////////////
 state Activated
@@ -39,6 +52,7 @@ state Activated
 		if(CheckPawn.AddHealthPct(HealingPct, Tainted, , , , true))
 		{
 			ReduceAmount(1);
+			EatingFood();
 			return true;
 		}
 		return false;
@@ -55,6 +69,7 @@ defaultproperties
 	{
 	PickupClass=class'DogTreatPickup'
 	Icon=Texture'Hudpack.icons.Icon_Inv_DogTreats'
+	//ClassicIcon=Texture'ClassicHUDPack.Inventory.Icon_Inv_DogTreats'
 	InventoryGroup=101
 	GroupOffset=5
 	PowerupName="Dog Treat"

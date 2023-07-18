@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 // MenuTheyHateMe.uc
-// Copyright 2003 Running With Scissors, Inc.  All Rights Reserved.
+// Copyright 2023 Running With Scissors Studios LLC.  All Rights Reserved.
 //
 // Menu to explain TheyHateMe difficulty. This is extra hard and has most 
 // people attacking the dude on sight.
@@ -23,6 +23,9 @@ var bool bUpdate;
 
 var MenuStart MyMenuStart;
 
+var Color MsgColor;
+var int MsgHeight;
+
 ///////////////////////////////////////////////////////////////////////////////
 // Create menu contents
 ///////////////////////////////////////////////////////////////////////////////
@@ -30,6 +33,7 @@ function CreateMenuContents()
 	{
 	local int i;
 	local array<string> Msg2;
+	local ShellWrappedTextControl ctl;
 
 	// Dynamic arrays don't localize properly, so copy static array to dynamic array
 	Msg2.insert(0, ArrayCount(Msg));
@@ -40,7 +44,9 @@ function CreateMenuContents()
 	
 	AddTitle(HateTitleText, F_FancyL, TA_Left);
 
-	AddWrappedTextItem(Msg2, 200, F_FancyS, TA_Left);
+	// xPatch: Changed font to be easier to read (was F_FancyS)
+	ctl = AddWrappedTextItem(Msg2, MsgHeight, F_Bold, TA_Left);
+	ctl.SetTextColor(MsgColor);
 
 	ItemFont = F_FancyL;
 	ItemAlign = TA_Left;
@@ -82,8 +88,10 @@ function Notify(UWindowDialogControl C, byte E)
 							if(ShellRootWindow(Root).bVerified
 								&& ShellRootWindow(Root).bVerifiedPicked)
 								GetGameSingle().StartGame(true);
-							else // Normal game, tell them about the keys
+							else if (!PlatformIsSteamDeck()) // Normal game, tell them about the keys
 								GotoMenu(class'MenuImageKeys');
+                            else
+                                GotoMenu(class'MenuImageKeys_SteamDeck');
 						}
 						else // Just return back to the game you were dealing with
 							// But save the difficulty and the game first
@@ -118,4 +126,7 @@ defaultproperties
     Msg[4] = "you and even RWS employees will be after you.\\n"
 	Msg[5] = "It's a much higher difficulty than the other settings and drastically "
     Msg[6] = "changes the dynamics of interaction in the game--be ready for some pain!\\n"	
+	
+	MsgColor=(R=245,G=245,B=245,A=245)
+	MsgHeight=230
 	}

@@ -693,7 +693,7 @@ defaultproperties
 	//Achievements(38)=(APIName="NightmareEnding",DisplayName="Scientology Level OT VIII",Description="Finished A Week in Paradise on POSTAL difficulty.",LockedTex=Texture'AchievementIcons.Locked-512.39-Locked-512',UnlockedTex=Texture'AchievementIcons.Unlocked-512.39-Unlocked-512')
 	Achievements(38)=(APIName="NightmareEnding",LockedTex=Texture'AchievementIcons.Locked-512.39-Locked-512',UnlockedTex=Texture'AchievementIcons.Unlocked-512.39-Unlocked-512')
 	AchievementsDisplayName(38)="Scientology Level OT VIII"
-	AchievementsDescription(38)="Finished A Week in Paradise on POSTAL difficulty."
+	AchievementsDescription(38)="Finished A Week In Paradise on POSTAL difficulty."
 	//end
 		
 	// RWS Staff Kills

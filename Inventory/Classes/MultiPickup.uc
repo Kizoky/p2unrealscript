@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 // MultiPickup
-// Copyright 2003 Running With Scissors, Inc.  All Rights Reserved.
+// Copyright 2023 Running With Scissors Studios LLC.  All Rights Reserved.
 //
 // A pickup that can be anything in an array of other pickups. Changes
 // with each touch.

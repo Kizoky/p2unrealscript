@@ -239,6 +239,8 @@ simulated function BlowUp(vector HitLocation)
 // Stub used in many subclasses
 simulated function GenExplosion(vector HitLocation, vector HitNormal, Actor Other);
 
+// xPatch: Stub used in AltDynamiteProjectile
+simulated function HitByMatch();
 
 defaultproperties
 {

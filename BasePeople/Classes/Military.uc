@@ -85,12 +85,14 @@ defaultproperties
 	BaseEquipment[1]=(weaponclass=class'Inventory.PistolWeapon')
 	ViolenceRankTolerance=0
 	TakesShotgunHeadShot=	0.4
-	TakesRifleHeadShot=		0.35
+	TakesRifleHeadShot=		1.0 //0.35
+	TakesPistolHeadShot=	0.5
 	TakesShovelHeadShot=	0.6
 	TakesOnFireDamage=		0.6
 	TakesAnthraxDamage=		0.5
 	TakesShockerDamage=		0.4
 	TakesChemDamage=		0.5
+	TakesSledgeDamage=		0.0
 
 	// Give all military helmets
 	Boltons[0]=(bone="NODE_Parent",staticmesh=staticmesh'boltons.Swat_Helmet',skin=texture'BoltonSkins.Military_Helmet',bCanDrop=false,bAttachToHead=true)
@@ -100,4 +102,8 @@ defaultproperties
 	bNoChamelBoltons=True
 	RandomizedBoltons(0)=None
 	BlockMeleeFreq=0.9
+	
+	// Added by Man Chrzan: xPatch 2.0 
+	TakesSledgeDamage=0.000000
+	TakesDervishDamage=0.500000
 	}

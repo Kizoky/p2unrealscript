@@ -8,7 +8,31 @@
 class RWSStaff extends Bystander
 	notplaceable
 	Abstract;
+	
+///////////////////////////////////////////////////////////////////////////////
+// xPatch: Classic Mode - swap to old skins
+///////////////////////////////////////////////////////////////////////////////
+simulated function PreBeginPlay()
+{
+	Super.PreBeginPlay();
+	
+	if(P2GameInfoSingle(Level.Game).InClassicMode())
+	{
+		 ChameleonSkins[0] = ChameleonSkins[2]; 
+		 ChameleonSkins[1] = ChameleonSkins[2]; 
+	}
+}
 
+simulated function PostBeginPlay()
+{
+	Super.PostBeginPlay();
+	
+	if(P2GameInfoSingle(Level.Game).InClassicMode())
+	{
+		 ChameleonSkins[0] = ChameleonSkins[2]; 
+		 ChameleonSkins[1] = ChameleonSkins[2]; 
+	}
+}
 
 defaultproperties
 	{
@@ -70,4 +94,5 @@ defaultproperties
 	RandomizedBoltons(4)=BoltonDef'BoltonDefBallcap_RWS'
 	RandomizedBoltons(5)=None
 	BlockMeleeFreq=1.0
+	bAllowRandomGuns=True	// xPatch
 	}

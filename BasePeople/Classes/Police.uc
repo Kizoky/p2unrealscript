@@ -12,6 +12,9 @@ class Police extends AuthorityFigure
 	notplaceable
 	Abstract;
 	
+	
+const BoltonPath = "GameTypes.ChameleonPlus bUseExtendedBoltons";
+
 const GUNBELT_INDEX = 1;			// Index for the gunbelt
 const GUNBELT_PISTOL_INDEX = 1;		// Skin index of the gun to turn off in the gunbelt
 var Material InvisiblePistolTex;	// Material to use for the pistol when it's invisible
@@ -92,6 +95,10 @@ function PostBeginPlay()
 		@"gunbelt"@Boltons[Gunbelt_Index].Part
 		@"skin"@Boltons[Gunbelt_Index].Part.Skins[Gunbelt_Pistol_Index]);
 	*/
+	
+		// No gunbelt with exteneded boltons disabled
+		if(!P2GameInfoSingle(Level.Game).GetChameleon().UseExtendedBoltons())
+			Boltons[GUNBELT_INDEX].Part.Destroy();
 	}
 
 ///////////////////////////////////////////////////////////////////////////////

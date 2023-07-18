@@ -179,7 +179,8 @@ simulated final function CheckHurtRadius( float DamageAmount, float DamageRadius
 
 	// Can't override this function in GrenadeHeadExplosion, so check for the I AM LEGION achievement here.
 	if (Kills >= KILLS_FOR_ACHIEVEMENT
-		&& Self.IsA('GrenadeHeadExplosion'))
+		&& (Self.IsA('GrenadeHeadExplosion') 
+			|| Self.IsA('MiniNukeHeadExplosion')))	// xPatch: Fix to allow unlocking this achievement in Enhanced Game too.
 		{
 			foreach DynamicActors(class'PlayerController',PlayerLocal)
 				break;
@@ -189,7 +190,8 @@ simulated final function CheckHurtRadius( float DamageAmount, float DamageRadius
 		
 	// Check for taliban suicide here, because checking in the pawn won't work.
 	if (bSuicideTaliban == 1
-		&& Self.IsA('GrenadeHeadExplosion'))
+		&& (Self.IsA('GrenadeHeadExplosion')
+			|| Self.IsA('MiniNukeHeadExplosion')))	// xPatch: Fix to allow unlocking this achievement in Enhanced Game too.
 		{
 			foreach DynamicActors(class'PlayerController',PlayerLocal)
 				break;

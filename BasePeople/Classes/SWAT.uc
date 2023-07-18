@@ -8,6 +8,7 @@
 class SWAT extends AuthorityFigure
 	placeable;
 
+var() bool NoWeaponReplacement;	// Set to true if you don't want M16 to be replaced with MP5
 
 function PreBeginPlay()
 	{
@@ -16,6 +17,31 @@ function PreBeginPlay()
 	// Do this here because we can't use enums in default properties
 	ChameleonOnlyHasGender = Gender_Male;
 	}
+
+// Added by Man Chrzan: xPatch 2.0
+// If it's not Classic Mode replace MachineGun to SMG and Pistol to Glock for SWAT units.	
+function AddDefaultInventory()
+{
+	// Only let this be called once
+	if (!bGotDefaultInventory)
+	{
+		if(!P2GameInfoSingle(Level.Game).InClassicMode() 
+			&& !P2GameInfo(Level.Game).InLiebermode()
+			&& !NoWeaponReplacement)
+		{
+			CloseWeaponIndex = 0;
+			FarWeaponIndex = 1;
+			
+			if (BaseEquipment[0].weaponclass == class'MachineGunWeapon') 
+				BaseEquipment[0].weaponclass = class<P2Weapon>(DynamicLoadObject("EDStuff.MP5Weapon_NPC",class'Class'));
+			
+			if (BaseEquipment[1].weaponclass == class'PistolWeapon') 
+				BaseEquipment[1].weaponclass = class<P2Weapon>(DynamicLoadObject("EDStuff.GSelectWeapon",class'Class'));
+		}
+	}
+	
+	Super.AddDefaultInventory();
+}
 
 defaultproperties
 	{
@@ -57,21 +83,26 @@ defaultproperties
 	BaseEquipment[1]=(weaponclass=class'Inventory.PistolWeapon')
 	TalkWhileFighting=0.1
 	TalkBeforeFighting=0.1
-    ControllerClass=class'MilitaryController'
+    ControllerClass=class'MilitaryController'        
 	DialogClass=class'BasePeople.DialogMaleMilitary'
 	Gang="SWAT"
 
 	ViolenceRankTolerance=0
 	TakesShotgunHeadShot=	0.25
-	TakesRifleHeadShot=		0.3
+	TakesRifleHeadShot=		1.0 //0.3
 	TakesShovelHeadShot=	0.35
 	TakesOnFireDamage=		0.4
 	TakesAnthraxDamage=		0.5
 	TakesShockerDamage=		0.1
+	TakesPistolHeadShot=	0.25
 
 	// Give all SWAT helmets
 	Boltons[0]=(bone="NODE_Parent",staticmesh=staticmesh'boltons.Swat_Goggles',bCanDrop=false,bAttachToHead=true)
 
 	bNoChamelBoltons=True
 	RandomizedBoltons(0)=None
+	
+	// Added by Man Chrzan: xPatch 2.0 
+	TakesDervishDamage=0.500000
+	BlockMeleeFreq=1.0 
 	}

@@ -31,12 +31,12 @@ defaultproperties
 	Cajones=1.0
 	Stomach=0.95
 	TakesShotgunHeadShot=	0.1
-	TakesRifleHeadShot=		0.2
+	TakesRifleHeadShot=		1.0 //0.2
 	TakesShovelHeadShot=	0.3
 	TakesOnFireDamage=		0.35
 	TakesAnthraxDamage=		0.35
 	TakesShockerDamage=		0.1
-	TakesPistolHeadShot=	0.3
+	TakesPistolHeadShot=	1.0 //0.3
 	RandomizedBoltons(0)=None
 	RandomizedBoltons(1)=None
 	RandomizedBoltons(2)=None

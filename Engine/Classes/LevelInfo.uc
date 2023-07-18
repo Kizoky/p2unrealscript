@@ -451,6 +451,9 @@ final function RequestUpdateStatFloat(name StatName, float NewValue)
 // Returns true if a Steam build; false if not.
 final native function bool IsSteamBuild();
 
+// Returns true if running on Steam Deck; false if not.
+final native function bool IsSteamDeck();
+
 // Returns true if build is compatible with Workshop (Steam), false if not (GOG Galaxy, DRM-free)
 final native function bool IsWorkshopBuild();
 

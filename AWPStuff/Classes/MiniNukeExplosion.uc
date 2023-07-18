@@ -69,6 +69,8 @@ function CutThisLimb(AWPerson BlowOffPawn, Pawn instigatedBy, int cutindex, vect
 		usec2 = BlowOffPawn.GetBoneCoords(BlowOffPawn.SeverBone[cutindex]);
 		// make it spawn about halfway between the two bones
 		usev = (usec.origin + usec2.origin)/2;
+		
+		uselimb.CatchOnFire(FPSPawn(Instigator));
 	}
 
 	if(FRand() < DoBlood)
@@ -92,9 +94,10 @@ function CutThisLimb(AWPerson BlowOffPawn, Pawn instigatedBy, int cutindex, vect
 		usestump.ConvertToLeftLeg();
 	else
 		usestump.ConvertToRightLeg();
+	
 	// attach blood too
-	sblood= spawn(BlowOffPawn.StumpBloodClass,BlowOffPawn,,usec2.origin);
-	BlowOffPawn.AttachToBone(sblood, BlowOffPawn.SeverBone[cutindex]);
+	//sblood= spawn(BlowOffPawn.StumpBloodClass,BlowOffPawn,,usec2.origin);
+	//BlowOffPawn.AttachToBone(sblood, BlowOffPawn.SeverBone[cutindex]);
 
 	// Tell the dude if he did it
 	if(AWDude(InstigatedBy) != None)
@@ -110,9 +113,15 @@ function CutThisLimb(AWPerson BlowOffPawn, Pawn instigatedBy, int cutindex, vect
 function BlowOffHeadAndLimbs(AWPerson BlowOffPawn, Pawn InstigatedBy, vector momentum)
 {
 	local int i;
+	local int Damage;
+	
+	// xPatch: Bug Fix
+	if(P2Player(BlowOffPawn.Controller) != None 
+		&& P2Player(BlowOffPawn.Controller).bGodMode)
+		return;
+	// End
 
 	// Tear off head
-
 	if (BlowOffPawn.bHasHead && BlowOffPawn.MyHead != None)
 	{
 		BlowOffPawn.PopOffHead(BlowOffPawn.Location, momentum);
@@ -124,7 +133,8 @@ function BlowOffHeadAndLimbs(AWPerson BlowOffPawn, Pawn InstigatedBy, vector mom
 	{
 		if (BlowOffPawn.BoneArr[i] == 1)
 		{
-			CutThisLimb(BlowOffPawn, InstigatedBy, i, momentum, 0.5, 0.5);
+			//CutThisLimb(BlowOffPawn, InstigatedBy, i, momentum, 0.5, 0.5);
+			CutThisLimb(BlowOffPawn, InstigatedBy, i, momentum, 0.0, 0.0);
 		}
 	}
 }
@@ -178,6 +188,8 @@ simulated function CheckHurtRadius2( float DamageAmount, float DamageRadius,
 
 				if (AWPerson(Victims) != None)
 				{
+					AWPerson(Victims).SetOnFire(FPSPawn(Instigator));
+					
 					if (FinalDamage*(1-AWPerson(Victims).ARMOR_EXPLODED_BLOCK) >= AWPerson(Victims).Health)
 					{
 						UseBlowOffMom = BlowOffMom + 250 * (Victims.Location - Location) + 50 * VRand();
@@ -214,7 +226,7 @@ defaultproperties
 {
      ExplodingSound=Sound'AW7Sounds.Nuke'
      ExplosionMag=200000.000000
-     ExplosionDamage=360.000000
+     ExplosionDamage=1200.000000 //360.000000
      ExplosionRadius=1500.000000
 	 TransientSoundRadius=2000
      MyDamageType=Class'NukeDamage'

@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 // MenuTheyHateMe.uc
-// Copyright 2003 Running With Scissors, Inc.  All Rights Reserved.
+// Copyright 2023 Running With Scissors Studios LLC.  All Rights Reserved.
 //
 // Menu to explain TheyHateMe difficulty. This is extra hard and has most
 // people attacking the dude on sight.

@@ -19,7 +19,8 @@ function AnnouncePickup( Pawn Receiver )
 
 defaultproperties
 {
-     BounceSound=Sound'WeaponSounds.grenade_bounce'
+     //BounceSound=Sound'WeaponSounds.grenade_bounce'
+	 BounceSound=Sound'WeaponSoundsToo.KGrenade_fall'	// Change by Man Chrzan: xPatch 2.0
      ShortSleeveType=Class'MrDKNadeWeaponSS'
      bNoBotPickup=True
      MaxDesireability=-1.000000

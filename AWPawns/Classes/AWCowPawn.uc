@@ -265,6 +265,7 @@ function bool CheckGetHammer(AWDude Other)
 	local vector Rot, dir;
 	local float dot1;
 	local P2Emitter butteffects;
+	local AWPlayer P;
 
 	if(StuckHammer != None)
 	{
@@ -279,6 +280,13 @@ function bool CheckGetHammer(AWDude Other)
 		{
 			RemoveHammer();
 			Other.CreateInventory("AWInventory.SledgeWeapon");
+			
+			// xPatch: Auto-Switch back to sledge
+			ForEach DynamicActors(class'AWPlayer', P)
+				break;
+			P.PickupThrownWeapon(Class'SledgeWeapon'.default.InventoryGroup, Class'SledgeWeapon'.default.GroupOffset);
+			// End
+			
 			// make effects
 			if(ButtPopClass != None)
 			{
@@ -1338,6 +1346,16 @@ function ShrinkHeadAddStump(coords usec, optional bool bExploded)
 	// Totally shrink the head
 	SetBoneScale(0, 0.0, HEAD_BONE);
 }
+
+// Change by NickP: MP fix
+simulated function ClientSetupStump(StumpCow UseStump)
+{
+	UseStump.SetupStump(Skins[0], AmbientGlow, true);
+
+	// Totally shrink the head
+	SetBoneScale(0, 0.0001, HEAD_BONE);
+}
+// End
 
 ///////////////////////////////////////////////////////////////////////////////
 // Do visual/sound effects for exploding head part

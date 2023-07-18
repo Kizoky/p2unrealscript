@@ -16,7 +16,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-class RifleWeapon extends P2Weapon;
+class RifleWeapon extends CatableWeapon; //P2Weapon;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Vars, structs, consts
@@ -46,14 +46,13 @@ var P2Pawn MyTarget;
 var float TargetTime;		// After every so often, reduce this again to 0. Use it to update
 							// the client that they're still in range.
 
-
 const SCALE_RAND =	0.3;
 const OFFSET_X_BASE = 0.02;
 const OFFSET_Y_BASE = 0.02;
 const MAX_ZOOM_FOV		=	30;
 const START_ZOOM_FOV	=	15;
-const MIN_ZOOM_FOV		=	2;
-const INC_ZOOM_FOV		=	1;
+const MIN_ZOOM_FOV		=	5;		// 2
+const INC_ZOOM_FOV		=	5;      // 1 
 const BREATH_MAX		=	20;
 const FADE_ZOOM_ENTRY_TIME=	1.4;
 const CAN_SHOOT_FADE	=	100;
@@ -67,6 +66,9 @@ const EXPECTED_START_RES_WIDTH_RIFLE	= 1024;
 const WAIT_IDLE_TIME	=	0.2;
 
 const TARGET_UPDATE_TIME	= 2.0;
+
+// Added by Man Chrzan: xPatch 2.0
+var sound EjectSound;    	 // Missing sound fix  
 
 ///////////////////////////////////////////////////////////////////////////////
 // Modify your speed based on your owners body speed
@@ -88,6 +90,13 @@ function PostBeginPlay()
 	if(FPSPawn(Instigator) != None
 		&& !FPSPawn(Instigator).bPlayer)
 		TraceAccuracy = BotTraceAccuracy;
+		
+	// If it's enhanced game we have higher accuracy too!
+	if(P2GameInfoSingle(Level.Game).VerifySeqTime()
+		&& Pawn(Owner).Controller.bIsPlayer )
+	{
+	    default.TraceAccuracy=ZoomedTraceAccuracy;
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -104,8 +113,29 @@ function RefreshHints()
 ///////////////////////////////////////////////////////////////////////////////
 simulated function PlayFiring()
 	{
+	local PlayerController P;
+		
 	Super.PlayFiring();
-	SetupMuzzleFlash();
+	//SetupMuzzleFlash();
+	
+		// xPatch: Camera shake effect fix
+		if ( (Instigator != None) && Instigator.IsLocallyControlled() )
+		{
+			P = PlayerController(Instigator.Controller);
+			if (P!=None)
+			{
+				if ( InstFlash != 0.0 )
+					P.ClientInstantFlash( InstFlash, InstFog);
+	
+				P.ShakeView(ShakeRotMag, ShakeRotRate, ShakeRotTime,
+							ShakeOffsetMag, ShakeOffsetRate, ShakeOffsetTime);
+			}
+		}
+		
+		// xPatch: Play MP sounds on everyone's computers
+		if(Level.Game == None
+			|| !FPSGameInfo(Level.Game).bIsSinglePlayer)
+			PlayOwnedSound(FireSound,SLOT_Interact,1.5,,,WeaponFirePitchStart + (FRand()*WeaponFirePitchRand),false);
 	}
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -158,8 +188,7 @@ simulated event RenderOverlays( canvas Canvas )
 	if ( Instigator == None )
 		return;
 
-
-
+	
 
 	bNoHudReticle=false;
 
@@ -360,6 +389,7 @@ simulated function EnterZoomMode()
 
 	PlayAnim('StartZoom',WeaponSpeedZoom);
 	bBlockZoomIn=true;
+	bHideFoot=true;	// xPatch
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -423,7 +453,14 @@ simulated function FinishZoomExit()
 		&& !FPSPawn(Instigator).bPlayer)
 		TraceAccuracy = BotTraceAccuracy;
 	else
-		TraceAccuracy = default.TraceAccuracy;
+	{
+		if(CatOnGun == 1)
+			TraceAccuracy = ZoomedTraceAccuracy;
+		else
+			TraceAccuracy = default.TraceAccuracy;
+	}
+	
+	bHideFoot=false;	// xPatch
 	bShowHints=false;
 	UpdateHudHints();
 }
@@ -545,6 +582,11 @@ function ProjectileFire()
 {
 	local vector markerpos, EndTrace;
 	local vector StartTrace, X,Y,Z;
+	
+	// Added by Man Chrzan: xPatch 2.0
+	// Reduce the cat ammo if we're using one
+	if(CatOnGun == 1)
+		CatAmmoLeft--;
 
 	// Moves like a projectile, but set up like a trace
 	Owner.MakeNoise(1.0);
@@ -557,7 +599,10 @@ function ProjectileFire()
 	EndTrace += (TraceDist * X);
 
 	// Make it
-	RifleAmmoInv(AmmoType).SpawnRifleProjectile(StartTrace,Normal(EndTrace - StartTrace));
+	if (CatOnGun == 1) // Change by Man Chrzan: Silencing doesn't seem work from SwapCatOn so let's use new projectile 
+		RifleAmmoInv(AmmoType).SpawnSilentRifleProjectile(StartTrace,Normal(EndTrace - StartTrace));
+	else
+		RifleAmmoInv(AmmoType).SpawnRifleProjectile(StartTrace,Normal(EndTrace - StartTrace));
 
 	// Only make a new danger marker if the consecutive fires were as high
 	// as the max
@@ -752,6 +797,16 @@ state Idle
 		local Actor TestTarget;
 
 		FadeTick(DeltaTime);
+		
+		// xPatch: Cutscenes FOV glitch fix
+		if(P2GameInfo(Level.Game) != None 
+			&& P2GameInfo(Level.Game).IsCinematic()
+			&& bZoomed)
+		{
+			ExitZoomMode();
+			FinishZoomExit();
+			GotoState('Idle');
+		}
 
 		// If it's the client, or a normal, single player game
 		if (P2GameInfoSingle(Level.Game) == None)
@@ -980,6 +1035,49 @@ state DownWeapon
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Added by Man Chrzan: xPatch 2.0
+///////////////////////////////////////////////////////////////////////////////
+
+function Notify_Eject()
+{
+    Instigator.PlaySound(EjectSound, SLOT_None, 1.0, true, , WeaponFirePitchStart + (FRand()*WeaponFirePitchRand));
+}
+
+function SwapCatOn()
+{
+	// Do actual silencing!! (silencer part)
+	// Turn off sounds so no one gets freaked out unless you actaully hit them
+	ShotMarkerMade = None;
+
+	// Increase accuracy
+	TraceAccuracy = ZoomedTraceAccuracy;
+
+	Super.SwapCatOn();
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+// Swap meshes and animations appropriately for normal shotgun
+///////////////////////////////////////////////////////////////////////////////
+function SwapCatOff()
+{
+	// Undo actual silencing!! (silencer part)
+	// Turn sounds back on, so people freak out again
+	ShotMarkerMade = default.ShotMarkerMade;
+	ExitZoomMode();
+	FinishZoomExit();
+	TraceAccuracy = default.TraceAccuracy;
+	
+	Super.SwapCatOff();
+}
+
+// xPatch: Make sure that this gun is not extension!
+function bool CanSwapHands()
+{
+	return (Class == Class'RifleWeapon');
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Default properties
 ///////////////////////////////////////////////////////////////////////////////
 defaultproperties
@@ -990,11 +1088,15 @@ defaultproperties
 	PickupClass=class'RiflePickup'
 	AttachmentClass=class'RifleAttachment'
 
-//	Mesh=Mesh'FP_Weapons.FP_Dude_Rifle'
+	OldMesh=Mesh'FP_Weapons.FP_Dude_Rifle'
 	Mesh=Mesh'MP_Weapons.MP_LS_Rifle'
 
 	Skins[0]=Texture'MP_FPArms.LS_arms.LS_hands_dude'
 //	Skins[0]=Texture'WeaponSkins.Dude_Hands'
+	Skins[1]=Texture'WeaponSkins.sniper_timb'
+	Skins[2]=Texture'WeaponSkins.brass-01'
+	Skins[3]=Texture'xPatchTex.Weapons.Rifle_handle'
+
 	FirstPersonMeshSuffix="Rifle"
 
 	bSniping=true
@@ -1039,13 +1141,14 @@ defaultproperties
 	AutoSwitchPriority=8
 	InventoryGroup=8
 	GroupOffset=1
-	BobDamping=0.975000
+	//BobDamping=0.975000
+	BobDamping=1.12 
 	ReloadCount=0
 	TraceAccuracy=0.2
 	TraceDist=1000
     TestTraceDist=10000.0
 	ZoomedTraceAccuracy=0.0
-	BotTraceAccuracy=0.5
+	BotTraceAccuracy=0.05		// Was 0.5, most likely a mistake and was intednded to be 0.05 (comments say bots are supposed to have better accuracy, not worse)
 	ShotMarkerMade=class'GunfireMarker'
 	BulletHitMarkerMade=class'BulletHitMarker'
 	ShotCountMaxForNotify=1
@@ -1076,5 +1179,26 @@ defaultproperties
 	bShowHint1=true
 	WeaponSpeedZoom = 1.0
 	PlayerViewOffset=(X=2,Y=0,Z=-7.75)
+	
+	EjectSound=Sound'WeaponSounds.sniper_ejectshell'
+	
+	// Muzzle Flash
+	bSpawnMuzzleFlash=true
+	MFBoneName="MESH_Stock"
+	MFRelativeLocation=(X=57.5,Y=4,Z=0)
+	MFTex[0]=Texture'Timb.muzzleflash.machine_gun_corona'
+	MFScale[0]=(Min=1.7,Max=1.7) 
+	MFSizeRange[0]=(Min=25,Max=25) 
+	MFLifetime[0]=(Min=0.05,Max=0.05)
+	MFClass[2]=class'FX2.MuzzleFlash01'
+	
+	// Meow! 
+	bAttachCat=True
+	CatFireSound=Sound'WeaponSounds.machinegun_catfire'
+	CatBoneName="MESH_Stock"
+	CatRelativeLocation=(X=57,Y=8.2,Z=0)
+	CatRelativeRotation=(Roll=16384)
+	StartShotsWithCat=9
+	CatScale=1.25
 	}
 

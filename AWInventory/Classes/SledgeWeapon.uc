@@ -542,7 +542,13 @@ function ThrowSledge()
 	AdjustedAim = Instigator.AdjustAim(AmmoType, StartTrace, 2*AimError);	
 	TurnOffHint();
 	sledgeproj = spawn(class'SledgeProjectile',Instigator,,StartTrace, AdjustedAim);
-
+//xPatch
+	if(BloodTextureIndex != 0)
+	{
+		sledgeproj.BloodTextureIndex = BloodTextureIndex;
+		sledgeproj.Skins[1] = BloodTextures[BloodTextureIndex - 1];
+	}
+//end	
 	// Shake the view when you throw it
 	if ( Instigator != None)
 	{
@@ -965,13 +971,18 @@ defaultproperties
      AIRating=0.110000
      MaxRange=95.000000
      FireSound=Sound'AWSoundFX.Sledge.hammerswingmiss'
-     GroupOffset=6
+     GroupOffset=10
      PickupClass=Class'AWInventory.SledgePickup'
-     BobDamping=0.970000
+     //BobDamping=0.970000
      AttachmentClass=Class'AWInventory.SledgeAttachment'
      ItemName="Sledgehammer"
      Mesh=SkeletalMesh'AWWeaponAnim.LS_Sledgehammer'
      Skins(0)=Texture'MP_FPArms.LS_arms.LS_hands_dude'
      Skins(1)=Texture'AWWeaponSkins.Weapons.Sledge'
-     AmbientGlow=128
+     AmbientGlow=90 //128
+	 
+	 //Change by Man Chrzan: xPatch 2.0
+	 PlayerViewOffset=(X=5,Y=0,Z=-10)
+	 BobDamping=1.10
+	 ThirdPersonBloodSkinIndex=1
 }

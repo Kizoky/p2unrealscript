@@ -282,7 +282,8 @@ simulated function BounceOffSomething( vector HitNormal, actor Wall )
 				StartSpinMag = RotDampen*StartSpinMag;
 				RandSpin(StartSpinMag);
 				// play a noise
-				PlaySound(CowHeadBounce);
+				//PlaySound(CowHeadBounce);
+				self.PlaySound(CowHeadBounce,,1.0,false,200.0,GetRandPitch());	// xPatch: Sound Fix
 			}
 			else
 				BounceRecoil(HitNormal);
@@ -315,7 +316,8 @@ simulated function BounceRecoil(vector HitNormal)
 	// play a noise
 	if(bCanPlayBounceSound)
 	{
-		PlaySound(CowHeadBounce,,,,0.0,GetRandPitch());
+		//PlaySound(CowHeadBounce,,,,0.0,GetRandPitch());
+		self.PlaySound(CowHeadBounce,,1.0,false,200.0,GetRandPitch());	// xPatch: Sound Fix
 		SetTimer(GetSoundDuration(CowHeadBounce), false);
 		if(VSize(Velocity) < MinExtraSoundSpeed)
 			bCanPlayBounceSound=false;

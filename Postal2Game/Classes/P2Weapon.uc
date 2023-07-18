@@ -172,6 +172,7 @@ var bool		bNoHudReticle;				// This doesn't want a reticle (like a melee weapon 
 var Texture		ReticleTexture;				// Reticle texture
 var Color		ReticleDefaultColor;		// Default reticle color
 var Color		ReticleColor;				// Current reticle color (can be modified by each weapon)
+var float 		ReticleSize;				// xPatch: gets reticle scale from P2Player
 
 var	float		MinRange;					// Minimum range of weapon--don't be any closer than this when
 											// when attacking with this weapon (opposite to Weapon::MaxRange)
@@ -212,6 +213,7 @@ var localized string DropWeaponHint2;
 var const localized string StandStillHint;	// Stand still while they cuff you
 var const localized string TooMuchAmmoHint;
 var const localized string TooManyOfTheseHint;
+var localized string GroupFullMessage, GroupFullMessage2A, GroupFullMessage2B, MeleeModeMessage;	// xPatch
 
 var bool		bBumpStartsFight;			// If you have this weapon equipped and you bump into
 											// a person with it, then they consider that starting a fight
@@ -282,6 +284,68 @@ var bool bAllowAimAssist;		// True if we want to allow aiming assistance
 
 var() bool bContextualFireSwap;	// If the player has turned on "dual wield swap" and this is true, always swaps the Fire and AltFire functions.
 
+///////////////////////////////////////////////////////////////////////////////
+// Man Chrzan: xPatch 
+///////////////////////////////////////////////////////////////////////////////
+
+var byte bDropInVeteranMode;		// 0 - Ammo drop, 1 - weapon drop, 2 - randomly drop weapon or ammo.
+var float VeteranModeDropChance;	// Chance for this weapon / it's ammo to drop.
+var bool bAllowMiddleFinger;		// Thanks to this new bool we can show middle finger with any one-handed weapon. Like Glock for example.
+
+// Reloading
+var bool bReloadableWeapon;			// Set True if this weapon is ACTUAL reloadable weapon.
+var bool bNoHudReticleReload;		// Set True if you crosshair to disappear during reload.
+var bool bHideReloadCount;			// Set True if you don't want ReloadCount to be displayed on HUD.
+var bool bAllowReloadHints;			// This decides if weapon is allowed to show reload hints or not (Permanent)
+var travel bool bShowReloadHints;	// This will show reload hint for all weapons extending this class. 
+									// Once player reloads manually (Reload function in P2Player) it gets disabled for all weapons.
+var localized string ReloadHint1;
+
+// Oldskool Hands
+var bool bOldHands;					// For Debug 
+var Mesh OldMesh;					// Old Mesh to use with the option enabled
+var array<Texture> OldHandsSkins;	// Old skins we swap to
+var Texture GimpHands, CopHands;	// Supported new skins we can also swap from
+//var travel material	PreSwapTex;		// Keep pre-swap hands texture, for disabling the option.
+
+// Settings Override
+var bool xDisplayOverwrite;
+var float xPreviousFOV;		// to save calculated fov
+var float xDisplayFOV;
+var float xOffsetX;
+var float xOffsetY;
+var float xOffsetZ;
+
+// Customizable Muzzle Flash Emitter
+var bool bSpawnMuzzleFlash;		// Set True if you want to use new Emitter MF system.
+var bool bSpawnMuzzleSmoke;		// Set True if you want to use smoke effects.
+var bool bMFNoAttach;			// Doesn't attach to bone, just spawn in it's location
+var bool bMFAlwaysSpawn;		// Always spawns, even if previous effect still exists.
+var bool bNoMFSetup;			// Spawns the emitter as it is, ignoring properties below.
+var byte MFType;				// 0 Default, 1 Alternative, 2 None
+var P2Emitter MF;
+// 0 Primary Fire, 1 Alt Fire, 2 Optional Alternative Effects
+var class<P2Emitter>  MFClass[3], SmokeClass;
+var(MuzzleFlash) name MFBoneName;
+var(MuzzleFlash) vector MFRelativeLocation;
+var(MuzzleFlash) rotator MFRelativeRotation;
+var(MuzzleFlash) Texture MFTex[3];
+var(MuzzleFlash) range	MFScale[3];
+var(MuzzleFlash) float	MFScaleTime[3];
+var(MuzzleFlash) range	MFSizeRange[3];
+var(MuzzleFlash) range	MFLifetime[3];
+var(MuzzleFlash) range	MFSpinRan[3], MFSpinsPerSec[3];
+
+// Shell
+var P2ShellMaker SM;
+var P2ShellCase shell;
+var class<P2ShellCase> ShellClass;
+var() name ShellBoneName;
+var() vector ShellRelativeLocation;
+var() float ShellSpeedY,ShellSpeedZ,ShellScale;
+var texture InvShellTex, ShellTex;
+var bool bCheckShell; 	   // If shell texture swap is needed
+
 // Network replication
 //
 replication
@@ -326,7 +390,10 @@ simulated function PostBeginPlay()
 	if(P2GameInfo(Level.Game) != None)
 		bAllowDynamicLights = P2GameInfo(Level.Game).AllowDynamicWeaponLights();
 
-
+	// Man Chrzan: xPatch
+	GetReticleSettings();
+	xSetupSettings();	
+	//GetHandsSettings();
 }
 
 
@@ -347,6 +414,10 @@ simulated function PostNetBeginPlay()
 			puse.FootTexture);
 
 	GetReticleSettings();
+	
+	// Man Chrzan: xPatch
+	xSetupSettings();	
+	//GetHandsSettings();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -390,9 +461,15 @@ simulated function GetReticleSettings()
 
 		if(p2p != None)
 		{
-			ReticleDefaultColor = p2p.GetReticleColor();
+			// Change by Man Chrzan: xPatch 2.0
+			// Return only alpha + white color for old crosshair, it doesn't support color change.
+			if(p2p.ReticleGroup == 0)
+				ReticleDefaultColor = p2p.GetReticleColor();
+			else
+				ReticleDefaultColor = p2p.GetReticleColor2();
 			ReticleColor = ReticleDefaultColor;
 			ReticleTexture = p2p.GetReticleTexture();
+			ReticleSize = p2p.ReticleSize;
 		}
 	}
 }
@@ -491,7 +568,13 @@ simulated function DetachFromPawn(Pawn P)
 simulated function ChangeHandTexture(Texture NewHandsTexture, Texture DefHandsTexture, Texture NewFootTexture)
 {
 	local int i;
-
+	
+	// xPatch: for old models handle texture change differently
+	if(DoSwapHands()) {
+		ChangeOldHandTexture(NewHandsTexture, DefHandsTexture, NewFootTexture);
+		return;
+	}
+	
 	for(i=0; i<Skins.Length; i++)
 	{
 		if(default.Skins[i] == DefHandsTexture)
@@ -549,7 +632,36 @@ function DropFrom(vector StartLocation)
 	if ((Instigator.IsA('Dude') || Instigator.IsA('AWDude'))
 		&& Instigator.Health <= 0)
 		return;
-
+		
+	// xPatch: Ludicrous difficulty, not player.
+	if (P2GameInfoSingle(Level.Game) != None
+		&& P2GameInfoSingle(Level.Game).InVeteranMode()
+		&& !Instigator.IsA('AWDude')
+		&& !Instigator.IsA('Dude')
+		&& !Instigator.IsA('AWZombie')	// Zombies can steal our AW weapons or have some useful stuff during final battle so they need to drop normally.
+		)
+	{
+		// spawn ammo pickup instead, and only sometimes at that!
+		if(FRand() <= VeteranModeDropChance)
+		{
+			// We might want grenades and some other stuff to be dropped.
+			if(bDropInVeteranMode == 1 || (bDropInVeteranMode == 2 && FRand() <= 0.50))
+			{
+				P = spawn(PickupClass,Instigator,,StartLocation);
+				// Give them weapon but with the bare minimum of ammo
+				if(P2WeaponPickup(P) != None)
+					P2WeaponPickup(P).AmmoGiveCount = class<P2WeaponPickup>(PickupClass).default.DeadNPCAmmoGiveRange.Min;
+			}
+			else // Otherwise we drop only it's ammo.
+			{
+				P = spawn(AmmoType.PickupClass,Instigator,,StartLocation);
+				// Give them the bare minimum of ammo
+				if(P2AmmoPickup(P) != None)
+					P2AmmoPickup(P).AmmoAmount = class<P2WeaponPickup>(PickupClass).default.DeadNPCAmmoGiveRange.Min;
+			}
+		}
+	}
+	else // xPatch Change end here
 	// spawn it earlier, so the instigator isn't cleared yet.
 	P = spawn(PickupClass,Instigator,,StartLocation);
 
@@ -563,10 +675,18 @@ function DropFrom(vector StartLocation)
 		{
 			DetachFromPawn(Instigator);
 		}
-		// Remove the ammo from the inventory
-		// But only if it's not being used
-		bAmmoInUse = false;
-		if ( Instigator != None )
+		
+		// xPatch: For limited inventory we want to always keep ammo.
+		// (so we can swap weapons and keep it between them)
+		if (P2GameInfoSingle(Level.Game) != None 
+			&& P2Player(Instigator.Controller) != None
+			&& P2GameInfoSingle(Level.Game).GetPlayer().UseGroupLimit())
+			bAmmoInUse = true;
+		else // Remove the ammo from the inventory
+			 // But only if it's not being used
+			bAmmoInUse = false;
+			
+		if ( Instigator != None && !bAmmoInUse)
 		{			
 			for (Inv = Instigator.Inventory; Inv != None; Inv = Inv.Inventory)
 			{				
@@ -669,7 +789,8 @@ simulated function Weapon RecommendWeapon( out float rating )
 		{
 		rating = RateSelf();
 		if ( (self == Instigator.Weapon) && (Instigator.Controller.Enemy != None)
-			&& AmmoType.HasAmmo()
+			//&& AmmoType.HasAmmo()		// xPatch: 
+			&& HasAmmo()				// Reloading support
 			&& ViolenceRank > 0
 			&& !bMeleeWeapon)
 			// tend to stick with same weapon, if it's violent and not melee (because those are very weak
@@ -831,13 +952,16 @@ function ServerFire()
 
 	//log(self$" serverfire, ammo "$AmmoType.AmmoAmount$" get state "$GetStateName());
 
-	if ( AmmoType.HasAmmo() )
+	//if ( AmmoType.HasAmmo() )
+	if ( HasAmmo() )	// xPatch: Reloading support
 	{
 		GotoState('NormalFire');
 
 		// Don't do reloadcount because we usually force reloads (grenades) or don't
 		// do them at all (machinegun)
-		//ReloadCount--;
+		if(bReloadableWeapon)	// xPatch: We DO reloadcount now, but only for bReloadableWeapon 
+			ReloadCount--;
+		
 		if ( AmmoType.bInstantHit )
 			TraceFire(TraceAccuracy,0,0);
 		else
@@ -855,7 +979,8 @@ simulated function Fire( float Value )
 {
 	//log(self$" Fire, ammo "$AmmoType.AmmoAmount);
 	if ( AmmoType == None
-		|| !AmmoType.HasAmmo() )
+	//	|| !AmmoType.HasAmmo() )
+		|| !HasAmmo() )				// xPatch: Reloading support
 	{
 		ClientForceFinish();
 		ServerForceFinish();
@@ -873,7 +998,8 @@ simulated function Fire( float Value )
 	{
 		// Don't do reloadcount because we usually force reloads (grenades) or don't
 		// do them at all (machinegun)
-		//ReloadCount--;
+		if(bReloadableWeapon)	// xPatch: We DO reloadcount now, but only for bReloadableWeapon 
+			ReloadCount--;
 		LocalFire();
 		//log(self$" going to client firing");
 		GotoState('ClientFiring');
@@ -1117,7 +1243,12 @@ simulated function bool ForceEndFire()
 simulated function bool HasAmmo()
 {
 	if(AmmoType != None)
-		return AmmoType.HasAmmo();
+	{
+		if(bReloadableWeapon)	// xPatch: Reloading Support
+			return (P2AmmoInv(AmmoType).bInfinite || AmmoType.AmmoAmount > 0 || ReloadCount > 0);
+		else
+			return AmmoType.HasAmmo();
+	}
 	else
 		return false;
 }
@@ -1187,7 +1318,8 @@ simulated function float SwitchPriority()
 		&& !Instigator.IsHumanControlled() )
 		return RateSelf();
 	else if ( !bJustMade
-		&& (AmmoType != None && !AmmoType.HasAmmo()) )
+		//&& (AmmoType != None && !AmmoType.HasAmmo()) ) 
+		&& (AmmoType != None && !HasAmmo()) )	// xPatch: Reloading support
 		{
 		if ( Pawn(Owner).Weapon == self )
 			return -0.5;
@@ -1281,6 +1413,12 @@ simulated function SetRightHandedMesh()
 			LinkMesh(default.Mesh);
 	}
 	*/
+	
+	// xPatch: Classic Hands
+	if(DoSwapHands())
+		SwapHandsOld();
+	else
+		SwapHandsNew();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1437,7 +1575,10 @@ event TravelPostAccept()
 		}
 	}
 	if ( self == Pawn(Owner).Weapon )
+	{
 		BringUp();
+		Pawn(Owner).ServerChangedWeapon(None, self); // xPatch: fix for missing weapon attachment after level transition
+	}
 	else GotoState('');
 }
 
@@ -1538,6 +1679,7 @@ function bool HandlePickupQuery( Pickup Item )
 ///////////////////////////////////////////////////////////////////////////////
 simulated function PlayFiring()
 {
+	SetupMuzzleFlashEmitter(); // Man Chrzan: xPatch
 	IncrementFlashCount();
 	// Play MP sounds on everyone's computers
 	if(Level.Game == None
@@ -1552,6 +1694,7 @@ simulated function PlayFiring()
 ///////////////////////////////////////////////////////////////////////////////
 simulated function PlayAltFiring()
 {
+	SetupMuzzleFlashEmitter(); // Man Chrzan: xPatch
 	IncrementFlashCount();
 	// Play MP sounds on everyone's computers
 	if(Level.Game == None
@@ -1658,7 +1801,8 @@ function ServerAltFire()
 		log("WARNING "$self$" HAS NO AMMO!!!");
 		GiveAmmo(Pawn(Owner));
 	}
-	if ( AmmoType.HasAmmo()
+	//if(AmmoType.HasAmmo()
+	if ( HasAmmo() 	// xPatch: Reloading Support
 		&& bUsesAltFire)
 	{
 		bAltFiring=true;
@@ -1677,7 +1821,8 @@ function ServerAltFire()
 ///////////////////////////////////////////////////////////////////////////////
 simulated function AltFire( float Value )
 {
-	if ( !AmmoType.HasAmmo() )
+	//if ( !AmmoType.HasAmmo() )
+	if (  !HasAmmo() )	// xPatch: Reloading Support
 		return;
 
 	if ( !RepeatFire() )
@@ -1836,7 +1981,8 @@ function Finish()
 	local bool bForce, bForceAlt;
 
 	//log(self$" Finish get state name "$GetStateName()$" ammo amount "$AmmoType.AmmoAmount);
-	if ( NeedsToReload() && P2AmmoInv(AmmoType).HasAmmoFinished() )
+	//if ( NeedsToReload() && P2AmmoInv(AmmoType).HasAmmoFinished() )
+	if ( NeedsToReload() && HasAmmoFinished() ) 	// xPatch: Reloading Support
 	{
 		GotoState('Reloading');
 		return;
@@ -1861,7 +2007,8 @@ function Finish()
 
 	if ( !Instigator.IsHumanControlled() )
 	{
-		if ( !P2AmmoInv(AmmoType).HasAmmoFinished() )
+		//if ( !P2AmmoInv(AmmoType).HasAmmoFinished() )
+		if ( !HasAmmoFinished() )	// xPatch: Reloading Support
 		{
 			// AI find it's next best weapon
 			Instigator.Controller.SwitchToBestWeapon();
@@ -1901,7 +2048,8 @@ function Finish()
 		return;
 	}
 
-	if ( !P2AmmoInv(AmmoType).HasAmmoFinished() && Instigator.IsLocallyControlled() )
+	//if ( !P2AmmoInv(AmmoType).HasAmmoFinished() && Instigator.IsLocallyControlled() )
+	if ( !HasAmmoFinished() && Instigator.IsLocallyControlled() )	// xPatch: Reloading Support
 	{
 		// If you autoswitch, you go to the next strongest weapon you have,
 		// if not, then go back to your hands.
@@ -1943,13 +2091,15 @@ simulated function ClientFinish()
 		GotoState('');
 		return;
 	}
-	if ( NeedsToReload() && P2AmmoInv(AmmoType).HasAmmoFinished() )
+	//if ( NeedsToReload() && P2AmmoInv(AmmoType).HasAmmoFinished() )
+	if ( NeedsToReload() && HasAmmoFinished() )	// xPatch: Reloading Support
 	{
 		GotoState('Reloading');
 		return;
 	}
 
-	if ( !P2AmmoInv(AmmoType).HasAmmoFinished() )
+	//if ( !P2AmmoInv(AmmoType).HasAmmoFinished() )
+	if ( !HasAmmoFinished() )	// xPatch: Reloading Support
 	{
 		// If you autoswitch, you go to the next strongest weapon you have,
 		// if not, then go back to your hands.
@@ -2054,7 +2204,18 @@ function bool GetCopHints(out String str1, out String str2)
 function bool GetHints(out String str1, out String str2, out String str3,
 				out byte InfiniteHintTime)
 {
-	if(bShowHints
+	// Change by Man Chrzan: xPatch 2.0	
+	// Show new reload hints
+	if (ReloadCount < Default.ReloadCount
+		&& AmmoType.AmmoAmount > 0
+		&& bShowReloadHints 
+		&& bAllowReloadHints)
+	{
+		str1=ReloadHint1;
+		return true;
+	}
+	// Show regular hints
+	else if(bShowHints
 		&& bAllowHints)
 	{
 		str1=HudHint1;
@@ -2124,7 +2285,10 @@ simulated function DrawCrossHair( canvas Canvas)
 		if (ReticleTexture != None && p2p != None)
 		{
 			// Draw reticle
-			UseScale = P2Hud(p2p.MyHud).Scale;
+			if(ReticleSize != 0) // xPatch Change
+				UseScale = ReticleSize; 
+			else // End
+				UseScale = P2Hud(p2p.MyHud).Scale;
 
 			Canvas.Style = ERenderStyle.STY_Alpha;
 			Canvas.DrawColor = ReticleColor;
@@ -2164,10 +2328,12 @@ simulated event RenderOverlays( canvas Canvas )
 	if (bDeleteMe)
 		return;
 
-	DrawCrosshair(Canvas);
-
 	if ( Instigator == None )
 		return;
+		
+	// xPatch: It's now handled with HUD by default.
+	if(!P2Player(Instigator.Controller).bHUDCrosshair)
+		DrawCrosshair(Canvas);
 
 	PlayerOwner = PlayerController(Instigator.Controller);
 
@@ -2239,6 +2405,20 @@ simulated event RenderOverlays( canvas Canvas )
 	}
 	else
 		bSetFlashTime = false;
+		
+	// Man Chrzan: xPatch Overwrite Weapons FOV
+	if(xDisplayOverwrite)
+	{
+		if(xPreviousFOV == 0)
+			xPreviousFOV = DisplayFOV;
+		
+		DisplayFOV = xPreviousFOV + xDisplayFOV;
+		
+		PlayerViewOffset.X = Default.PlayerViewOffset.X + xOffsetX;
+		PlayerViewOffset.Y = Default.PlayerViewOffset.Y + xOffsetY;
+		PlayerViewOffset.Z = Default.PlayerViewOffset.Z + xOffsetZ;
+	}
+	// End
 
 	// clear z buffer to get muzzle flash behind hands correctly (doesn't work--not sure what else to do)
 	Canvas.DrawActor(None, false, true);
@@ -2348,9 +2528,11 @@ state Idle
 
 Begin:
 	bPointing=False;
-	if ( NeedsToReload() && P2AmmoInv(AmmoType).HasAmmoFinished() )
+	//if ( NeedsToReload() && P2AmmoInv(AmmoType).HasAmmoFinished() )
+	if ( NeedsToReload() && HasAmmoFinished() )	// xPatch: Reloading Support
 		GotoState('Reloading');
-	if ( !P2AmmoInv(AmmoType).HasAmmoFinished() )
+	//if ( !P2AmmoInv(AmmoType).HasAmmoFinished() )	
+	if ( !HasAmmoFinished() )	// xPatch: Reloading Support
 		Instigator.Controller.SwitchToBestWeapon();  //Goto Weapon that has Ammo
 	if ( Instigator.PressingFire() )
 	{
@@ -2383,7 +2565,8 @@ state NormalFire
 	{
 		//log(self$" normal fire ");
 		if ( AmmoType == None
-			|| !AmmoType.HasAmmo() )
+		//	|| !AmmoType.HasAmmo() )
+			|| !HasAmmo() )				// xPatch: Reloading support
 		{
 			ClientForceFinish();
 			ServerForceFinish();
@@ -2430,7 +2613,8 @@ state ClientFiring
 	{
 		//log(self$" fire client firing");
 		if ( AmmoType == None
-			|| !AmmoType.HasAmmo() )
+		//	|| !AmmoType.HasAmmo() )
+			|| !HasAmmo() )				// xPatch: Reloading support
 		{
 			ClientForceFinish();
 			ServerForceFinish();
@@ -2476,7 +2660,8 @@ state DownWeapon
 	///////////////////////////////////////////////////////////////////////////////
 	simulated function BeginState()
 	{
-		if(AmmoType.HasAmmo()
+		//if(AmmoType.HasAmmo()
+		if( HasAmmo()	// xPatch: Reloading Support
 			&& ThirdPersonActor != None)
 			ThirdPersonActor.bHidden=false;
 
@@ -2510,6 +2695,9 @@ state Active
 	function EndState()
 	{
 		Super.EndState();
+		
+		if (ShellClass != None)	// xPatch: Shells
+			SetupShell();		
 	}
 
 	///////////////////////////////////////////////////////////////////////////////
@@ -2670,11 +2858,524 @@ simulated function ClientInventoryDeleted(Actor OldOwner)
 }
 // End
 
+
+//=====================================================================================
+// Added by Man Chrzan: xPatch
+// NEW NEW Muzzle Flash System
+//=====================================================================================
+
+///////////////////////////////////////////////////////////////////////////////
+// Setup for old 2013 Update firing effects ("Alternative") option. 
+///////////////////////////////////////////////////////////////////////////////
+function SetupAltMuzzleFlash(int NewType)
+{
+	MFType = NewType;
+	
+	if(MFType == 2)
+		bSpawnMuzzleFlash=True;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Decides which effects to spawn
+///////////////////////////////////////////////////////////////////////////////
+simulated function SetupMuzzleFlashEmitter() 
+{
+	if (IsFirstPersonView() && bSpawnMuzzleFlash)
+	{
+		// Spawn Effect
+		if(bAltFiring && MFClass[1] != none)
+			PlayFireEffects(MFClass[1], 1);
+		else 
+		{
+			if (MFType == 1 && MFClass[2] != None)
+				PlayFireEffects(MFClass[2], 2); 
+			else
+				PlayFireEffects(MFClass[0], 0);
+		}
+	}
+}
+
+simulated function PlayFireEffects(class<P2Emitter> MyMFClass, optional int SetNum)
+{
+	local int i;
+	local vector SpawnPos;
+	local vector SpawnDir;
+	local P2Emitter MF;
+	local Rotator R;
+	local vector V;
+	
+	// Debug 
+	//P2Player(Owner.Controller).ClientMessage("Fire Effects");
+	
+	// Spawn only if it disappeared - unless AlwaysSpawn bool is true.
+	if (MyMFClass != none 
+		&& (MF == none || bMFAlwaysSpawn))
+	{
+		if(bMFNoAttach) 
+		{
+			SpawnPos = GetBoneCoords(MFBoneName).Origin;
+			SpawnDir = GetBoneCoords(MFBoneName).XAxis;
+			MF = Spawn(MyMFClass,,, SpawnPos, Rotator(SpawnDir));
+		}
+		else
+			MF = Spawn( MyMFClass );
+		
+		// If it's xMuzzleFlashEmitter we can setup some exta stuff.
+		if( xMuzzleFlashEmitter(MF) != None)
+		{
+			if(Level.Game.bIsSinglePlayer && P2GameInfoSingle(Level.Game).xManager.bDynamicLights)
+				xMuzzleFlashEmitter(MF).SetDynamicLight();
+			
+			if(!bNoMFSetup) {
+				xMuzzleFlashEmitter(MF).SetEmitterTexture(MFTex[SetNum]);
+				xMuzzleFlashEmitter(MF).SetEmitterScale(MFScale[SetNum].Min, MFScale[SetNum].Max, MFScaleTime[SetNum]);
+				xMuzzleFlashEmitter(MF).SetEmitterSize(MFSizeRange[SetNum].Min, MFSizeRange[SetNum].Max);
+				xMuzzleFlashEmitter(MF).SetEmitterLifetime(MFLifetime[SetNum].Min, MFLifetime[SetNum].Max);
+				xMuzzleFlashEmitter(MF).SetEmitterSpin(MFSpinRan[SetNum], MFSpinsPerSec[SetNum]);	
+			}
+		}
+		
+		// Random position and rotation stuff	
+		//V = MFRelativeLocation;
+		//V.Z += (frand() * 2) - 1;
+		//V.X += (frand() * 2) - 1;
+		//V.Y += (frand() * 2) - 1;
+		
+		// Basic setup for any P2Emitter
+		MF.SetOwner( Owner );
+		if(!bMFNoAttach)
+			AttachToBone( MF, MFBoneName );
+		MF.SetDirection(vector(Rotation), 0.0);
+		MF.SetRelativeRotation(MFRelativeRotation);
+		MF.SetRelativeLocation(MFRelativeLocation);
+
+		// Disable upon completion of effect
+		for( i=0; i < MF.Emitters.Length; i++ )
+			MF.Emitters[i].AutoDestroy = true; 
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Called by xMuzzleFlashEmitter
+///////////////////////////////////////////////////////////////////////////////
+function SetupWeaponGlow(byte FlashGlow) 
+{
+	local int FinalGlow;
+	
+	if(FlashGlow == 0)
+	{
+		if(P2GameInfoSingle(Level.Game).xManager.bOverwriteWeaponProperties)
+			AmbientGlow = P2GameInfoSingle(Level.Game).xManager.iWeaponBrightness;
+		else
+			AmbientGlow = default.AmbientGlow;
+	}
+	else
+	{
+		FinalGlow = AmbientGlow + FlashGlow;
+		if( FinalGlow > 250 )
+			FinalGlow = 250;
+
+		AmbientGlow = FinalGlow;
+	}
+}
+
+//=====================================================================================
+// Added by Man Chrzan: xPatch
+// Setup xPatch Settings & Reticle Settings
+//=====================================================================================
+event PostLoadGame()
+{
+	Super.PostLoadGame();
+	
+	xSetupSettings();
+	GetReticleSettings();
+}
+
+simulated function xSetupSettings(optional bool bRestoreDefaults)
+{
+	//local P2Player OurPlayer;
+	local xPatchManager xManager;
+	local bool xDoDispOverw;
+	local float fCheck;
+	
+	//OurPlayer = P2Player(Pawn(Owner).Controller);
+	xManager = P2GameInfoSingle(Level.Game).xManager;
+	
+	if(xManager == None)
+		return;
+		
+	SetupAltMuzzleFlash(xManager.iMFEffect);
+
+	if(xManager.bOverwriteWeaponProperties)		//if(class'xPatchManager'.static.GetBool(OurPlayer, "bOverwriteWeaponProperties"))
+	{
+		// Check if the settings are now different than 
+		// current properties and overwrite if needed.
+		fCheck = xManager.fWeaponBob; 			//class'xPatchManager'.static.GetFloat(OurPlayer, "fWeaponBob");
+		if(fCheck != BobDamping)
+			BobDamping = fCheck;
+		
+		fCheck = xManager.iWeaponBrightness;	//class'xPatchManager'.static.GetFloat(OurPlayer, "iWeaponBrightness");
+		if(fCheck != AmbientGlow)
+			AmbientGlow = fCheck;
+		
+		fCheck = xManager.fWeaponFOV;	  		//class'xPatchManager'.static.GetFloat(OurPlayer, "fWeaponFOV");
+		if(fCheck != xDisplayFOV) {
+			xDisplayFOV = fCheck;
+			xDoDispOverw = True;
+		}
+		fCheck = xManager.fWeaponXoffset; 		//class'xPatchManager'.static.GetFloat(OurPlayer, "fWeaponXoffset");	
+		if(fCheck != xOffsetX) {
+			xOffsetX = fCheck;
+			xDoDispOverw = True;
+		}
+		fCheck = xManager.fWeaponYoffset; 		//class'xPatchManager'.static.GetFloat(OurPlayer, "fWeaponYoffset");	
+		if(fCheck != xOffsetY) {
+			xOffsetY = fCheck;
+			xDoDispOverw = True;
+		}	
+		fCheck = xManager.fWeaponZoffset; 		//class'xPatchManager'.static.GetFloat(OurPlayer, "fWeaponZoffset");
+		if(fCheck != xOffsetZ) {
+			xOffsetZ = fCheck;
+			xDoDispOverw = True;
+		}
+		
+		if(xDoDispOverw)
+			xDisplayOverwrite = True;
+			
+		//P2Player(Instigator.Controller).ClientMessage("xPatch: Overwrited weapon properties");
+	}
+	
+	// Restore default properties
+	if(bRestoreDefaults)
+	{
+		//xDisplayOverwrite = False;
+		BobDamping = default.BobDamping;
+		AmbientGlow = default.AmbientGlow;
+		xDisplayFOV = 0;
+		xOffsetX = 0;
+		xOffsetY = 0;
+		xOffsetZ = 0;
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// This is called whenever xPatch settings are updated
+///////////////////////////////////////////////////////////////////////////////
+static simulated function ViewmodelSettingsUpdated(P2Player player, bool Defaults)
+{
+	local Inventory inv;
+
+	log(Player$" xPatch: Weapon settings updated ");
+	if (player != None && player.Pawn != None)
+	{
+		// Tell all player's weapons to update their reticles
+		inv = player.Pawn.Inventory;
+		while (inv != None)
+			{
+			if (P2Weapon(inv) != None)
+				P2Weapon(inv).xSetupSettings(Defaults);
+			inv = inv.Inventory;
+			}
+	}
+}
+
+//=====================================================================================
+// Added by Man Chrzan: xPatch
+// Spawn some actual shells
+//=====================================================================================
+function SetupShell()
+{
+	if (P2GameInfoSingle(Level.Game).xManager != None
+		&& P2GameInfoSingle(Level.Game).xManager.bShellCases 
+		&& Level.Game.bIsSinglePlayer)
+	{
+		if (SM == None && ShellClass != None)
+		{
+			SM = spawn(class'P2ShellMaker', Instigator);
+			AttachToBone(SM, ShellBoneName);
+			SM.SetRelativeLocation(ShellRelativeLocation);
+		}
+	}
+	
+	if(bCheckShell)
+		CheckShell();
+}
+function CheckShell()
+{
+	local int i;
+	
+	// Hide old in-animation shell
+	if (P2GameInfoSingle(Level.Game).xManager != None
+		&& P2GameInfoSingle(Level.Game).xManager.bShellCases 
+		&& Level.Game.bIsSinglePlayer)
+	{
+		for(i=0; i<Skins.Length; i++)
+		{
+			if(Skins[i] == ShellTex)
+				Skins[i] = InvShellTex;
+		}
+	}
+	else
+	{
+		for(i=0; i<Skins.Length; i++)
+		{
+			if(default.Skins[i] == ShellTex && Skins[i] == InvShellTex)
+				Skins[i] = default.Skins[i];
+		}
+	}
+}
+function Notify_SpawnShell()
+{
+	local vector Start, X,Y,Z;
+
+	if(ShellClass == None)
+		return;
+	
+	if (Level.Game.bIsSinglePlayer
+		&& P2GameInfoSingle(Level.Game).xManager != None
+		&& P2GameInfoSingle(Level.Game).xManager.bShellCases)
+	{
+		GetAxes(Instigator.GetViewRotation(),X,Y,Z);
+		if (IsFirstPersonView())
+//			Start = GetBoneCoords(ShellBoneName).Origin;//+vect(-43,0,0) >> Rotation;
+			Start = SM.Location;
+		else
+			Start = ThirdPersonActor.Location;
+		AdjustedAim = Instigator.AdjustAim(AmmoType, Start, 2*AimError);
+		shell = spawn(ShellClass,Instigator,,Start, AdjustedAim);
+
+		if (shell != None)
+		{
+			shell.SetDrawScale(ShellScale);
+			shell.AmbientGlow = AmbientGlow;
+			shell.Eject(((fRand() * 0.2 + 0.2) * Y * ShellSpeedY) + ((fRand() * 0.3 + 0.3) * Z * ShellSpeedZ) + Instigator.Velocity);
+		}
+	}
+}
+
+//=====================================================================================
+// Added by Man Chrzan: xPatch
+// Setup Oldskool Hands
+//=====================================================================================
+
+///////////////////////////////////////////////////////////////////////////////
+// Swap meshes and animations appropriately 
+///////////////////////////////////////////////////////////////////////////////
+function SwapHandsOld()
+{
+	if(!bOldHands)
+	{
+		// Swap mesh
+		LinkMesh( OldMesh, true);
+		bOldHands = True;
+		SwapHandsSkin();
+	}
+}
+function SwapHandsNew()
+{
+	if(bOldHands || Mesh == OldMesh)
+	{
+		// Swap mesh
+		LinkMesh( Default.Mesh, true);
+		bOldHands = False;
+		SwapHandsSkin();
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Swaps old hands skin (after the model is switched)
+///////////////////////////////////////////////////////////////////////////////
+function SwapHandsSkin()
+{
+	local Texture DefDudeHands, DefOldDudeHands, CurrentDudeHands;
+	local int i;
+	
+	DefDudeHands = Class'P2Player'.default.DefaultHandsTexture;
+	DefOldDudeHands = Class'P2Player'.default.DefaultClassicHandsTexture;
+	if(P2Player(Instigator.Controller) != None)
+		CurrentDudeHands = P2Player(Instigator.Controller).GetCurrentClothesHandsTexture();
+	
+	// Swap dude's hands skin if needed
+	for(i=0; i<Skins.Length; i++)
+	{
+		if(Default.Skins[i] == DefDudeHands)
+		{
+			// Wearing some unusual clothes (Gimp, Cop, etc)
+			if(CurrentDudeHands != None)
+			{
+				if(bOldHands)
+					ChangeOldHandTexture(CurrentDudeHands, DefDudeHands, None);
+				else
+					ChangeHandTexture(CurrentDudeHands, DefDudeHands, None);
+			}
+			else // Wearing usual clothes
+			{
+				if(bOldHands)
+					Skins[i] = DefOldDudeHands;
+				else
+					Skins[i] = DefDudeHands;
+			}
+		}		
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Swaps old hands skin (for clothes change)
+///////////////////////////////////////////////////////////////////////////////
+function ChangeOldHandTexture(Texture NewHandsTexture, Texture DefHandsTexture, Texture NewFootTexture)
+{
+	local int i, j;
+	local P2Player p2p;
+	
+	p2p = P2Player(Instigator.Controller);
+	if(p2p == None)
+		return;
+	
+	for(i=0; i<Skins.Length; i++)
+	{
+		if(default.Skins[i] == DefHandsTexture)
+		{
+			for(j=0; j<p2p.ReplaceHandsSkins.Length; j++)
+			{
+				if(NewHandsTexture == p2p.ReplaceHandsSkins[j].NewSkin)
+					Skins[i] = p2p.ReplaceHandsSkins[j].OldSkin;
+				else // If we can't find a proper texture to swap to, use the default old dude's hands skin.
+					 // Doesn't take a genius to figure out what would happened if we got an new texture on a old model.
+					Skins[i] = p2p.DefaultClassicHandsTexture;
+			}
+		}
+	}	
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// This is false by default for all P2Weapon extensions.
+// Individual weapons have it overwritten to properly allow swap.
+// Otherwise we would get extending weapons fooked up.
+///////////////////////////////////////////////////////////////////////////////
+function bool CanSwapHands()
+{
+	return false;
+}
+function bool DoSwapHands()
+{
+	return 	(P2GameInfoSingle(Level.Game).InClassicMode() 
+				&& P2GameInfoSingle(Level.Game).xManager.bClassicHands 
+				&& CanSwapHands()
+				&& OldMesh != None);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// DEBUG: Forces current weapon change the weapon model
+///////////////////////////////////////////////////////////////////////////////
+exec function TOldHands()
+{
+	if (!P2Player(Instigator.Controller).DebugEnabled())
+		return;
+	
+	if(!bOldHands)
+		SwapHandsOld();
+	else
+		SwapHandsNew();
+	
+	PlayIdleAnim();
+	P2Player(Instigator.Controller).ClientMessage("OldHands: "@bOldHands);
+}
+exec function ForceBringUp()
+{
+	BringUp();
+}
+
+//=====================================================================================
+// Added by Man Chrzan: xPatch
+// Actual Reloading Support
+//=====================================================================================
+
+// Updated Reloading
+state Reloading
+{
+	simulated function BeginState()
+	{
+		Super.BeginState();
+		
+		// Hide crosshair on reload
+		if(!bNoHudReticle && bNoHudReticleReload)
+			bNoHudReticle = true;
+	}
+
+	simulated function AnimEnd(int Channel)
+	{
+		local int TopUpAmount;
+
+		// if it's actual reloadable weapon we use up ammo for reloading
+		if(bReloadableWeapon)
+		{
+			if(!P2AmmoInv(AmmoType).bInfinite)
+			{
+				TopUpAmount = Min((Default.ReloadCount - ReloadCount), AmmoType.AmmoAmount);
+				ReloadCount += TopUpAmount;
+				P2AmmoInv(AmmoType).UseAmmoForShot(TopUpAmount);
+			}
+			if(Role < ROLE_Authority)
+				ClientFinish();
+			else
+				Finish();	
+			CheckAnimating();
+		}
+		else // otherwise we use the old method
+			Super.AnimEnd(Channel);
+	}
+
+	simulated function EndState()
+	{
+		Super.EndState();
+		
+		// Show crosshair again
+		if(bNoHudReticleReload)
+			bNoHudReticle = Default.bNoHudReticle;
+	}
+}
+
+// return percent of full ammo (0 to 1 range)
+function float AmmoStatus()
+{
+	if(bReloadableWeapon)
+		return float(AmmoType.AmmoAmount+ReloadCount)/AmmoType.MaxAmmo;
+	else
+		return float(AmmoType.AmmoAmount)/AmmoType.MaxAmmo;
+}
+
+// Same as in AmmoType for normal weapons 
+// but different for reloadable
+simulated function bool HasAmmoFinished()
+{
+	if(bReloadableWeapon)
+		return HasAmmo();
+	else
+		return P2AmmoInv(AmmoType).HasAmmoFinished();
+}
+
+// Manual reload (we bind it to a key)
+exec function Reload()
+{
+	if (AmmoType.AmmoAmount > 0 
+		&& ReloadCount != default.ReloadCount 
+		&& ReloadCount != 0)
+	{
+		//if (FPSGameInfo(Level.Game).bIsSinglePlayer)
+			ForceReload(); 
+		//else
+		//	ServerForceReload();
+		
+		// Disable reload hint
+		bShowReloadHints=false;
+	}
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // DefaultProperties
 ///////////////////////////////////////////////////////////////////////////////
 defaultproperties
-	{
+{
 	DrawScale=1
 	//DisplayFOV=+60.0
 	DisplayFOV=+70.0 // 60.0
@@ -2739,7 +3440,20 @@ defaultproperties
     bOverrideAutoFOV=false
 	ReticleDefaultColor	= (R=255,G=255,B=255,A=90)
 	ReticleColor	= (R=255,G=255,B=255,A=90)
-	ReticleTexture=Texture'P2Misc.Reticle.Reticle_Crosshair_Redline'
+	ReticleTexture=Texture'P2Misc.Reticle.Reticle_Crosshair_Cross' //Texture'P2Misc.Reticle.Reticle_Crosshair_Redline'
 	ControllerFOV = 0
 	bAllowAimAssist=true
-	}
+	
+	// Man Chrzan: xPatch
+	MFClass[0]=class'xMuzzleFlashEmitter'
+	bShowReloadHints=True		// Needs to be true by default. ALWAYS!
+	bAllowReloadHints=False 	// This can be set in various weapons as desired. 
+	ReloadHint1="Press %KEY_Reload% to reload manually."
+	InvShellTex=Texture'Timb.Misc.invisible_timb'
+	ShellScale=1.0
+	VeteranModeDropChance=0.35
+	
+	GroupFullMessage="You can only carry one weapon in group"
+	GroupFullMessage2A="You can only carry"
+	GroupFullMessage2B="weapons in group"
+}

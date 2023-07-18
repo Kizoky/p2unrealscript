@@ -5,6 +5,13 @@ var int ThirdAnimUsed;
 var int AnimPlayed;
 var bool bRightFist;
 
+// Added by Man Chrzan: xPatch 2.0
+var travel int FistsBloodTextureIndex;			   // index into following array
+var array<Material> FistsBloodTextures;    // bloodier versions of this weapon skin
+var() int FistBloodSkinIndex;			   // Index of hands model that gets more and more bloody.
+var Texture CurrentHandsTex;
+
+
 simulated function PlayFiring()
 {
 	if (bRightFist)
@@ -70,11 +77,93 @@ simulated function PlayAltFiring()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Changed by Man Chrzan: xPatch 2.0
 // Set first person hands texture
 ///////////////////////////////////////////////////////////////////////////////
 simulated function ChangeHandTexture(Texture NewHandsTexture, Texture DefHandsTexture, Texture NewFootTexture)
 {
-	Skins[1] = NewHandsTexture;
+	CurrentHandsTex = NewHandsTexture;
+	Skins[BloodSkinIndex] = Default.Skins[BloodSkinIndex];
+	Skins[FistBloodSkinIndex] = NewHandsTexture;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Added by Man Chrzan: xPatch 2.0
+// Set our super-duper hands texture combiner
+///////////////////////////////////////////////////////////////////////////////
+function SetHandsBloodTexture(Material NewTex)
+{
+	local Combiner usetex;
+
+	usetex = new(Outer) class'Combiner';
+	usetex.CombineOperation = CO_Multiply;
+
+	if(CurrentHandsTex != None)
+		usetex.Material1 = CurrentHandsTex;
+	else
+		usetex.Material1 = Default.Skins[FistBloodSkinIndex];
+	usetex.Material2 = NewTex;
+	Skins[FistBloodSkinIndex] = usetex;
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+// Added by Man Chrzan: xPatch 2.0
+// Remove all blood from hands and dusters
+///////////////////////////////////////////////////////////////////////////////
+function CleanWeapon()
+{
+	BloodTextureIndex = 0;
+	FistsBloodTextureIndex = 0;
+	
+	//Skins[0] = default.Skins[0];
+	SetBloodTexture(default.Skins[BloodSkinIndex]);
+	if(CurrentHandsTex != None)
+		Skins[FistBloodSkinIndex] = CurrentHandsTex;
+	else
+		Skins[FistBloodSkinIndex] = default.Skins[FistBloodSkinIndex];
+	//log(self$" clean weapon "$BloodTextureIndex$" new skin "$Skins[1]);
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+// Added by Man Chrzan: xPatch 2.0
+// Add more blood the weapon by incrementing into the blood texture array for
+// skins
+///////////////////////////////////////////////////////////////////////////////
+function DrewBlood()
+{
+	// Can add blood, so do
+    if(BloodTextureIndex < BloodTextures.Length)
+	{
+		// update the texture
+	    SetBloodTexture(BloodTextures[BloodTextureIndex]);
+		BloodTextureIndex++;
+	}
+	//log(self$" drew blood "$BloodTextureIndex$" new skin "$Skins[1]);
+
+	// Can add more blood, so do
+    if(FistsBloodTextureIndex < FistsBloodTextures.Length)
+	{
+		// update the texture
+	    SetHandsBloodTexture(FistsBloodTextures[FistsBloodTextureIndex]);
+		FistsBloodTextureIndex++;
+	}
+	//log(self$" drew blood "$BloodTextureIndex$" new skin "$Skins[1]);
+}
+
+// xPatch: Returns if we should clean or not + restores blood if needed. 
+function bool RestoreBlood()
+{
+	if((P2GameInfoSingle(Level.Game) != None && P2GameInfoSingle(Level.Game).xManager.bKeepBlood && BloodTextureIndex != 0)
+	|| (bForceBlood && BloodTextureIndex != 0))
+	{
+		SetBloodTexture(BloodTextures[BloodTextureIndex - 1]);	// NOTE: BloodTextureIndex defines the next blood skin so do -1
+		SetHandsBloodTexture(FistsBloodTextures[FistsBloodTextureIndex - 1]);
+		bForceBlood=False;
+		return true;
+	}
+	return false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -88,7 +177,8 @@ defaultproperties
 	PickupClass=None
 	AttachmentClass=class'FistsAttachment'
 
-	Mesh=SkeletalMesh'AW7_EDWeapons.ED_Dusters_NEW'
+	//Mesh=SkeletalMesh'AW7_EDWeapons.ED_Dusters_NEW'
+	Mesh=SkeletalMesh'ED_Weapons.ED_Dusters_NEW'
 	Skins[0]=Shader'AW7Tex.Weapons.InvisiblePistol'
 	Skins[1]=Texture'MP_FPArms.LS_arms.LS_hands_dude'
 
@@ -96,7 +186,7 @@ defaultproperties
 
 	WeaponsPackageStr="AW7_EDWeapons."
 
-	PlayerViewOffset=(X=10.000,Y=0.000,Z=-10.000)
+	PlayerViewOffset=(X=4.5,Y=0.000,Z=-7.5)
 
 	bMeleeWeapon=true
 	ShotMarkerMade=None
@@ -130,7 +220,9 @@ defaultproperties
 	ReloadCount=0
 	TraceAccuracy=0.1
 	ViolenceRank=1
-	bBumpStartsFight=true
+	// Change by Man Chrzan: xPatch 2.0
+	//bBumpStartsFight=true
+	bBumpStartsFight=false
 	bArrestableWeapon=false
 	bCanThrow=false
 	AI_BurstCountExtra=2
@@ -157,7 +249,21 @@ defaultproperties
 	NPCMeleeDist=90.0
 	MaxRange=90
 	RecognitionDist=600
-	BloodTextures[0]=Texture'WeaponSkins_Bloody.LS_hands_dude_blood01'
-	BloodTextures[1]=Texture'WeaponSkins_Bloody.LS_hands_dude_blood02'
-	BloodSkinIndex=1
+	
+// Change by Man Chrzan: xPatch 2.0
+// BloodTextures are now used for dusters
+// FistsBloodTextures for hands 
+	BloodSkinIndex=0
+	BloodTextures[0]=Shader'AW7Tex.Weapons.InvisiblePistol'
+	BloodTextures[1]=Shader'AW7Tex.Weapons.InvisiblePistol' 	
+//	BloodTextures[0]=Texture'WeaponSkins_Bloody.LS_hands_dude_blood01'
+//	BloodTextures[1]=Texture'WeaponSkins_Bloody.LS_hands_dude_blood02'
+	
+	FistBloodSkinIndex=1
+	FistsBloodTextures[0]=Texture'xPatchTex.Weapons.Fists_Bloody1'
+	FistsBloodTextures[1]=Texture'xPatchTex.Weapons.Fists_Bloody2'
+	FistsBloodTextures[2]=Texture'xPatchTex.Weapons.Fists_Bloody3'
+	
+// Added by Man Chrzan: xPatch 2.0
+	bCannotBeStolen=true
 }

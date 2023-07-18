@@ -12,6 +12,23 @@
 
 class BatonWeapon extends ShovelWeapon;
 
+///////////////////////////////////////////////////////////////////////////////
+// xPatch: Classic Mode Stuff + Fix for some old Baton Extensions
+///////////////////////////////////////////////////////////////////////////////
+function DrewBlood()
+{
+	if( class != class'BatonWeapon' || P2GameInfoSingle(Level.Game).GetClassicMelee())
+		return;
+		
+	Super(P2BloodWeapon).DrewBlood();
+}
+
+// xPatch: Make sure that this gun is not extension!
+function bool CanSwapHands()
+{
+	return (Class == Class'BatonWeapon');
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // Default properties
@@ -25,10 +42,11 @@ defaultproperties
 	PickupClass=class'BatonPickup'
 	AttachmentClass=class'BatonAttachment'
 
-//	Mesh=Mesh'FP_Weapons.FP_Dude_Baton'
+	OldMesh=Mesh'FP_Weapons.FP_Dude_Baton'
 	Mesh=Mesh'MP_Weapons.MP_LS_Baton'
 //	Skins[0]=Texture'WeaponSkins.Dude_Hands'
 	Skins[0]=Texture'MP_FPArms.LS_arms.LS_hands_dude'
+	Skins[1]=Texture'WeaponSkins.LS_arms.baton_timb'
 
 	FirstPersonMeshSuffix="Baton"
 
@@ -61,8 +79,9 @@ defaultproperties
 	AIRating=0.1
 	AutoSwitchPriority=1
 	InventoryGroup=1
-	GroupOffset=3
-	BobDamping=0.975000
+	GroupOffset=2
+//	BobDamping=0.975000
+	BobDamping=1.12 
 	ReloadCount=0
 	TraceAccuracy=0.1
 	ViolenceRank=1
@@ -90,4 +109,9 @@ defaultproperties
 	RecognitionDist=600
 	BloodTextures[0]=Texture'WeaponSkins_Bloody.baton_timb_blood01'
 	BloodTextures[1]=Texture'WeaponSkins_Bloody.baton_timb_blood02'
+	ThirdPersonBloodSkinIndex=0
+	
+	bDropInVeteranMode=1
+	VeteranModeDropChance=1.00
+	bAllowMiddleFinger=True
 	}

@@ -40,7 +40,7 @@ var	config Color AppealForPlayerColor;
 var	config Color EnemyColor;
 var	config Color PlayerColor;
 
-struct SoundFilter
+struct native SoundFilter
 {
 	var sound Sound;
 	var float time;
@@ -49,7 +49,7 @@ struct SoundFilter
 var Array<SoundFilter> InvalidSounds;
 var () float InvalidTime; //If the same sound play during this time, subtitle not show.
 
-struct PendingSound
+struct native PendingSound
 {
 	var sound Sound;
 	var Actor Actor;

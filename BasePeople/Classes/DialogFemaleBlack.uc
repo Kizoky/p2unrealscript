@@ -448,7 +448,7 @@ function FillInLines()
 
 	Clear(lnoticedickout);
 	Addto(lnoticedickout,						"BFemaleDialog.bf_seewang_checkyourselfV1", 1);
-	Addto(lnoticedickout,						"BFemaleDialog.bf_seewang_didn'tneedtoseethatV1", 1);
+	Addto(lnoticedickout,						"BFemaleDialog.bf_seewang_didntneedtoseethatV1", 1);
 	Addto(lnoticedickout,						"BFemaleDialog.bf_seewang_magnifyingglassV1", 1);
 	Addto(lnoticedickout,						"BFemaleDialog.bf_seewang_messawayV1", 1);
 	Addto(lnoticedickout,						"BFemaleDialog.bf_seewang_pullyourpantsupV1", 1);

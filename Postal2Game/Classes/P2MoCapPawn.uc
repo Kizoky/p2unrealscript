@@ -314,6 +314,9 @@ const SWITCH_WEAPON_BLEND_TIME = 0.1;
 const BRING_UP_BLEND_TIME	= 0.0;
 const BRING_UP_WEAPON_RATE	= 2.0;
 const PUT_DOWN_WEAPON_RATE	= 1.5;
+// Added by Man Chrzan: ED Stuff 
+const RELOAD_WEAPON_RATE	= 0.8;
+const RELOAD_BLEND_TIME	        = 0.0;
 
 const HEAD_PERCENT			= 0.8;
 
@@ -376,8 +379,8 @@ struct FootstepSound
 	var() ESurfaceType SurfaceType;
 	var() array<String> Sounds;
 };
-var(Footsteps) globalconfig array<FootstepSound> FootstepSounds;
-var(Footsteps) globalconfig bool bDoFootsteps;
+var(Footsteps) /*globalconfig*/ array<FootstepSound> FootstepSounds;
+var(Footsteps) /*globalconfig*/ bool bDoFootsteps;
 var Sound LastFootstepSound;
 const FOOTSTEP_VOLUME_DEFAULT = 0.75;
 const FOOTSTEP_RADIUS_DEFAULT = 64.0;
@@ -2274,6 +2277,12 @@ simulated function PlayTellOffAnim()
 	PlayAnim(useanim, 1.0, 0.15);
 }
 
+// xPatch: For the middle finger feature we want this one specific animation
+simulated function PlayFlipOffAnim()
+{
+	PlayAnim(GetAnimFlipThemOff(), 1.0, 0.15);
+}
+
 simulated function PlayPointThatWayAnim()
 {
 	if (bNoExtendedAnims)
@@ -2671,7 +2680,7 @@ function CapKarmaMomentum(out vector Kmomentum, class<damageType> mydam,
 	else if(!ClassIsChildOf(mydam, class'ExplodedDamage')
 		&& !ClassIsChildOf(mydam, class'SmashDamage'))
 	{
-		if(mydam == class'ShotgunDamage')
+		if(mydam == class'ShotgunDamage' || mydam == class'SuperShotgunDamage')	// xPatch: SuperShotgunDamage fix
 			KMomentum = KARMA_DAMPEN_SHOTGUN*Kmomentum;
 		else
 			KMomentum = KARMA_DAMPEN_NON_EXPLOSION*Kmomentum;
@@ -3265,6 +3274,127 @@ function PlayWeaponDown()
 		}
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Added by Man Chrzan: ED Stuff 
+// It's for the pawn to play an anim to Reload the weapon 
+////////////////////////////////////////////////////////////////////////////////
+function PlayWeaponReload(Weapon NewWeapon)
+        {
+	local EWeaponHoldStyle wstyle;
+	local WeaponAttachment wpattach;
+
+	wstyle = GetWeaponSwitchStyle();
+	if(MyWeapAttach != None)
+		wpattach = MyWeapAttach;
+	else if(Weapon != None)
+		wpattach = WeaponAttachment(Weapon.ThirdPersonActor);
+
+	AnimEndSwitch();
+
+	//log(self$" weapon down "$Weapon);
+	// Choose appropriate shooting animation and blend it into
+	// current animation.  We assume the current animation is
+	// amenable to shooting; if it isn't, this will look stupid.
+	if(wstyle != WEAPONHOLDSTYLE_None)
+	{
+		AnimBlendParams(WEAPONCHANNEL, 1.0, RELOAD_BLEND_TIME, 0, BONE_BLENDFIRING);
+		WeaponBlendTime = RELOAD_BLEND_TIME;
+	}
+
+	switch (wstyle)
+		{
+		case WEAPONHOLDSTYLE_None:
+		case WEAPONHOLDSTYLE_Toss:
+		case WEAPONHOLDSTYLE_Single:
+			if (bIsCrouched)
+				PlayAnim('C_ReloadSingle', RELOAD_WEAPON_RATE, RELOAD_BLEND_TIME, WEAPONCHANNEL);
+			else
+				PlayAnim('ReloadSingle', RELOAD_WEAPON_RATE, RELOAD_BLEND_TIME, WEAPONCHANNEL);
+			break;
+		case WEAPONHOLDSTYLE_Both:
+			if (bIsCrouched)
+				PlayAnim('C_ReloadMP', RELOAD_WEAPON_RATE, RELOAD_BLEND_TIME, WEAPONCHANNEL);
+			else
+				PlayAnim('ReloadMP', RELOAD_WEAPON_RATE, RELOAD_BLEND_TIME, WEAPONCHANNEL);
+			break;
+		case WEAPONHOLDSTYLE_Double:
+			if(wpattach != None
+				&& wpattach.FiringMode == 'SHORTY1')
+			{
+			    if (bIsCrouched)
+					PlayAnim('C_ReloadShorty', RELOAD_WEAPON_RATE, RELOAD_BLEND_TIME, WEAPONCHANNEL);
+			    else
+					PlayAnim('ReloadShorty', RELOAD_WEAPON_RATE, RELOAD_BLEND_TIME, WEAPONCHANNEL);
+			}
+			else
+			{
+			    if (bIsCrouched)
+					PlayAnim('C_ReloadDouble', RELOAD_WEAPON_RATE, RELOAD_BLEND_TIME, WEAPONCHANNEL);
+			    else
+					PlayAnim('ReloadDouble', RELOAD_WEAPON_RATE, RELOAD_BLEND_TIME, WEAPONCHANNEL);
+                        }
+			break;
+		case WEAPONHOLDSTYLE_Pour:
+		case WEAPONHOLDSTYLE_Carry:
+		case WEAPONHOLDSTYLE_Melee:
+			if(wpattach != None						// This one is not actually used but I decided to keep it anyway.
+				&& wpattach.FiringMode == 'BONG1')	// Might be useful for Eternal Damation port.
+			{
+			      if (bIsCrouched)
+				PlayAnim('C_ReloadBong', RELOAD_WEAPON_RATE, RELOAD_BLEND_TIME, WEAPONCHANNEL);
+			      else
+				PlayAnim('ReloadBong', RELOAD_WEAPON_RATE, RELOAD_BLEND_TIME, WEAPONCHANNEL);
+			}
+			break;
+		case WEAPONHOLDSTYLE_Dual:
+			if(wpattach != None )
+			{
+			    if (bIsCrouched)
+					PlayAnim('C_ReloadAkimbo', RELOAD_WEAPON_RATE, RELOAD_BLEND_TIME, WEAPONCHANNEL);
+				else
+					PlayAnim('ReloadAkimbo', RELOAD_WEAPON_RATE, RELOAD_BLEND_TIME, WEAPONCHANNEL);
+			}
+
+		default:
+			Warn("Unknown EWeaponHoldStyle");
+			break;
+		}
+	}
+
+simulated function name GetAnimBating()
+{
+	local int rnd;
+
+	rnd = Rand(2);
+	switch(rnd)
+	{
+	case 0:
+		return 'BatHit1';
+		break;
+	case 1:
+		return 'BatHit3';
+		break;
+	}
+}
+
+simulated function name GetAnimKatana()
+{
+	local int rnd;
+
+	rnd = Rand(2);
+	switch(rnd)
+	{
+	case 0:
+		return 'KatanaHit1';
+		break;
+	case 1:
+		return 'KatanaHit3';
+		break;
+	}
+}
+
+
+
 ///////////////////////////////////////////////////////////////////////////////
 // This should be called PlayWeaponBringUp or whatever, but Epic named it so....
 // Anyway, it's for the pawn to play an anim to bring up the new weapon
@@ -3590,13 +3720,30 @@ simulated function PlayFiring(float Rate, name FiringMode)
 				}
 				else if(FiringMode == 'SHOVEL2')
 					PlayAnim('sd_shovel2', Rate, 0.1, WEAPONCHANNEL);
-				else if(FiringMode == 'BATON1'
-					|| FiringMode == 'BASEBALLBAT1')
+				else if(FiringMode == 'BATON1')
 					PlayAnim('sd_baton1', Rate, 0.1, WEAPONCHANNEL);
 				else if(FiringMode == 'BATON2')
 					PlayAnim('sd_baton2', Rate, 0.1, WEAPONCHANNEL);
 				else if (FiringMode == 'CLIPPER1')
 					PlayAnim('Vchop', Rate, 0.1, WEAPONCHANNEL);
+				// Added by Man Chrzan: ED Stuff
+				else if (FiringMode == 'BASEBALLBAT1')
+				{
+					if (P2Weapon(Weapon).bAltFiring)
+						PlayAnim('BatHit2', Rate, 0.1, WEAPONCHANNEL);
+					else
+						PlayAnim(GetAnimBating(), Rate, 0.1, WEAPONCHANNEL);
+						
+				}
+				else if (FiringMode == 'KATANA1')
+				{
+					if (P2Weapon(Weapon).bAltFiring)
+						PlayAnim('KatanaHit2', Rate, 0.1, WEAPONCHANNEL);
+					else
+						PlayAnim(GetAnimKatana(), Rate, 0.1, WEAPONCHANNEL);
+						
+				}
+				// end
 			break;
 
 		default:
@@ -3838,12 +3985,19 @@ simulated function SetAnimStanding()
 			case WEAPONHOLDSTYLE_Melee:
 				if(wpattach != None
 					&& (wpattach.FiringMode == 'SHOVEL1'
-						|| wpattach.FiringMode == 'BASEBALLBAT1'
 						|| wpattach.FiringMode == 'WEED1'))
 					LoopIfNeeded('sd_base', 1.0);
 				else if (wpattach != None
 					&& wpattach.FiringMode == 'CLIPPER1')
 					LoopIfNeeded('shears_idle', 1.0);
+				// Added by Man Chrzan: ED Stuff
+				else if (wpattach != None
+					&& wpattach.FiringMode == 'BASEBALLBAT1')
+					LoopIfNeeded('BatIdle', 1.0);
+				else if (wpattach != None
+					&& wpattach.FiringMode == 'KATANA1')
+					LoopIfNeeded('KatanaIdle', 1.0);
+				// end
 				else
 					LoopIfNeeded('s_base1', 1.0);
 				break;
@@ -4037,6 +4191,28 @@ simulated function SetAnimWalking()
 					MovementAnims[2]	= 's_strafel';
 					MovementAnims[3]	= 's_strafer';
 				}
+				// Added by Man Chrzan: ED Stuff
+				else if (wpattach != None
+					&& wpattach.FiringMode == 'BASEBALLBAT1')
+				{
+					TurnLeftAnim		= 'BatIdle';
+					TurnRightAnim		= 'BatIdle';
+				    MovementAnims[0]	= 'sd_walk';
+					MovementAnims[1]	= 'sd_walk';
+					MovementAnims[2]	= 's_strafel';
+					MovementAnims[3]	= 's_strafer';
+				}
+				else if (wpattach != None
+					&& wpattach.FiringMode == 'KATANA1')
+				{
+					TurnLeftAnim		= 'KatanaIdle';
+					TurnRightAnim		= 'KatanaIdle';
+				    MovementAnims[0]	= 's_walk1';
+					MovementAnims[1]	= 's_walk1';
+					MovementAnims[2]	= 's_strafel';
+					MovementAnims[3]	= 's_strafer';
+				}
+				// end
 				else
 				{
 					TurnLeftAnim		= 's_base1';//'ss_turn_right';
@@ -4380,6 +4556,31 @@ simulated function SetAnimRunning()
 						MovementAnims[2]	= 'HTrun';
 						MovementAnims[3]	= 'HTrun';
 					}
+					// Added by Man Chrzan: ED Stuff
+					else if (wpattach != None
+						&& wpattach.FiringMode == 'BASEBALLBAT1')
+					{
+						TurnLeftAnim		= 'BatIdle';
+						TurnRightAnim		= 'BatIdle';
+						MovementAnims[0]	= 'sd_run';
+						MovementAnims[1]	= 'sd_run';
+						MovementAnims[2]	= 'sd_run';
+						MovementAnims[3]	= 'sd_run';
+					}
+					else if (wpattach != None
+						&& wpattach.FiringMode == 'KATANA1')
+					{
+						TurnLeftAnim		= 'KatanaIdle';
+						TurnRightAnim		= 'KatanaIdle';
+						MovementAnims[0]	= 's_run2';
+						if(!AllowBackpeddle())
+							MovementAnims[1]	= MovementAnims[0];
+						else
+							MovementAnims[1]	= 's_runback';
+						MovementAnims[2]	= 's_run2';
+						MovementAnims[3]	= 's_run2';
+					}
+					// end
 					else
 					{
 						TurnLeftAnim		= 's_base1';
@@ -4993,8 +5194,11 @@ simulated function name GetAnimDeathCrouch()
 simulated function name GetAnimDeathFallForward()
 {
 //	return 's_fall_fore';
-	//return 's_fall_fore_inplace';
-	return 'pl_s_fall_fore_inplace';
+	if (P2GameInfoSingle(Level.Game) != None 
+	&& P2GameInfoSingle(Level.Game).GetClassicAnimations())	// Change by Man Chrzan: xPatch 2.0
+		return 's_fall_fore_inplace';						// PL Anims are now optional.
+	else
+		return 'pl_s_fall_fore_inplace';
 }
 
 
@@ -5013,14 +5217,20 @@ simulated function name GetAnimPuke()
 
 simulated function name GetAnimKick() // a low kick (aimed at a prone body)
 	{
-	//return 's_rodney';
-	return 'pl_s_rodney';
+//	if (P2GameInfoSingle(Level.Game) != None 
+//	&& P2GameInfoSingle(Level.Game).GetClassicAnimations())	// Change by Man Chrzan: xPatch 2.0
+//		return 's_rodney';					// PL Anims are now optional.
+//	else
+		return 'pl_s_rodney';
 	}
 
 simulated function name GetAnimShocked() // electrocuted by a Shocker
 	{
-	//return 's_shock';
-	return 'pl_s_shock';
+	if (P2GameInfoSingle(Level.Game) != None 
+	&& P2GameInfoSingle(Level.Game).GetClassicAnimations())	// Change by Man Chrzan: xPatch 2.0
+		return 's_shock';
+	else
+		return 'pl_s_shock';
 	}
 
 simulated function name GetAnimDazed()
@@ -5079,7 +5289,15 @@ simulated function name GetAnimPanting()
 simulated function name GetAnimDancing()
 	{
 	local float fr;
-	fr = Rand(7);
+	
+	// Change by Man Chrzan: xPatch 2.0
+	// PLAnims are now optional.
+	if (P2GameInfoSingle(Level.Game) != None 
+	&& !P2GameInfoSingle(Level.Game).GetClassicAnimations()) 
+		fr = Rand(7);
+	else
+		fr = Rand(3);
+	
 	if(fr == 0)
 		return 's_dance1';
 	else if(fr == 1)
@@ -5092,7 +5310,7 @@ simulated function name GetAnimDancing()
 		return 'pl_clubdance1';
 	else if (fr == 5)
 		return 'pl_clubdance2';
-	else
+	else if (fr == 6)
 		return 'pl_clubdance3';
 	}
 	
@@ -5126,13 +5344,19 @@ simulated function name GetAnimLaugh()
 	//return 's_laugh';
 	local int seed;
 	
-	seed = Rand(3);
-	if (seed == 0)
-		return 's_laugh';
-	else if (seed == 1)
-		return 'pl_laugh2';
+	if (P2GameInfoSingle(Level.Game) != None 
+	&& !P2GameInfoSingle(Level.Game).GetClassicAnimations()) // Change by Man Chrzan: xPatch 2.0
+	{
+		seed = Rand(3);
+		if (seed == 0)
+			return 's_laugh';
+		else if (seed == 1)
+			return 'pl_laugh2';
+		else
+			return 'pl_laugh3';
+	}
 	else
-		return 'pl_laugh3';
+		return 's_laugh';
 	}
 
 simulated function name GetAnimTellThemOff()
@@ -5388,7 +5612,10 @@ state Dying
 				// Check to remove their heads off, even when dead, with the shotgun or shovel
 				// If the thing hit the head, and you're close enough to take it off
 				if(VSize(MyHead.Location - HitLocation) < CollisionRadius
-					&& DamageType == class'ShotgunDamage')
+					&& (DamageType == class'ShotgunDamage'
+					|| DamageType == class'SuperShotgunDamage'	// xPatch: Added more head-exploding damage types
+					|| DamageType == class'SuperBulletDamage'
+					|| ClassIsChildOf(DamageType, class'SuperRifleDamage')))
 				{
 					if(VSize(Location - InstigatedBy.Location) < DISTANCE_TO_EXPLODE_HEAD)
 					{
@@ -5406,6 +5633,39 @@ state Dying
 							ExplodeHead(HitLocation, Momentum);
 						}
 					}
+					else // xPatch: Some new damage types, they explode heads but ignore the distance!
+						 // NOTE: For some weapons like Sawn-Off the distance limit is handled in the AmmoInv.
+					{
+						// SuperShotgunDamage fix, makes it work the same as ShotgunDamage
+						// Previously it could only destroy doors and cars.
+						if(DamageType == class'SuperShotgunDamage')
+						{
+							// record special kill
+							if(P2GameInfoSingle(Level.Game) != None
+								&& P2GameInfoSingle(Level.Game).TheGameState != None
+								&& P2Pawn(InstigatedBy) != None
+								&& P2Pawn(InstigatedBy).bPlayer)
+							{
+								P2GameInfoSingle(Level.Game).TheGameState.ShotgunHeadShot++;
+							}
+
+							if(class'P2Player'.static.BloodMode())
+							{
+								ExplodeHead(HitLocation, Momentum);
+							}
+						}
+						// The optional SuperRifleDamage for well... Rifle (what else?)
+						// and SuperBulletDamage for Paradise Lost Revolver
+						// they explode dead people's heads too.
+						else if(DamageType == class'SuperBulletDamage'
+								|| ClassIsChildOf(DamageType, class'SuperRifleDamage'))
+						{
+							if(class'P2Player'.static.BloodMode())
+							{
+								ExplodeHead(HitLocation, Momentum);
+							}
+						}
+					} // xPatch Changes end here.
 				}
 				// Because the collision on the shovel is so large and general, just take their
 				// head off anyway, half the time.
@@ -5488,10 +5748,10 @@ state Dying
 					// If you don't take any of these damages, then block them here
 					if((TakesMachinegunDamage == 0.0
 							&& DamageType == class'MachinegunDamage')
-						|| (TakesShotgunHeadShot == 0.0
-							&& DamageType == class'ShotgunDamage')
-						|| (TakesPistolHeadShot == 0.0
-							&& DamageType == class'BulletDamage'))
+						|| (TakesShotgunHeadShot == 0.0						// xPatch: SuperShotgunDamage fix
+							&& (DamageType == class'ShotgunDamage' ||  DamageType == class'SuperShotgunDamage'))	
+						|| (TakesPistolHeadShot == 0.0						// xPatch: New damage type
+							&& (DamageType == class'BulletDamage' ||  DamageType == class'SuperBulletDamage')))
 					{
 						// Make a ricochet sound and puff out some smoke and sparks
 						SparkHit(HitLocation, Momentum, 1);
@@ -6212,6 +6472,7 @@ defaultproperties
 	SurfaceTypeTensions[4]=(SurfaceType=EST_Sand,GroundSpeedMult=0.9,GroundFriction=10.0)
 	SurfaceTypeTensions[5]=(SurfaceType=EST_Shit,GroundSpeedMult=1.0,GroundFriction=4.0)
 	SurfaceTypeTensions[5]=(SurfaceType=EST_Water,GroundSpeedMult=0.8,GroundFriction=13.0)
+	bDoFootsteps=True
 	
 	HoldingCigarette=-1
 	}

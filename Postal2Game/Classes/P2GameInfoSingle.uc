@@ -86,6 +86,11 @@ const TheyHateMePath = "Postal2Game.P2GameInfo bTheyHateMeMode";
 const InsaneoPath = "Postal2Game.P2GameInfo bInsaneoMode";
 const LudicrousPath = "Postal2Game.P2GameInfo bLudicrousMode";
 const ExpertPath = "Postal2Game.P2GameInfo bExpertMode";
+const MasochistPath = "Postal2Game.P2GameInfo bMasochistMode";
+const VeteranPath = "Postal2Game.P2GameInfo bVeteranMode";
+const MeleePath = "Postal2Game.P2GameInfo bMeeleMode";
+const HardLieberPath = "Postal2Game.P2GameInfo bHardLieberMode";
+const NukeModePath = "Postal2Game.P2GameInfo bNukeMode";
 const CustomPath = "Postal2Game.P2GameInfo bCustomMode";
 
 const FinStopPath=	"Postal2Game.P2GameInfoSingle FinStop"; // ini path
@@ -99,6 +104,7 @@ const AW_GAME_PATH = "GameTypes.AWGameSPFinal";
 const AWP_GAME_PATH = "GameTypes.AWPGameInfo";
 
 // Difficulty numbers for Hestonworld and up
+const DIFFICULTY_NUMBER_LUDICROUS = 15;
 const DIFFICULTY_NUMBER_IMPOSSIBLE = 14;
 const DIFFICULTY_NUMBER_POSTAL = 13;
 const DIFFICULTY_NUMBER_THEYHATEME = 12;
@@ -193,6 +199,8 @@ var localized string CheckpointSaveMessageString;
 var localized string ForcedSaveMessageString;
 var localized string NormalSaveMessageString;
 
+
+var globalconfig bool 	bShowedControls;		// If set to true and the game was beaten the "How to play" screen no longer shows up.
 var globalconfig bool	bAllowCManager;			// If set to true, cheats in P2CheatManager can be used.
 var globalconfig bool	bWarnedCheater;			// The first time a player puts in a cheat, we'll pop up a warning screen
 												// reminding them that cheating will disqualify them from achievements
@@ -222,7 +230,7 @@ var name		RunningStateName;				// State name that the game normal runs in. (Diff
 												// versus demo game. Don't change this when switching over to the
 												// apocalypse at the end of the game--this is special.)
 
-var localized string DifficultyNames[15];		// These used to be held in the menu files, but now it's here
+var localized string DifficultyNames[16];		// These used to be held in the menu files, but now it's here
 												// so both the menu and the slot mgr can get to it.
 var localized string CustomDifficultyName;
 var globalconfig int CoolStart, EndCool;
@@ -234,6 +242,7 @@ var globalconfig int TimesBeatenAW;				// Number of times you've beaten AW
 var globalconfig int TimesBeatenAWP;			// Number of times you've beaten AWP
 
 var globalconfig bool bContraMode;
+var globalconfig bool bSeekritKodeEntered;
 
 var globalconfig int FinStop;
 var globalconfig int MultCast;
@@ -241,7 +250,7 @@ var globalconfig int Tunneling;
 
 var bool bNightmareSave;	// Saved already on this map
 
-var array<String> DayNames;
+var localized array<String> DayNames;			// xPatch Change: Day names are now localized (can be now translated into other languages)
 var array<Texture> LoadingScreens;
 
 var P2GameMod BaseMod;	// P2GameMod version of BaseMutator
@@ -262,6 +271,60 @@ var globalconfig bool bNoHolidays; // No-holidays mode
 
 var bool bForbidRagdolls;						// LD can now forbid ragdolls for whatever reason. Does not carry over
 
+///////////////////////////////////////////////////////////////////////////////
+// xPatch's vars, structs, consts...
+///////////////////////////////////////////////////////////////////////////////
+var /*private*/ xPatchManager xManager;	// Now instead of having the settings scattered around (bleh)
+										// everything will be handled through this cool manager thing, bravo me.
+
+var globalconfig string SavedCountryCode; // This will allow us to correctly setup the default dialog variety automatically but only if needed.
+
+var array<Texture> ClassicLoadTex;
+
+// Loadout copied form P2CheatManager,
+// needs to be here to work with day selection correctly
+struct LoadoutItem
+{
+	var() class<Inventory> Item;	// Item to give
+	var int Amount;					// How much of this thing to give (ammo, armor etc.)
+	var bool NonClassic;
+};
+// Can't do nested arrays
+struct LoadoutList
+{
+	var() array<LoadoutItem> Items;	// List of items for this day
+};
+var() array<LoadoutList> LoadoutDays;	// List of items per day
+
+// Classic Game arrays
+struct ClassicReplaceStr
+{
+	var string OldClass;	// weapon we look for 
+	var string NewClass;	// other weapon we replace it with
+};
+var array<ClassicReplaceStr> ClassicModeReplace;
+
+struct ClassicDestroyStr 
+{
+	var() string ClassName;				// Class name of the pickup
+	var() bool bAWPickup;				// Apocalypse Weekend pickup
+	var() class<Actor> MyClass;			// Actual class of the pickup
+};
+var() array<ClassicDestroyStr> NonClassicPickupList;
+
+var localized string ClassicSaveText;
+var bool bAllowClassicGame;				// For workshop games to allow Classic Game mode (or not).
+
+const ClassicPath 			= 	"Postal2Game.P2GameInfo bNoEDWeapons";
+const LoacalizationPath 	= 	"Postal2Game.P2GameInfo bLocalizedDialog";
+
+const UPDATE_GROUP			=	"UPDATED_GAME";		// Group for objects only present in standard game
+const CLASSIC_GROUP			=	"CLASSIC_GAME";		// Group for objects only present in classic game
+
+const MENU_BGR_TRIGGER		=	'MenuBackgroundTrigger';
+
+const DAY_PLMONDAY = 7; 							// First day of the 2nd week
+
 //=================================================================================================
 //=================================================================================================
 // Functions for 1412 support
@@ -271,13 +334,13 @@ var bool bForbidRagdolls;						// LD can now forbid ragdolls for whatever reason
 ///////////////////////////////////////////////////////////////////////////////
 // Get start URL
 ///////////////////////////////////////////////////////////////////////////////
-static function string GetStartURL(optional bool bIntroMap)
+static function string GetStartURL(optional bool bIntroMap, optional bool bIntroSkip)
 {
 	local string StartURL;
 
 	if (bIntroMap)
 	{
-		if (Default.IntroUrl != "")
+		if (Default.IntroUrl != "" && !bIntroSkip)	// xPatch: Added bIntroSkip
 			StartURL = Default.IntroURL;
 		else
 			StartURL = Default.StartFirstDayURL;
@@ -316,6 +379,24 @@ function bool WeekendGame()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// xPatch: returns true if we play Two Weeks In Paradise (Paradise Lost DLC)
+///////////////////////////////////////////////////////////////////////////////
+function bool TwoWeeksGame()
+{
+	return false;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// xPatch: This new function allows to make cats AW-Like even if it's not weekend.
+///////////////////////////////////////////////////////////////////////////////
+function bool CrazyCats()
+{
+	// by default have it return weekend.
+	// since that's what was used before.
+	return IsWeekend();
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // returns true in Nightmare mode (no save-scumming, etc)
 ///////////////////////////////////////////////////////////////////////////////
 function bool InNightmareMode()
@@ -324,6 +405,61 @@ function bool InNightmareMode()
 		return (TheGameState.bExpertMode);
 	else
 		return bExpertMode;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// returns true in Masochist mode (Player takes damage like NPCs)
+///////////////////////////////////////////////////////////////////////////////
+function bool InMasochistMode()
+{
+	if (TheGameState != None)
+		return (TheGameState.bMasochistMode);
+	else
+		return bMasochistMode;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// returns true in Veteran mode (no weapon drop, half the maxammo etc)
+///////////////////////////////////////////////////////////////////////////////
+function bool InVeteranMode()
+{
+	if (TheGameState != None)
+		return (TheGameState.bVeteranMode);
+	else
+		return bVeteranMode;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// returns true in Melee mode (Custom Difficulty)
+///////////////////////////////////////////////////////////////////////////////
+function bool InMeeleMode()
+{
+	if (TheGameState != None)
+		return (TheGameState.bMeeleMode);
+	else
+		return bMeeleMode;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// returns true in Hard Liebermode (Custom Difficulty)
+///////////////////////////////////////////////////////////////////////////////
+function bool InHardLiebermode()
+{
+	if (TheGameState != None)
+		return (TheGameState.bHardLieberMode);
+	else
+		return bHardLieberMode;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// returns true in Nuke (Mass Destruction) Mode (Custom Difficulty)
+///////////////////////////////////////////////////////////////////////////////
+function bool InNukeMode()
+{
+	if (TheGameState != None)
+		return (TheGameState.bNukeMode);
+	else
+		return bNukeMode;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -342,8 +478,7 @@ function bool InCustomMode()
 ///////////////////////////////////////////////////////////////////////////////
 function bool InImpossibleMode()
 {
-	if (
-		(InInsaneMode() || InLudicrousMode())
+	if ((InInsaneMode() || InLudicrousMode())	// xPatch: Count the harder Ludicrous mode too
 		&& TheyHateMeMode()
 		&& InNightmareMode()
 		&& TheGameState.GameDifficulty >= 10
@@ -352,6 +487,24 @@ function bool InImpossibleMode()
 	else
 		return false;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// Returns true if Ludicrous Difficulty
+///////////////////////////////////////////////////////////////////////////////
+function bool InLudicrousDifficulty()
+{
+	if (InLudicrousMode()
+		&& TheyHateMeMode()
+		&& InNightmareMode()
+		&& InVeteranMode()
+		&& InMasochistMode()
+		&& TheGameState.GameDifficulty >= 10
+		)
+		return true;
+	else
+		return false;
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // returns true if free-roam (AW+P2)
@@ -642,10 +795,15 @@ event InitGame(out string Options, out string Error)
 	MySlotInfoMgr = spawn(class'SlotInfoMgr');
 	if (ParseOption(Options,"Enhanced") != "")
 		bEGameStart = true;
+	
+	// Man Chrzan: Add xPatch Manager
+	xPatchManagerCheck();
+	
 	if (ParseOption(Options,"Workshop") == "1")
 		bWorkshopGame = true;
-	else
+	else						
 		bWorkshopGame = false;
+
 	if (ParseOption(Options,"SetDay") != "")
 	{
 		ForceDayOnStartup = int(ParseOption(Options,"SetDay"));
@@ -661,6 +819,12 @@ event InitGame(out string Options, out string Error)
 	bLudicrousMode = class'P2GameInfo'.Default.bLudicrousMode;
 	bExpertMode = class'P2GameInfo'.Default.bExpertMode;
 	bCustomMode = class'P2GameInfo'.Default.bCustomMode;
+	bNoEDWeapons  = class'P2GameInfoSingle'.Default.bNoEDWeapons;			// xPatch
+	bMasochistMode = class'P2GameInfo'.Default.bMasochistMode;
+	bVeteranMode = class'P2GameInfo'.Default.bVeteranMode;
+	bMeeleMode = class'P2GameInfo'.Default.bMeeleMode;
+	bHardLieberMode = class'P2GameInfo'.Default.bHardLieberMode;
+	bNukeMode = class'P2GameInfo'.Default.bNukeMode;
 }
 
 //=================================================================================================
@@ -817,47 +981,59 @@ function EndOfGame(P2Player player)
 	RecordEnding();
 	//log(self$" GameRefVal new InfoSeqTime "$InfoSeqTime$" GameRefVal "$GameRefVal$" fover "$FOver);
 
-	// Grant achievement if we beat both AW and P2
-	if (FinallyOver()
-		&& GinallyOver())
-		{
-		if(Level.NetMode != NM_DedicatedServer ) Player.GetEntryLevel().EvaluateAchievement(Player,'GameComplete');
-		}
-
-	// Grant achievements for beating the game in certain ways
-
-	// Shovel ending
-	if (!TheGameState.bShovelEndingDQ		// Used only the shovel to kill
-		&& TheGameState.PeopleKilled >= 30	// Must have killed at least 30 people
-		&& !WeekendOnlyGame())				// Must be AWP or P2
-		{
-		if(Level.NetMode != NM_DedicatedServer ) Player.GetEntryLevel().EvaluateAchievement(Player,'ShovelEnding',true);
-		}
-	// Speedrun ending
-	if (TheGameState.TimeElapsed <= TheGameState.SPEEDRUN_ACHIEVEMENT
-		&& !WeekendOnlyGame()				// Must be AWP or P2
-		&& !VerifySeqTime())				// Can't be in Enhanced
-		{
-		if(Level.NetMode != NM_DedicatedServer ) Player.GetEntryLevel().EvaluateAchievement(Player,'SpeedrunEnding',true);
-		}
-	// Hestonworld ending
-	if (InHestonMode())
+	
+	// xPatch: Must be played from the first day to get these achievement		
+	if(TheGameState.StartDay == 0)	
 	{
-		if(Level.NetMode != NM_DedicatedServer ) Player.GetEntryLevel().EvaluateAchievement(Player,'HestonworldEnding',true);
-	}
-	// Jesus/Anustart ending
-	if (TheGameState.PeopleKilled + TheGameState.CatsKilled + TheGameState.ElephantsKilled + TheGameState.DogsKilled == 0)
-	{
-		if(Level.NetMode != NM_DedicatedServer ) Player.GetEntryLevel().EvaluateAchievement(Player,'JesusEnding',true);
-	}
-	// Scientology Level OT VIII ending
-	if (InNightmareMode()		// Beat the game in nightmare mode
-		&& !WeekendOnlyGame()	// Not in AW
-		&& WeekendGame())		// Not in P2
-		{
-		if(Level.NetMode != NM_DedicatedServer ) Player.GetEntryLevel().EvaluateAchievement(Player,'NightmareEnding',true);
-		}
+		// Grant achievement if we beat both AW and P2
+		if (FinallyOver()
+			&& GinallyOver())
+			{
+			if(Level.NetMode != NM_DedicatedServer ) Player.GetEntryLevel().EvaluateAchievement(Player,'GameComplete');
+			}
 
+		// Grant achievements for beating the game in certain ways
+
+		// Shovel ending
+		if (!TheGameState.bShovelEndingDQ		// Used only the shovel to kill
+			&& TheGameState.PeopleKilled >= 30	// Must have killed at least 30 people
+			&& !WeekendOnlyGame())				// Must be AWP or P2
+			{
+			if(Level.NetMode != NM_DedicatedServer ) Player.GetEntryLevel().EvaluateAchievement(Player,'ShovelEnding',true);
+			}
+		// Speedrun ending
+		if (TheGameState.TimeElapsed <= TheGameState.SPEEDRUN_ACHIEVEMENT
+			&& !WeekendOnlyGame()				// Must be AWP or P2
+			&& !VerifySeqTime())					// Can't be in Enhanced
+			{
+			if(Level.NetMode != NM_DedicatedServer ) Player.GetEntryLevel().EvaluateAchievement(Player,'SpeedrunEnding',true);
+			}
+		// Hestonworld ending
+		if (InHestonMode())
+		{
+			if(Level.NetMode != NM_DedicatedServer ) Player.GetEntryLevel().EvaluateAchievement(Player,'HestonworldEnding',true);
+		}
+		// Jesus/Anustart ending
+		if (TheGameState.PeopleKilled + TheGameState.CatsKilled + TheGameState.ElephantsKilled + TheGameState.DogsKilled == 0)
+		{
+			if(Level.NetMode != NM_DedicatedServer ) Player.GetEntryLevel().EvaluateAchievement(Player,'JesusEnding',true);
+		}
+		// Scientology Level OT VIII ending
+		if (InNightmareMode()		// Beat the game in nightmare mode
+			&& !WeekendOnlyGame()	// Not in AW
+			&& WeekendGame())		// Not in P2
+			{
+			if(Level.NetMode != NM_DedicatedServer ) Player.GetEntryLevel().EvaluateAchievement(Player,'NightmareEnding',true);
+			}
+			
+		// If they completed Ludicrous unlock custom difficulty menu. 
+		if(InLudicrousDifficulty())
+		{
+			bSeekritKodeEntered = True;
+			SaveConfig();
+		}
+	}
+	
 	// Send player to main menu
 	SendPlayerTo(player, MainMenuURL);
 	}
@@ -929,6 +1105,20 @@ function LoadGame(int Slot, bool bShowScreen)
 			}
 		}
 	}
+	
+	// Added by Man Chrzan: xPatch 2.0 -- Loadscreen Swap
+	//if(class'xPatchManager'.static.GetClassicLoading())
+	if(xManager.bClassicLoadScreens || (InStr((SaveInfo), ClassicSaveText) > 0))
+	{
+		for(i=0; i<LoadingScreens.Length; i++)
+		{
+			if( ForcedLoadTex == LoadingScreens[i] )
+			{
+				ForcedLoadTex = ClassicLoadTex[i];
+			}
+		}
+	}
+	// End
 
 	// The perverted engine technique for loading a level is to travel to
 	// the loaded game.  (Set flag to indicate pawn might be none)
@@ -955,6 +1145,12 @@ function PrepDifficulty()
 		bInsaneoMode = TheGameState.bInsaneoMode;
 		bExpertMode = TheGameState.bExpertMode;
 		bLudicrousMode = TheGameState.bLudicrousMode;
+		bNoEDWeapons = TheGameState.bNoEDWeapons; 				// xPatch
+		bMasochistMode = TheGameState.bMasochistMode;
+		bVeteranMode = TheGameState.bVeteranMode;
+		bMeeleMode = TheGameState.bMeeleMode;
+		bHardLieberMode = TheGameState.bHardLieberMode;
+		bNukeMode = TheGameState.bNukeMode;
 		ConsoleCommand("set "@LieberPath@TheGameState.bLieberMode);
 		ConsoleCommand("set "@HestonPath@TheGameState.bHestonMode);
 		ConsoleCommand("set "@TheyHateMePath@TheGameState.bTheyHateMeMode);
@@ -962,6 +1158,12 @@ function PrepDifficulty()
 		ConsoleCommand("set "@LudicrousPath@TheGameState.bLudicrousMode);
 		ConsoleCommand("set "@ExpertPath@TheGameState.bExpertMode);
 		ConsoleCommand("set "@CustomPath@TheGameState.bCustomMode);
+		ConsoleCommand("set "@ClassicPath@TheGameState.bNoEDWeapons); // xPatch
+		ConsoleCommand("set "@MasochistPath@TheGameState.bMasochistMode);
+		ConsoleCommand("set "@VeteranPath@TheGameState.bVeteranMode);
+		ConsoleCommand("set "@MeleePath@TheGameState.bMeeleMode);
+		ConsoleCommand("set "@HardLieberPath@TheGameState.bHardLieberMode);
+		ConsoleCommand("set "@NukeModePath@TheGameState.bNukeMode);
 		//log("Set difficulty flags: Lieber/Heston/Hate/Insane/Expert/Ludicrous"@bLieberMode@bHestonMode@bTheyHateMeMode@bInsaneoMode@bExpertMode@bLudicrousMode);
 	}
 }
@@ -981,6 +1183,11 @@ event PostLoadGame()
 	// Always clear the pause after a game is loaded (in case the game was
 	// saved in a paused state)
 	GetPlayer().SetPause(false);
+	
+	// Added by Man Chrzan: xPatch
+	bNoEDWeapons = TheGameState.bNoEDWeapons;
+	xPatchManagerCheck();
+	// end
 
 	//log(self$" game difficulty ***************** "$TheGameState.GameDifficulty);
 	// If the game state's difficulty was not initialized properly, then it was from
@@ -1004,6 +1211,9 @@ event PostLoadGame()
 
 	// After loading, run PrepDifficulty again. Should fix issues with Liebermode etc. flags carrying over to loaded games.
 	PrepDifficulty();
+	
+	// xPatch: Change main menu map if needed.
+	UpdateMainMenu();
 
 	// Clear these after a load, so we don't repeatedly attempt to autosave.
 	bDoAutoSave = false;
@@ -1027,12 +1237,20 @@ function bool SetPause( BOOL bPause, PlayerController P )
 ///////////////////////////////////////////////////////////////////////////////
 function bool SaveGame(int Slot, bool bShowMessage)
 	{
-	local string IsCheated, EnhancedFlag;
+	local string IsCheated, EnhancedFlag, ClassicFlag; //, WorkshopFlag;
 	local int SaveAttempts;
 	local bool SaveResult;
 	local int WasMostRecentGameSlot;
 	local bool bWasNightmareSave;
-
+	
+// Man Chrzan: xPatch 2.5
+	// Add a flag for Classic Mode saves
+	if (TheGameState.bNoEDWeapons)
+		ClassicFlag = " "$ClassicSaveText;
+	//if(GetWorkshopGame())	
+	//	WorkshopFlag = " [W]";
+// End
+	
 	Log(self$" SaveGame(): Slot="$Slot$" bAutoSave="$bDoAutoSave$" bForcedAutoSave="$bForcedAutoSave$" the game state difficulty "$TheGameState.GameDifficulty);
 	GetPlayer().ConsoleCommand("ResetSmoothingOnSave");
 	TheGameState.bNoHolidays = bNoHolidays;
@@ -1084,12 +1302,18 @@ function bool SaveGame(int Slot, bool bShowMessage)
             // if it's a cheated save, give it a "mark of shame"
             // (also helps players distinguish between cheated and non-cheated saves)
             if (TheGameState.DidPlayerCheat())
-                IsCheated = "*";
-
+			{		
+				// xPatch Change: Mark debug differently
+				if (GetPlayer().DebugEnabled())
+					IsCheated = "**";
+				else 
+					IsCheated = "*";	
+			}
+			
             // Save info about this slot
             MySlotInfoMgr.SetInfo(
                 Slot,
-                IsCheated$GetCurrentDayBase().Description@"-"@Level.Title@"-"@GetDiffName(TheGameState.GameDifficulty)$EnhancedFlag@"-"@GameNameShort,
+                IsCheated$GetDayName()@"-"@Level.Title@"-"@GetDiffName(TheGameState.GameDifficulty)$EnhancedFlag@"-"@GameNameShort$ClassicFlag/*$WorkshopFlag*/,
                 GetCurrentDay(),
                 Level.Year$"-"$Val2Str(level.Month, 2)$"-"$Val2Str(Level.Day, 2)@":"@Val2Str(Level.Hour, 2)$":"$Val2Str(Level.Minute, 2),
                 int(ConsoleCommand("GETGMTIME")),
@@ -1151,6 +1375,9 @@ function string GetDiffName(int DiffIndex)
 		// Custom
 	if (InCustomMode())
 		return CustomDifficultyName$" ("$TheGameState.GameDifficulty$")"$EnhancedFlag;
+	// Ludicrous mode (Nightmare + Ludicrous + Veteran + Masochist)
+	else if (InLudicrousDifficulty())
+		DiffIndex = DIFFICULTY_NUMBER_LUDICROUS;
 	// Impossible mode (Nightmare + Insane-O)
 	else if (InNightmareMode() && InInsaneMode() && DiffIndex == 10)
 		DiffIndex = DIFFICULTY_NUMBER_IMPOSSIBLE;
@@ -1371,8 +1598,9 @@ function bool VerifySeqTime(optional bool bUpdate)
 	local bool bEStartCheck;
 	local bool bverified;
 
+	// xPatch: Changed to be allowed in Custom Difficulty
 	// Expert Mode always invalidates verification
-	if (InNightmareMode())
+	if (InNightmareMode() && !InCustomMode())
 		return false;
 
 	if(bUpdate)
@@ -1460,16 +1688,65 @@ exec function WriteCoolness()
 }
 function bool FinallyOver()
 {
+	if(TimesBeatenGame == 0)
+		CheckAchievments();
+		
 	return (FOVER_SUM == (FOver + GameRefVal));
 }
 function bool GinallyOver()
 {
+	if(TimesBeatenGame == 0)
+		CheckAchievments();	
+		
 	return (GOVER_SUM == (GOver + GameRefVal));
 }
 function bool HinallyOver()
 {
 	return (FinallyOver()
 		|| GinallyOver());
+}
+
+////////////////////////////////////////////////////////////////////////////////////
+// If you already beaten the game but it's not been recorded in the INI.
+////////////////////////////////////////////////////////////////////////////////////
+function CheckAchievments()
+{
+	local bool bDoFOver;
+	local bool bDoGOver;
+	
+	// check if P2 was completed.
+	if (GetPlayer().GetEntryLevel().GetAchievementManager().GetAchievement('FridayComplete'))
+		bDoFOver = true;
+
+	// check if AW was completed.
+	if (GetPlayer().GetEntryLevel().GetAchievementManager().GetAchievement('SundayComplete'))
+		bDoGOver = true;
+		
+	if (bDoFOver || bDoGOver)	
+	{
+		PrepIniStartVals();
+		TimesBeatenGame++;
+	}
+	
+	if (bDoFOver)
+	{
+		FOver = FOVER_SUM - GameRefVal;
+		ConsoleCommand("set "@FOverPath@FOver);
+		ConsoleCommand("set "@TimesBeatenGamePath@TimesBeatenGame);
+	}
+	if (bDoGOver)
+	{
+		GOver = GOVER_SUM - GameRefVal;
+		ConsoleCommand("set "@GOverPath@GOver);
+		ConsoleCommand("set "@TimesBeatenGamePath@TimesBeatenGame);
+	}
+		
+	// AWP completed - unlock Enhanced Game
+	if(GetPlayer().GetEntryLevel().GetAchievementManager().GetAchievement('GameComplete'))
+	{
+		InfoSeqTime = GetSeqTime();
+		ConsoleCommand("set "@InfoSeqPath@InfoSeqTime);
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1491,6 +1768,11 @@ function SetupDifficultyOnce()
 	TheGameState.bExpertMode = bExpertMode;
 	TheGameState.bCustomMode = bCustomMode;
 	TheGameState.bLudicrousMode = bLudicrousMode;
+	TheGameState.bMasochistMode = bMasochistMode;
+	TheGameState.bVeteranMode = bVeteranMode;
+	TheGameState.bMeeleMode = bMeeleMode;
+	TheGameState.bHardLieberMode = bHardLieberMode;
+	TheGameState.bNukeMode = bNukeMode;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1604,6 +1886,11 @@ function ConvertToNewGameState(GameState OldGS)
 	TheGameState.bTheyHateMeMode = OldGS.bTheyHateMeMode;
 	TheGameState.bInsaneoMode = OldGS.bInsaneoMode;
 	TheGameState.bExpertMode = OldGS.bExpertMode;
+	TheGameState.bMasochistMode = OldGS.bMasochistMode;
+	TheGameState.bVeteranMode = OldGS.bVeteranMode;
+	TheGameState.bMeeleMode = OldGS.bMeeleMode;
+	TheGameState.bHardLieberMode = OldGS.bHardLieberMode;
+	TheGameState.bNukeMode = OldGS.bNukeMode;
 	TheGameState.TimeElapsed = OldGS.TimeElapsed;
 	TheGameState.bShovelEndingDQ = OldGS.bShovelEndingDQ;
 	TheGameState.bReadMondayPaper = OldGS.bReadMondayPaper;
@@ -1643,6 +1930,24 @@ function ConvertToNewGameState(GameState OldGS)
 	for (i=0; i<OldGS.InactiveInvHints.Length; i++)
 		TheGameState.InactiveInvHints[i] = OldGS.InactiveInvHints[i];
 }
+///////////////////////////////////////////////////////////////////////////////
+// xPatch: New function to change the GameState.
+// Called from MenuStart.StartGame2(), which needs it for a major bug fix.
+///////////////////////////////////////////////////////////////////////////////
+function ChangeGameState(class<GameState>NewGameStateClass)
+{
+	if(NewGameStateClass != None)
+	{
+		if (TheGameState != None)
+		{
+			Log(self$" ChangeGameState(): Deleting current GameState");
+			GetPlayer().MyPawn.DeleteInventory(TheGameState);
+			TheGameState = None;
+		}
+		TheGameState = spawn(NewGameStateClass);
+		Log(self$" ChangeGameState(): The new GameState is:"@TheGameState@NewGameStateClass);
+	}
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Called from P2Player.TravelPostAccept(), which is after the player pawn
@@ -1661,6 +1966,7 @@ event PostTravel(P2Pawn PlayerPawn)
 	local GameState GroundhogDayGameState;
 	local Mutator TestMutator;
 	local class<HolidaySpawnerBase> HolidaySpawnerClass;
+	local int iDay, i;
 
 	if (TheGameState != None)
 		{
@@ -1703,7 +2009,7 @@ event PostTravel(P2Pawn PlayerPawn)
 
 			// We just created a new GameState, so if we're NOT on one of the
 			// "pre game" maps then we must be testing a map by loading it directly.
-			if (IsMainMenuMap() || IsIntroMap())
+			if (IsMainMenuMap() || IsIntroMap())	
 				{
 				TheGameState.bPreGameMode = true;
 				SetupDifficultyOnce();
@@ -1730,9 +2036,9 @@ event PostTravel(P2Pawn PlayerPawn)
 				}
 			}
 			
-			if (bWorkshopGame)
+			if (bWorkshopGame/* && !xManager.bWSAchievements*/)		// xPatch: Allows achievements for workshop games. (Mod-Exclusive)
 				TheGameState.PlayerCheated("Workshop game");
-
+			
 			// Allows for testing enhanced game via command line
 			if (bEGameStart)
 				TheGameState.bEGameStart = true;
@@ -1741,6 +2047,9 @@ event PostTravel(P2Pawn PlayerPawn)
 			if (IsHoliday(NIGHT_MODE_HOLIDAY))
 				TheGameState.bNightMode = true;
 
+		// xPatch: Allows achievements for workshop games. (Mod-Exclusive)
+		/*if(!xManager.bWSAchievements)*/
+//		{
 			// Check the mutator chain. If the player added any Workshop game mods, consider the game cheated and ineligible for speedruns/achievements.
 			for (TestMutator = BaseMutator; TestMutator != None; TestMutator = TestMutator.NextMutator)
 			{
@@ -1750,19 +2059,89 @@ event PostTravel(P2Pawn PlayerPawn)
 					break;
 				}
 			}
+//		}
 
 		// Check if we need to change the day (includes starting a new game)
 		if (TheGameState.bChangeDayPostTravel)
 			{
 			// Check if starting a new game
-			if (NextDay() == 0)
+			if (NextDay() == 0)	
 				{
 				TheGameState.bFirstLevelOfGame = true;
 				TheGameState.bPreGameMode = false;
+				
+				//GetPlayer().ClientMessage("starting a new game");
 
 				// Check for valid errand goals (only done once, reports errors to log)
 				CheckForValidErrandGoals();
 				}
+			// xPatch: starting a new game from the selected day
+			else if (TheGameState.bStartDayPostTravel)	
+				{
+				TheGameState.bFirstLevelOfGame = false;
+				TheGameState.bFirstLevelOfDay = true;
+				TheGameState.bPreGameMode = false;
+				
+				// Loadout
+				GetLoadOut(TheGameState.StartDay);
+				
+				// Always give the player starting inventory 
+				// from the first day (Map, Money, Stats)
+				Days[0].AddInStartingInventory(PlayerPawn);
+					
+				// Remove inventory player can't leave the previous days with
+				// It will take care of removing map on weekend etc.
+				for (i = 0; i < TheGameState.StartDay; i++)
+					Days[i].TakeInventoryFromPlayer(PlayerPawn);
+				
+				// TWO WEEKS IN PARADISE FIX:
+				// Check if we are starting from second week
+				if (TwoWeeksGame() && TheGameState.StartDay >= DAY_PLMONDAY)
+				{
+					// Give the player the 2nd Monday starting inventory 
+					// (Since the map was taken away by weekend days)
+					Days[DAY_PLMONDAY].AddInStartingInventory(PlayerPawn);
+					
+					// completing errands adds haters, but we don't want 
+					// haters from P2 since they were nuked haha
+					// so yeah, easy fix, set only PL errands completed
+					// since we don't need P2 errands status for anything anyways.
+					if(TheGameState.StartDay > DAY_PLMONDAY)
+					{
+						for (iDay = DAY_PLMONDAY; iDay < TheGameState.StartDay; iDay++)
+						{
+							for (i = 0; i < Days[iDay].Errands.Length; i++)
+								SetThisErrandComplete(Days[iDay].Errands[i].UniqueName);
+						}
+					}
+				}
+				else // Set all errands from previous days as completed
+				{
+					for (iDay = 0; iDay < TheGameState.StartDay; iDay++)
+					{
+						for (i = 0; i < Days[iDay].Errands.Length; i++)
+							SetThisErrandComplete(Days[iDay].Errands[i].UniqueName);
+					}
+				}
+
+				// setting errands as completed added haters 
+				// but we still need to set them as revealed.
+				for (i = 0; i < TheGameState.CurrentHaters.length; i++)
+				{
+					TheGameState.CurrentHaters[i].Revealed = 1;
+				}
+				
+				// We did add new haters but they are already revealed so make it false 
+				// We don't want the game to buttsauce itself during level transition 
+				TheGameState.bAddedNewHaters=false;
+
+				// Check for valid errand goals (only done once, reports errors to log)
+				CheckForValidErrandGoals();
+				
+				// Starting day is done
+				TheGameState.bStartDayPostTravel = false;
+				}
+			// xPatch: End
 			else
 				{
 				TheGameState.bFirstLevelOfGame = false;
@@ -1825,6 +2204,9 @@ event PostTravel(P2Pawn PlayerPawn)
 		// See if the game mods want to do anything
 		BaseMod.PostTravel(PlayerPawn);
 
+		// xPatch: Change main menu map if needed.
+		UpdateMainMenu();
+		
 		// See if holidays want to do anything
 		PostTravelForHolidays(PlayerPawn);
 
@@ -1846,7 +2228,7 @@ event PostTravel(P2Pawn PlayerPawn)
 					bForcedAutoSave = true;
 				}
 			}
-		}		
+		}
 	}
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1884,6 +2266,14 @@ function PostTravelForHolidays(P2Pawn PlayerPawn)
 						zone.DistanceFogEnd = c_fFogOffValue;
 					}
 				}
+			}
+			
+			// xPatch: Use the Halloween startup
+			if(ParseLevelName(Level.GetLocalURL()) != MainMenuURL
+				&& Holidays[i].HolidayName == 'SeasonalHalloween')
+			{
+				default.MainMenuURL = "Startup-Halloween";
+				MainMenuURL = "Startup-Halloween";
 			}
 		}
 	}
@@ -3140,11 +3530,20 @@ exec function SetThisErrandComplete(String UniqueName)
 	{
 	local int DayI, ErrandI;
 
-	if (!GetPlayer().DebugEnabled())
-		return;
+	// xPatch: Check if we are starting the game via the day select option
+	// and allow this function without the need of debug menu enabled.
+	if(TheGameState.bStartDayPostTravel)
+	{
+		Log("SetThisErrandComplete() UniqueName="$UniqueName);
+	}
+	else // Otherwise do the usual debug check
+	{
+		if (!GetPlayer().DebugEnabled())
+			return;
 
-	Log("CHEAT: SetThisErrandComplete() UniqueName="$UniqueName);
-
+		Log("CHEAT: SetThisErrandComplete() UniqueName="$UniqueName);
+	}
+	
 	FindErrand(UniqueName, DayI, ErrandI);
 	if(DayI >= 0 && ErrandI >= 0)
 		{
@@ -3255,7 +3654,7 @@ function PrepActorsByGroup()
 {
 	local Actor CheckA;
 	local FPSPawn LastPawn, FirstPawn;
-	local byte Needed, NeededForDude, NeededForDay, NeededForDifficulty, NeededForDetail, NeedForHoliday, SpecifiedDay;
+	local byte Needed, NeededForDude, NeededForDay, NeededForDifficulty, NeededForDetail, NeedForHoliday, SpecifiedDay, NeedForClassicGame;
 	local bool bEnhanced;
 
 	bEnhanced=VerifySeqTime();
@@ -3271,6 +3670,9 @@ function PrepActorsByGroup()
 
 		// Check if we want it for a holiday
 		NeededForHoliday(CheckA, NeedForHoliday);
+		
+		// xPatch: Check for Classic Game
+		NeededForClassicGame(CheckA, NeedForClassicGame);
 
 		// Dude check
 		NeededForThisStringBool(CheckA, TheGameState.bNiceDude, GOOD_GUY_GROUP, BAD_GUY_GROUP, NeededForDude);
@@ -3282,8 +3684,8 @@ function PrepActorsByGroup()
 		NeededForThisDetail(CheckA, NeededForDetail);
 
 		// Allow this thing only if we're playing the right dude on the right day.
-		Needed = NeededForDay & NeededForDude & NeededForDifficulty & NeededForDetail & NeedForHoliday;
-
+		Needed = NeededForDay & NeededForDude & NeededForDifficulty & NeededForDetail & NeedForHoliday & NeedForClassicGame;
+		
 		if(Needed == 0)
 		{
 			// Don't let the player start be deleted. It's the only thing that should have all the days in it
@@ -3378,7 +3780,13 @@ function PrepActorsByGroup()
 				PreloadSpawnerAssets(Spawner(CheckA));
 			}
 		}
-
+		
+		// xPatch: Delete pickups in Classic Game (ignores Needed thing)
+		if(P2WeaponPickup(CheckA) != None || P2AmmoPickup(CheckA) != None)
+		{
+			if(!AllowedInClassicGame(CheckA))
+				CheckA.Destroy();
+		}
 	}
 
 	// Link the stasis pawns
@@ -3454,9 +3862,21 @@ function PrepSliderPawns()
 function FindInPickupList(Pickup DelMe, String Lname)
 {
 	local int i;
+	local int loopcount;
 
 	for(i=0; i<TheGameState.GottenPickups.Length; i++)
 	{
+		// xPatch: Runaway loop Crash Fix
+		// Not sure what exactly causes it to go over 1000000 iterations - Don't have a save with that issue to properly debug it.
+		// I'll just add a check that will reset the list and that will have to do for now.
+		if (loopcount > 5000)	
+		{
+			Warn(self$"FindInPickupList(): HIT COUNT BREAKING.... INFINITE LOOP STOPPED");
+			TheGameState.GottenPickups.Length = 0;	
+			return;
+		}
+		loopcount++;
+		
 		//log(self$" RemoveGottenPickups, GottenPickups "$TheGameState.GottenPickups[i].PickupName);
 		//log(self$" for level "$TheGameState.GottenPickups[i].LevelName$" checking... "$TheGameState.GottenPickups[i].PickupName$" against "$DelMe.name);
 		if(TheGameState.GottenPickups[i].PickupName == DelMe.name
@@ -4239,7 +4659,7 @@ function StoreChams()
 exec function ShowGameInfo()
 	{
 	TheGameState.bShowGameInfo = !TheGameState.bShowGameInfo;
-	}
+	}	
 
 ///////////////////////////////////////////////////////////////////////////////
 // Display debug info
@@ -4263,6 +4683,7 @@ event RenderOverlays(Canvas Canvas)
 		DrawTextDebug(Canvas, "MainMenuURL = "$MainMenuURL, 1);
 		DrawTextDebug(Canvas, "");
 		DrawTextDebug(Canvas, "bNiceDude = "$TheGameState.bNiceDude, 1);
+		DrawTextDebug(Canvas, "StartDay = "$TheGameState.StartDay, 1);	// xPatch
 		DrawTextDebug(Canvas, "CurrentDay = "$TheGameState.CurrentDay$" ("$Days[TheGameState.CurrentDay].UniqueName$")", 1);
 		DrawTextDebug(Canvas, "Current level = "$ParseLevelName(Level.GetLocalURL()), 1);
 		DrawTextDebug(Canvas, "bFirstLevelOfGame = "$TheGameState.bFirstLevelOfGame, 1);
@@ -4271,7 +4692,15 @@ event RenderOverlays(Canvas Canvas)
 		DrawTextDebug(Canvas, "ErrandsCompletedToday = "$TheGameState.ErrandsCompletedToday, 1);
 		DrawTextDebug(Canvas, "JailCellNumber = "$TheGameState.JailCellNumber, 1);
 		DrawTextDebug(Canvas, "MostRecentGameSlot = "$MostRecentGameSlot, 1);
+// xPatch:
+		DrawTextDebug(Canvas, "ClassicGame = "$bNoEDWeapons, 1);
+		DrawTextDebug(Canvas, "ClassicGame (GameState) = "$TheGameState.bNoEDWeapons, 1);
 		DrawTextDebug(Canvas, "");
+		DrawTextDebug(Canvas, "bCheated = "$TheGameState.DidPlayerCheat(), 1);
+		DrawTextDebug(Canvas, "bActuallyCheated = "$TheGameState.DidPlayerCheatCode(), 1);
+		DrawTextDebug(Canvas, "bWorkshopGame = "$GetWorkshopGame(), 1);
+		DrawTextDebug(Canvas, "");
+// End
 
 		str = "";
 		DrawTextDebug(Canvas, "Errands Still To Do Today:", 1);
@@ -4411,6 +4840,17 @@ auto state StartUp
 		// Don't ever allow saving in the demo
 		if(!Level.IsDemoBuild())
 			p2p.PrepForSave();
+			
+		// xPatch: for the new Skip Intro option 
+		// we need to force the map at the start of the game.
+		if(p2p != None 
+			&& TheGameState.bFirstLevelOfGame
+			&& TheGameState.bForceMap)
+		{
+			//log(self$" requesting map ");
+			p2p.ForceMapUp();
+			TheGameState.bForceMap = False;
+		}
 	}
 	
 	///////////////////////////////////////////////////////////////////////////////
@@ -4424,6 +4864,7 @@ Begin:
 	PrepDifficulty();
 	SetZoneFogPlanes();
 	ChangeSkyByDay();	// Change the skies based on the day number
+	ChangeMenuBackground();	// xPatch: Change the menu background
 	PrepActorsByGroup();
 	PrepSliderPawns();
 	PrepPickupsForErrands();
@@ -4533,6 +4974,434 @@ function GameInfoIsNowValid()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+// Man Chrzan: xPatch's Functions
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////
+// Handled through final function to make sure that any workshop mods
+// won't be able to mess around with it or remove it, just to be safe.
+///////////////////////////////////////////////////////////////////////////////
+final function xPatchManagerCheck()
+{
+	if(xManager == None)
+		xManager = spawn(class'xPatchManager');	
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// New better way to disable new dialogs for localized version 
+// on it's first launch or if the game version was changed.
+// NOTE: Called by ShellRootWindow initialization.
+///////////////////////////////////////////////////////////////////////////////
+function CountryCodeCheck(string CountryCode)
+{
+	local bool bLocalize;
+	
+	// Add xPatch Manager
+	xPatchManagerCheck();
+	
+	// We can actually use it to assign new important controls/settings 
+	// if they are launching the game for the first time after update too.
+	// I don't think the Postal2.ini will update itself with new Default.ini changes... sadly.
+	// This bit of code can be removed some time after the update has been released officially.
+	if(SavedCountryCode == "")
+	{
+		GetPlayer().ConsoleCommand("set input MiddleMouse Reload");
+		GetPlayer().ConsoleCommand("set input G MiddleFinger");
+		GetPlayer().ConsoleCommand("set input Y GetDown");
+		
+		if(BodiesSliderMax >= 15)
+			GetPlayer().ConsoleCommand("set P2GameInfo BodiesSliderMax 15");
+	}
+
+	// Check if game version was changed 
+	// (or if it's first launch ever)
+	if(SavedCountryCode != CountryCode)
+	{
+		// These are the only (offcial) versions with dub I think
+		if(CountryCode == "RU"
+		|| CountryCode == "ZH"	
+		|| CountryCode == "PL")
+			bLocalize = True;
+		else
+			bLocalize = False;
+		
+		// Change the setting
+		GetPlayer().ConsoleCommand("set" @ LoacalizationPath @ bLocalize);
+	
+		// Save our current game ver
+		SavedCountryCode = CountryCode;	
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Localized dialogue swap 
+// Simplified BasePeople.u file is no longer needed 
+// for localized game versions!
+///////////////////////////////////////////////////////////////////////////////
+function P2Dialog GetDialogObj(string strClass)
+{
+	local string replaceStr;
+	replaceStr = strClass;
+
+	// Replace new dialogs with old ones if desired
+	if( bLocalizedDialog )
+	{
+		if(strClass == "BasePeople.DialogFemaleAlt"
+			|| strClass == "BasePeople.DialogFemaleBlack"
+			|| strClass == "BasePeople.DialogFemaleMex")
+			replaceStr = "BasePeople.DialogFemale";
+
+		if(strClass == "BasePeople.DialogMaleAlt"
+			|| strClass == "BasePeople.DialogMaleBlack"
+			|| strClass == "BasePeople.DialogMaleMex"
+			|| strClass == "BasePeople.DialogMikeJ"
+			|| strClass == "BasePeople.DialogGay")
+			replaceStr = "BasePeople.DialogMale";
+
+		if(strClass == "BasePeople.DialogFanatic"
+			|| strClass == "BasePeople.DialogHabib")
+			replaceStr = "BasePeople.DialogHabibLocalized";
+			
+		if(strClass == "BasePeople.DialogDude")
+			replaceStr = "BasePeople.DialogDudeLocalized";
+		
+		if(strClass == "BasePeople.DialogVince")
+			replaceStr = "BasePeople.DialogVinceLocalized";	
+	}
+
+	return Super.GetDialogObj(replaceStr);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Get the localized day name
+///////////////////////////////////////////////////////////////////////////////
+function string GetDayName()
+{
+	local string DayDescription;
+	local int i, strcheck;
+	
+	DayDescription = GetCurrentDayBase().Description;
+
+	// Check if DayDescription matches our localized DayNames
+	for (i=0; i<DayNames.Length; i++)
+	{
+		strcheck = InStr(DayDescription, DayNames[i]);
+		if(strcheck >= 0 )
+			return DayNames[i];
+	}
+	
+	// if it doesn't just return the description back
+	return DayDescription;
+}
+		
+///////////////////////////////////////////////////////////////////////////////
+// New way to handle removing weapon pickups in classic mode
+///////////////////////////////////////////////////////////////////////////////
+function bool AllowedInClassicGame(Actor CheckA)
+{
+	local int i;
+	local bool bException;
+	local bool bNoAWWeapons;
+	local bool bCheckExceptions;
+	local class<Actor> PickupClass;
+	local class<P2Weapon> GunClass;
+	
+	// ONLY PICKUPS 
+	if(P2WeaponPickup(CheckA) != None
+		|| P2AmmoPickup(CheckA) != None)
+	{
+		// Check for xManager -- just in case
+		xPatchManagerCheck();
+		
+		if(InClassicMode() || xManager.bAlwaysOGWeapons)
+		{
+			if(InClassicMode()) {
+				bNoAWWeapons = xManager.bNoAWWeapons;
+				bCheckExceptions = xManager.bAllowExceptions;
+			}
+			else {
+				bNoAWWeapons = xManager.bNoAWWeaponsRG;
+				bCheckExceptions = xManager.bAllowExceptionsRG;
+			}
+			
+			
+			for( i = 0 ; i < NonClassicPickupList.Length ; i++ )
+			{
+				if( NonClassicPickupList[i].ClassName != "" )
+				{
+					//Log("Checking Non-Classic item: "$NonClassicPickupList[i].ClassName);
+					
+					// Special check for AW weapons
+					if((NonClassicPickupList[i].bAWPickup == true && IsWeekend())		// It's AW pickup and it's weekend currently
+					|| (NonClassicPickupList[i].bAWPickup == true && !bNoAWWeapons))	// It's always allowed by the setting option
+						bException = True;
+					else if(bCheckExceptions) // The ususal check for exceptions list
+						bException = xManager.IsException(NonClassicPickupList[i].ClassName);
+					
+					if(!bException)
+					{
+						// See if we have loaded the class already.
+						if(NonClassicPickupList[i].MyClass != None)
+							PickupClass = NonClassicPickupList[i].MyClass;
+						else
+						{
+							PickupClass = class<Actor>(DynamicLoadObject(NonClassicPickupList[i].ClassName, class'Class'));
+							// Save it for later so we don't need to dynamic load every time.
+							NonClassicPickupList[i].MyClass = PickupClass; 
+							default.NonClassicPickupList[i].MyClass = PickupClass; 
+						}
+						
+						if(CheckA.Class == PickupClass)
+						{
+							//Log("Non-Classic item NOT allowed: "$CheckA);
+							return false;
+						}
+					}
+				}
+			}
+		}
+	}
+	// Passed all checks for classic game
+	//Log("Non-Classic item allowed: "$CheckA);
+	return true;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Check if this actor is need for either of these groups.
+///////////////////////////////////////////////////////////////////////////////
+function NeededForClassicGame(Actor CheckA, out byte Needed)
+{
+	local int i;
+	local string GroupString;
+
+	GroupString = Caps(CheckA.Group);
+	
+	Needed=1;
+	
+	// Not needed if classic game is disabled
+	i = InStr(GroupString, CLASSIC_GROUP);
+	if(i >= 0 && !InClassicMode())
+	{
+		Needed=0;
+		return;
+	}
+
+	// Not needed if classic game is enabled
+	i = InStr(GroupString, UPDATE_GROUP);
+	if(i >= 0 && InClassicMode())
+	{
+		Needed=0;
+		return;
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Is it classic mode or not
+///////////////////////////////////////////////////////////////////////////////
+function bool InClassicMode()
+{
+	if (TheGameState != None)
+		return (TheGameState.bNoEDWeapons);
+	else
+		return bNoEDWeapons;
+	
+	//log(self@"classic mode"@bNoEDWeapons);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Static classic game check for DayBase to get correct laoding screens.
+///////////////////////////////////////////////////////////////////////////////
+static function bool InClassicModeStatic()
+{
+	if(default.bNoEDWeapons)
+		return true;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Should we get classic animations or not
+///////////////////////////////////////////////////////////////////////////////
+function bool GetClassicAnimations()
+{
+	return (xManager != None && xManager.bClassicAnimations && InClassicMode()
+		|| xManager != None && xManager.bClassicAnimationsRG && !InClassicMode());
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Should we get classic melee or not
+///////////////////////////////////////////////////////////////////////////////
+function bool GetClassicMelee()
+{
+	return (xManager != None && xManager.bClassicMelee && InClassicMode()
+			|| xManager != None && xManager.bClassicMeleeRG && !InClassicMode());
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Should we get classic zombies or not
+///////////////////////////////////////////////////////////////////////////////
+function bool GetClassicZombies()
+{
+	return (xManager != None && xManager.bClassicZombies && InClassicMode()
+			|| xManager != None && xManager.bClassicZombiesRG && !InClassicMode());
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Should we get classic icons or not
+///////////////////////////////////////////////////////////////////////////////
+function bool GetClassicIcons()
+{
+	return (xManager != None && xManager.bClassicHUDIcons && InClassicMode()
+			|| xManager != None && xManager.bClassicHUDIconsRG && !InClassicMode());
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Should we get classic police cars or not
+///////////////////////////////////////////////////////////////////////////////
+function bool GetClassicCars()
+{
+	return (xManager != None && xManager.bClassicCars && InClassicMode()
+			|| xManager != None && xManager.bClassicCarsRG && !InClassicMode());
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Should we get classic dude head or not
+///////////////////////////////////////////////////////////////////////////////
+function bool GetClassicDude()
+{
+	return (xManager != None && xManager.bClassicDude && InClassicMode()
+			|| xManager != None && xManager.bClassicDudeRG && !InClassicMode());
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Workshop game or not
+///////////////////////////////////////////////////////////////////////////////
+final function bool GetWorkshopGame()
+{
+	return bWorkshopGame;
+}
+
+function bool IsFirstLevelOfGame()
+{
+	return (TheGameState.bFirstLevelOfGame && TheGameState.bFirstLevelOfDay);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Changes the menu background based on the selected option
+///////////////////////////////////////////////////////////////////////////////
+function ChangeMenuBackground()
+{
+	local MaterialTrigger mattrig;
+	
+	// Find the background trigger, and trigger it if needed
+	if(xManager != None)
+	{
+		foreach AllActors(class'MaterialTrigger', mattrig, MENU_BGR_TRIGGER)
+			break;
+			
+		if(mattrig != None)
+		{
+			if(xManager.bClassicBackground)
+				mattrig.SetCurrentMaterialSwitch(1);
+			else
+				mattrig.SetCurrentMaterialSwitch(0);
+		}
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Allows to Toggle Classic Mode even after the game started
+///////////////////////////////////////////////////////////////////////////////
+function ToggleClassicMode()
+{
+	bNoEDWeapons = !bNoEDWeapons; 
+	TheGameState.bNoEDWeapons = bNoEDWeapons; 
+
+	if(bNoEDWeapons)
+		GetPlayer().ClientMessage("Classic Mode -- ON");
+	else
+		GetPlayer().ClientMessage("Classic Mode -- OFF");
+}
+
+function GetLoadOut(optional int myday)
+{
+	local int i, j, day;
+	local Inventory inv;
+	local class<Actor> WeaponClass;
+	local P2Pawn Dude;
+	local bool bGive;
+	
+	if(myday != 0)
+		day = myday-1;
+	else
+		day = GetCurrentDay();
+	
+	Dude = GetPlayer().MyPawn;
+	
+	//Log("LoadoutDays[day].Items.Length = "$LoadoutDays[day].Items.Length);
+	
+	// Add loadout to the dude's inventory
+	for (i = 0; i < LoadoutDays[day].Items.Length; i++)
+	{
+		// Ignore some for Classic Game
+		bGive = True;
+		if(LoadoutDays[day].Items[i].NonClassic 
+			&& (InClassicMode() || xManager.bAlwaysOGWeapons))
+			bGive=False;
+		
+		if(bGive)
+		{
+			inv = Dude.CreateInventoryByClass(LoadoutDays[day].Items[i].Item);
+			//Log("LoadOut: CreateInventoryByClass: "$LoadoutDays[day].Items[i].Item);
+			
+			// If we made it, possibly give them some extra ammo or whatever.
+			if (inv != None)
+			{
+				if (P2Weapon(Inv) != None)
+				{
+					P2Weapon(Inv).GiveAmmoFromPickup(Dude, LoadoutDays[day].Items[i].Amount);
+					P2Weapon(inv).bJustMade = false;
+				}			
+				else if (Ammunition(Inv) != None)
+					Ammunition(Inv).AddAmmo(LoadoutDays[day].Items[i].Amount);
+				else if (P2PowerupInv(Inv) != None)
+					P2PowerupInv(Inv).AddAmount(LoadoutDays[day].Items[i].Amount);
+			}
+		}
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Allows unique main menus, just like Apocalypse Weekend has its own
+// now with this function there can be multiple for one game mode.
+///////////////////////////////////////////////////////////////////////////////
+function UpdateMainMenu()
+{
+	//STUB. It's used only for AWPGameInfo and PLGameInfo.
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// NEW DEBUG COMMANDS
+///////////////////////////////////////////////////////////////////////////////
+exec function TClassicGame()
+{
+	if(!GetPlayer().DebugEnabled())
+		return;
+	
+	ToggleClassicMode();
+}
+
+exec function EndGameNow()
+{
+	if (!GetPlayer().DebugEnabled())
+		return;
+	
+	EndOfGame(GetPlayer());
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Default properties
 ///////////////////////////////////////////////////////////////////////////////
 defaultproperties
@@ -4551,6 +5420,7 @@ defaultproperties
 	RunningStateName="Running"
 	bIsValid=false
 	bAllowBehindView=true
+	bAllowClassicGame=true
 
 	DifficultyNames[0]="Liebermode"
 	DifficultyNames[1]="Too Easy"
@@ -4567,6 +5437,7 @@ defaultproperties
 	DifficultyNames[12]="They Hate Me"
 	DifficultyNames[13]="POSTAL"
 	DifficultyNames[14]="Impossible"
+	DifficultyNames[15]="Ludicrous"
 	CustomDifficultyName="Custom"
 
 	FinStop=41
@@ -4629,4 +5500,56 @@ defaultproperties
 	MainMenuName="Shell.MenuMain"
 	StartMenuName="Shell.MenuMain"
 	GameMenuName="Shell.MenuGame"
+	
+	// Classic displayed on saves
+	ClassicSaveText="(Classic)"
+	
+	// Classic Mode - List of pickups to destroy 
+	NonClassicPickupList[0]=(ClassName="EDStuff.MP5Pickup")
+	NonClassicPickupList[1]=(ClassName="EDStuff.MP5AmmoPickup")
+	NonClassicPickupList[2]=(ClassName="EDStuff.GSelectPickup")
+	NonClassicPickupList[4]=(ClassName="EDStuff.GSelectAmmoPickup")
+	NonClassicPickupList[5]=(ClassName="EDStuff.ShearsPickup")
+	NonClassicPickupList[6]=(ClassName="EDStuff.AxePickup")
+	NonClassicPickupList[7]=(ClassName="EDStuff.BaliPickup")
+	NonClassicPickupList[8]=(ClassName="EDStuff.DynamitePickup")
+	NonClassicPickupList[9]=(ClassName="EDStuff.GrenadeLauncherPickup")
+	NonClassicPickupList[10]=(ClassName="AWPStuff.BaseballBatPickup")
+	NonClassicPickupList[11]=(ClassName="AWPStuff.ChainSawPickup")
+	NonClassicPickupList[12]=(ClassName="AWPStuff.DustersPickup")
+	NonClassicPickupList[13]=(ClassName="AWPStuff.FlamePickup")
+	NonClassicPickupList[14]=(ClassName="AWPStuff.SawnOffPickup")
+	NonClassicPickupList[15]=(ClassName="AWPStuff.NukePickup")
+	NonClassicPickupList[16]=(ClassName="Inventory.MrDKNadePickup")
+	NonClassicPickupList[17]=(ClassName="P2R.ProtestSignPickup")
+	NonClassicPickupList[18]=(ClassName="AWPStuff.NukeAmmoPickup")
+	NonClassicPickupList[19]=(ClassName="AWInventory.MachetePickup",bAWPickup=True)
+	NonClassicPickupList[20]=(ClassName="AWInventory.SledgePickup",bAWPickup=True)
+	NonClassicPickupList[21]=(ClassName="AWInventory.ScythePickup",bAWPickup=True)
+	
+	// Classic Mode - Replacement Info
+	ClassicModeReplace(0)=(OldClass="EDStuff.MP5Weapon",NewClass="Inventory.MachinegunWeapon")
+	ClassicModeReplace(1)=(OldClass="EDStuff.GSelectWeapon",NewClass="Inventory.PistolWeapon")
+	ClassicModeReplace(2)=(OldClass="EDStuff.ShearsWeapon",NewClass="AWInventory.MacheteWeapon")
+	ClassicModeReplace(3)=(OldClass="EDStuff.AxeWeapon",NewClass="AWInventory.MacheteWeapon")
+	ClassicModeReplace(4)=(OldClass="EDStuff.BaliWeapon",NewClass="Inventory.BatonWeapon")
+	ClassicModeReplace(5)=(OldClass="EDStuff.DynamiteWeapon",NewClass="Inventory.GrenadeWeapon")
+	ClassicModeReplace(6)=(OldClass="EDStuff.GrenadeLauncherWeapon",NewClass="Inventory.GrenadeWeapon")
+	ClassicModeReplace(7)=(OldClass="AWPStuff.BaseballBatWeapon",NewClass="Inventory.ShovelWeapon")
+	ClassicModeReplace(8)=(OldClass="AWPStuff.ChainsawWeapon",NewClass="AWInventory.ScytheWeapon")
+	ClassicModeReplace(9)=(OldClass="AWPStuff.DustersWeapon",NewClass="Inventory.BatonWeapon")
+	ClassicModeReplace(10)=(OldClass="AWPStuff.FlameWeapon",NewClass="Inventory.MachinegunWeapon")
+	ClassicModeReplace(11)=(OldClass="AWPStuff.SawnOffWeapon",NewClass="Inventory.ShotgunWeapon")
+	ClassicModeReplace(12)=(OldClass="AWPStuff.NukeWeapon",NewClass="Inventory.LauncherWeapon")
+	ClassicModeReplace(13)=(OldClass="Inventory.MrDKNadeWeapon",NewClass="Inventory.GrenadeWeapon")
+	ClassicModeReplace(14)=(OldClass="P2R.ProtestSignWeapon",NewClass="P2R.ProtestSignWeapon_NoDrop")
+	ClassicModeReplace(15)=(OldClass="EDStuff.MP5Weapon_NPC",NewClass="Inventory.MachinegunWeapon")
+	
+	ClassicLoadTex[0]=Texture'xPatchTex.Loading.loading1'  
+	ClassicLoadTex[1]=Texture'xPatchTex.Loading.loading2'
+	ClassicLoadTex[2]=Texture'xPatchTex.Loading.loading3'
+	ClassicLoadTex[3]=Texture'xPatchTex.Loading.loading4'
+	ClassicLoadTex[4]=Texture'xPatchTex.Loading.loading5'
+	ClassicLoadTex[5]=Texture'xPatchTex.Loading.loading_sat'
+	ClassicLoadTex[6]=Texture'xPatchTex.Loading.loading_sun'
 }

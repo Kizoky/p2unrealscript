@@ -137,7 +137,9 @@ auto state Moving
 			&& P2Pawn(Instigator).bPlayer)
 		{
 			GenExplosion(HitLocation, HitNormal, Other);
-			return false;
+		// Explosions in enhanced game deal less damage than normal rifle.
+		// Make both explosion and bullet so it is actually 'enhanced', not nerfed.
+			//return false;
 		}
 
 		TellNPCs(Other, HitLocation);
@@ -149,7 +151,12 @@ auto state Moving
 		}
 		else 
 		{
-			Other.TakeDamage(class'RifleAmmoInv'.default.DamageAmount, Pawn(Owner), 
+			// xPatch: Optional Super Rifle Damage
+			if(P2GameInfoSingle(Level.Game).xManager.bSuperRifle)
+				Other.TakeDamage(class'RifleAmmoInv'.default.DamageAmount, Pawn(Owner), 
+							HitLocation, Velocity, class'RifleAmmoInv'.default.DamageTypeEnhanced);
+			else
+				Other.TakeDamage(class'RifleAmmoInv'.default.DamageAmount, Pawn(Owner), 
 							HitLocation, Velocity, class'RifleAmmoInv'.default.DamageTypeInflicted);
 
 			// If we're a guy (krotchy) who doesn't take head shots at all, stop the bullet completely)

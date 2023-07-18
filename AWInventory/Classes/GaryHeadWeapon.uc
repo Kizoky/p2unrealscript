@@ -28,7 +28,7 @@ function RemoveMe()
 			Instigator.Weapon = None;
 			if(P2Player(Instigator.Controller) != None)
 				P2Player(Instigator.Controller).SwitchToThisWeapon(P2Pawn(Instigator).HandsClass.default.InventoryGroup, 
-							P2Pawn(Instigator).HandsClass.default.GroupOffset, true);
+							P2Pawn(Instigator).HandsClass.default.GroupOffset, true);	
 
 			Instigator.DeleteInventory(self);
 			bRemoved=true;
@@ -38,7 +38,7 @@ function RemoveMe()
 		else
 		{
 			if( P2Player(Instigator.Controller) != None )
-				P2Player(Instigator.Controller).ClientSwitchToHands(true);
+				P2Player(Instigator.Controller).ClientSwitchToHands(true); 
 
 			bRemoved=true;
 			Instigator.DeleteInventory(self);
@@ -46,6 +46,28 @@ function RemoveMe()
 			LifeSpan = 1.1;
 		}
 		// End
+	}
+}
+
+// Added by Man Chrzan:
+// Same as above but we don't switch to hands.
+function RemoveMe2()
+{
+	if(!bRemoved)
+	{
+		if(Level.NetMode == NM_Standalone)
+		{
+			Instigator.DeleteInventory(self);
+			bRemoved=true;
+			Destroy();
+		}
+		else
+		{
+			bRemoved=true;
+			Instigator.DeleteInventory(self);
+			SetOwner(Instigator);
+			LifeSpan = 1.1;
+		}
 	}
 }
 
@@ -162,7 +184,8 @@ defaultproperties
      AltFireProjClass=Class'AWInventory.GaryHeadHomingProjectile'
      bUsesAltFire=True
      ViolenceRank=9
-     bNoHudReticle=True
+     //bNoHudReticle=True
+	 bNoHudReticle=False	//Change by Man Chrzan: xPatch 2.0
      ShakeOffsetTime=0.000000
      DropWeaponHint1=""
      CombatRating=0.500000
@@ -187,7 +210,7 @@ defaultproperties
      GroupOffset=5
      BobDamping=0.975000
      AttachmentClass=None
-     ItemName="GaryHeadHands"
+     ItemName="Gary Heads"
      Mesh=SkeletalMesh'MP_Weapons.MP_LS_Nothing'
      Skins(0)=Texture'MP_FPArms.LS_arms.LS_hands_dude'
 }

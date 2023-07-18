@@ -21,6 +21,11 @@ var int	  SameSpotBounce;		// Number of times we've bounced slowly in the same s
 var Sound GrenadeBounce;
 var GrenadeTrail	GTrail;		// grenade smoke trail to make them easier to see
 
+// Added by Man Chrzan: xPatch 2.0
+// Enhanced Mode stuff
+var bool bDoSplit;
+var byte MaxChildren;
+
 
 const FORCE_RAD_CHECK		= 50;
 const SAME_SPOT_RADIUS		= 30;
@@ -247,6 +252,12 @@ simulated function HitWall( vector HitNormal, actor Wall )
 	local bool bStopped;
 	local float speed;
 	local SmokeHitPuff smoke1;
+	
+// Added by Man Chrzan: xPatch 2.0
+	local int i;
+	local GrenadeProjectile gren;
+	local vector NewVelocity;
+// End
 
 	if(bBounce == true)
 	{
@@ -308,6 +319,25 @@ simulated function HitWall( vector HitNormal, actor Wall )
 			// play a noise
 			smoke1.PlaySound(GrenadeBounce,,,,TransientSoundRadius,GetRandPitch());
 	}
+
+// Added by Man Chrzan: xPatch 2.0	
+	// If we're not in bDoSplit, quit
+	if (!bDoSplit)
+		return;
+
+	for (i=0; i<MaxChildren; i++)
+	{
+		// Spawn Betty Daughters and send them flying in various directions.
+		gren = spawn(class,Owner,,Location,rotator(HitNormal));
+		NewVelocity.X = frand()*2*Velocity.X + 100;
+		NewVelocity.Y = frand()*2*Velocity.Y + 100;
+		NewVelocity.Z = frand()*2*Velocity.Z + 100;
+		gren.SetupThrown(0);
+		gren.Velocity = NewVelocity;
+	}
+	
+	bDoSplit = False;
+// End	
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -432,6 +462,8 @@ simulated function GenExplosion(vector HitLocation, vector HitNormal, Actor Othe
 		}
 		else
 			WallHitPoint = HitLocation;
+			
+
 		exp = spawn(class'GrenadeExplosion',GetMaker(),,HitLocation + ExploWallOut*HitNormal);
 		exp.CheckForHitType(Other);
 		exp.ShakeCamera(exp.ExplosionDamage);
@@ -477,4 +509,5 @@ defaultproperties
 	bNetTemporary=false
 	bUpdateSimulatedPosition=true
 	TransientSoundRadius=150
+	MaxChildren=4			// Added by Man Chrzan: xPatch 2.0
 }

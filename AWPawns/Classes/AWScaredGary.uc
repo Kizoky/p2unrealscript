@@ -78,7 +78,7 @@ defaultproperties
 	Stomach=0.200000
 	TalkWhileFighting=0.010000
 	TakesShotgunHeadShot=0.050000
-	TakesRifleHeadShot=0.150000
+	TakesRifleHeadShot=1.0 //0.150000
 	TakesShovelHeadShot=0.150000
 	TakesOnFireDamage=0.250000
 	TakesAnthraxDamage=0.250000
@@ -114,4 +114,11 @@ defaultproperties
 	ExtraAnims(5)=None
 	ExtraAnims(6)=None
 	HEAD_RATIO_OF_FULL_HEIGHT=0.1
+	
+	// Addded by Man Chrzan: xPatch 2.0
+	// Seems like it switches to PLAnims intead of using PLAnims_Mini
+	// after loading saved game... well, that should do the trick.
+	PLAnims_Mini=MeshAnimation'Gary_Characters.animMini_PL'
+	PLAnims=MeshAnimation'Gary_Characters.animMini_PL'
+	PLAnims_Fat=MeshAnimation'Gary_Characters.animMini_PL'
 }

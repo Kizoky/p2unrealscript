@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 // SledgeProjectile.
-// Copyright 2003 Running With Scissors, Inc.  All Rights Reserved.
+// Copyright 2023 Running With Scissors Studios LLC.  All Rights Reserved.
 //
 // Flying, spinning Sledgehammer
 //
@@ -47,6 +47,9 @@ const FLOOR_Z				=	0.5;
 const BOUNCE_WALL_DOT		=	0.4;
 const SIDE_RAND_MAG			=	1.0;
 
+// xPatch: 
+var int	BloodTextureIndex; 
+
 ///////////////////////////////////////////////////////////////////////////////
 // Attach the blurry effect
 ///////////////////////////////////////////////////////////////////////////////
@@ -86,6 +89,13 @@ simulated function PostBeginPlay()
 		&& SledgeWeapon(Instigator.Weapon) != None
 		&& SledgeWeapon(Instigator.Weapon).bHulkSmash)
 		bNoPickup=true;
+}
+
+// xPatch
+function SetupBloodSkin()
+{
+	if(BloodTextureIndex != 0)
+		Skins[1] = Class'SledgeWeapon'.default.BloodTextures[BloodTextureIndex - 1];
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -206,6 +216,19 @@ function MakePickup()
 			usemom = 100*usemom;
 			newmac.bAllowMovement = true; // Change by NickP: MP fix
 			newmac.TakeDamage(1,Instigator,Location,usemom,class'damageType');
+			
+			// xPatch: Keep blood on and force weapon switch
+			if(SledgePickup(newmac) != None)
+			{
+				SledgePickup(newmac).bForceSwitch = True;
+				if(BloodTextureIndex != -1)
+				{
+					SledgePickup(newmac).SavedBloodTextureIndex = BloodTextureIndex;			
+					SledgePickup(newmac).Skins[1] = Class'SledgeWeapon'.default.BloodTextures[BloodTextureIndex - 1]; 
+				} 
+			}
+			// End
+			
 			bMadePickup=true;
 		}
 	}
@@ -410,6 +433,14 @@ simulated function ProcessTouch(Actor Other, Vector HitLocation)
 						}
 						Other.TakeDamage( Damage, instigator, Location, MomentumTransfer * Normal(Velocity), MyDamageType);
 						smoke1 = spawn(class'SmokeHitPuffMelee',Owner,,Location);
+						// xPatch
+						if(BloodTextureIndex < Class'SledgeWeapon'.default.BloodTextures.Length 
+							&& P2MocapPawn(Other).MyRace < RACE_Automaton)
+						{
+							BloodTextureIndex++; 
+							SetupBloodSkin();
+						}
+						//end						
 						if (P2MocapPawn(Other) != None)
 							if (P2MocapPawn(Other).MyRace < RACE_Automaton)
 								smoke1.PlaySound(SledgeHitBody,,1.0,false,200.0,GetRandPitch());
@@ -518,6 +549,7 @@ auto simulated state StartFlying
 {
 Begin:
 	Timer();
+	SetupBloodSkin();	// xPatch
 	SetTimer(FlySoundTime, true);
 	Sleep(WAIT_THROWER_TOUCH);
 	ContinueFlying();
@@ -587,7 +619,7 @@ defaultproperties
 	bReplicateMovement=true
 	bUpdateSimulatedPosition=true
 	// End
-
+	
      BounceMax=6
      WallHitSound=Sound'AWSoundFX.Sledge.hammerhitwall_metalhit'
      FlyingSound=Sound'AWSoundFX.Sledge.hammerthrowloop'

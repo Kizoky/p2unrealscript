@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 // ScytheProjectile.
-// Copyright 2003 Running With Scissors, Inc.  All Rights Reserved.
+// Copyright 2023 Running With Scissors Studios LLC.  All Rights Reserved.
 //
 // Flying, spinning Scythe
 //
@@ -39,6 +39,9 @@ var bool	bNoPickup;			// Don't make pickups that bog the framerate when cheats a
 const WAIT_THROWER_TOUCH	=	0.2;	// wait this long to be touched by the Thrower and picked up again
 const FLOOR_Z				=	0.5;
 const BOUNCE_WALL_DOT		=	0.4;
+
+// xPatch
+var int	BloodTextureIndex; 
 
 ///////////////////////////////////////////////////////////////////////////////
 // Attach the blurry effect
@@ -80,6 +83,14 @@ simulated function PostBeginPlay()
 		&& ScytheWeapon(Instigator.Weapon).bReaper)
 		bNoPickup=true;
 }
+
+// xPatch
+function SetupBloodSkin()
+{
+	if(BloodTextureIndex != 0)
+		Skins[0] = Class'ScytheWeapon'.default.BloodTextures[BloodTextureIndex - 1];
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // Remove blurry effect
@@ -144,7 +155,7 @@ function MakePickup()
 {
 	local P2WeaponPickup newmac;
 	local vector usemom;
-
+	
 	if(!bNoPickup)
 	{
 		newmac = spawn(PickupClass, Owner,,Location);
@@ -158,6 +169,17 @@ function MakePickup()
 			usemom = 100*usemom;
 			newmac.bAllowMovement = true; // Change by NickP: MP fix
 			newmac.TakeDamage(1,Instigator,Location,usemom,class'damageType');
+			
+			// xPatch: Keep blood on and force weapon switch
+			if(ScythePickup(newmac) != None)
+			{
+				ScythePickup(newmac).bForceSwitch = True;
+				if(BloodTextureIndex != 0)
+				{
+					ScythePickup(newmac).SavedBloodTextureIndex = BloodTextureIndex;			
+					ScythePickup(newmac).Skins[0] = Class'ScytheWeapon'.default.BloodTextures[BloodTextureIndex - 1]; 
+				} 
+			}
 		}
 	}
 }
@@ -306,6 +328,14 @@ simulated function ProcessTouch(Actor Other, Vector HitLocation)
 						{
 							Other.TakeDamage( Damage, instigator, Location, MomentumTransfer * Normal(Velocity), MyDamageType);
 							smoke1 = spawn(class'SmokeHitPuffMelee',Owner,,Location);
+							// xPatch
+							if(BloodTextureIndex < Class'SledgeWeapon'.default.BloodTextures.Length 
+								&& P2MocapPawn(Other).MyRace < RACE_Automaton)
+							{
+								BloodTextureIndex++; 
+								SetupBloodSkin();
+							}
+							//end
 							if (P2MocapPawn(Other) != None)
 								if (P2MocapPawn(Other).MyRace < RACE_Automaton)
 									smoke1.PlaySound(ScytheHitBody,,1.0,false,200.0,GetRandPitch());
@@ -416,6 +446,7 @@ auto simulated state StartFlying
 {
 Begin:
 	Timer();
+	SetupBloodSkin(); // xPatch
 	SetTimer(FlySoundTime, true);
 	Sleep(WAIT_THROWER_TOUCH);
 	ContinueFlying();
@@ -460,7 +491,7 @@ simulated state FallingDown
 
 defaultproperties
 {
-     BounceMax=6
+	 BounceMax=6
      WallHitSound=Sound'AWSoundFX.Scythe.scythehitwall'
      FlyingSound=Sound'AWSoundFX.Scythe.scythethrowloop'
      bRecordBounce=True

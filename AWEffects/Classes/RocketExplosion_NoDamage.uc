@@ -1,0 +1,13 @@
+///////////////////////////////////////////////////////////////////////////////
+// RocketExplosion_NoDamage
+// by Man Chrzan, xPatch
+// 
+// New explosion with no damage for a Mad Cow Mike J scene
+///////////////////////////////////////////////////////////////////////////////
+class RocketExplosion_NoDamage extends RocketExplosion;
+
+defaultproperties
+{
+	ExplosionDamage=0
+	MyDamageType = None
+}

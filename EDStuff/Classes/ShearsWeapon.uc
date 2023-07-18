@@ -4,106 +4,13 @@
 //   Dopamine|Silent-Scope
 //=============================================================
 
-class ShearsWeapon extends P2Weapon;
-
-var travel bool bShowHint1;
-var bool bStopAtDoor;		// If this is set, then we care about hitting doors first and people
-							// later. This is really for just the foot. Most of the time we kick doors
-							// open. If we directly kick a door open, but a person was on the other side
-							// we *don't* want them pissed off (attacking) because we couldn't know they	
-							// we're on the other side and for the most part we didn't mean to do that.
-
-var int BloodTextureIndex;			// index into following array
-var array<Texture> BloodTextures;	// bloodier versions of this weapon skin
-
-var float AlertRadius;		// how big an area to tell people i'm going to hit about me
+class ShearsWeapon extends P2BloodWeapon;
 
 replication
 {
 	// Functions called by server on client
 	reliable if(Role == ROLE_Authority)
 		ClientShovelShake;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// Set the texture that would handle the blood
-///////////////////////////////////////////////////////////////////////////////
-function SetBloodTexture(Texture NewTex)
-{
-	Skins[0] = NewTex;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// Add more blood the weapon by incrementing into the blood texture array for
-// skins
-///////////////////////////////////////////////////////////////////////////////
-function DrewBlood()
-{
-	// Can add more blood, so do
-	if(BloodTextureIndex < BloodTextures.Length)
-	{
-		// update the texture
-		SetBloodTexture(BloodTextures[BloodTextureIndex]);
-		BloodTextureIndex++;
-	}
-	//log(self$" drew blood "$BloodTextureIndex$" new skin "$Skins[1]);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// Remove all blood from blade
-///////////////////////////////////////////////////////////////////////////////
-function CleanWeapon()
-{
-	BloodTextureIndex = 0;
-	SetBloodTexture(Texture(default.Skins[0]));
-	//log(self$" clean weapon "$BloodTextureIndex$" new skin "$Skins[1]);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-// Weapon gets cleaned when you bring it back out each time
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-state Active
-{
-	function BeginState()
-	{
-		Super.BeginState();
-		CleanWeapon();
-	}
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// Tell them your about to smash things
-///////////////////////////////////////////////////////////////////////////////
-function SendSwingAlert(float UseRadius)
-{
-	local vector endpt;
-	local AWPerson Victims;
-
-	//log(self$" send swing alert ");
-	if(Owner != None)
-	{
-		endpt = Owner.Location + UseMeleeDist*vector(Owner.Rotation);
-	}
-	else
-	{
-		endpt = Location;
-	}
-
-	foreach VisibleCollidingActors( class'AWPerson', Victims, UseRadius, endpt )
-	{
-		//log(self$" seeing "$victims);
-		// If they're valid, tell them about your swing
-		if(Victims != None
-			&& !Victims.bDeleteMe
-			&& Victims.Health > 0)
-		{
-			Victims.BigWeaponAlert(AWPerson(Owner));
-		}
-	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -134,6 +41,8 @@ function RefreshHints()
 
 simulated function PlayFiring()
 {
+	// xPatch: Alert NPCs so they can block this melee attack
+	SendSwingAlert(AlertRadius);
 	Super.PlayFiring();
 	//ShearsAttachment(ThirdPersonActor).PlayClip();
 	if(bShowHint1)
@@ -144,6 +53,8 @@ simulated function PlayFiring()
 }
 simulated function PlayAltFiring()
 {
+	// xPatch: Alert NPCs so they can block this melee attack
+	SendSwingAlert(AlertRadius);	
 	Super.PlayAltFiring();
 	//ShearsAttachment(ThirdPersonActor).PlayClip();
 	if(!bShowHint1)
@@ -334,11 +245,12 @@ function DoHit( float Accuracy, float YOffset, float ZOffset )
 					if(Victims.bStatic)
 						bHitSolid=true;
 					// If we hit a live pawn, record that too
-					else if(LivePawnHit == None
+/*					else if(LivePawnHit == None
 						&& FPSPawn(Victims) != None
 						&& FPSPawn(Victims).Health > 0)
 						LivePawnHit = FPSPawn(Victims);
-						//DrewBlood();
+						DrewBlood();
+*/
 
 					// Check to deliver damage
 					dir = Victims.Location - HitLocation;
@@ -356,13 +268,14 @@ function DoHit( float Accuracy, float YOffset, float ZOffset )
 	}
 
 	// If we hit a pawn, don't say it was a solid hit, even if we hit other stuff
-	if(LivePawnHit != None)
+/*	if(LivePawnHit != None)
 	{
 		bHitSolid = false;
 		if (P2MocapPawn(LivePawnHit) == None
 			|| P2MocapPawn(LivePawnHit).MyRace < RACE_Automaton)
 			DrewBlood();
 	}
+*/
 
 	//log(self$" shovel hit something 0, inst "$Instigator$" hit something "$bHitSomething$" role "$Role);
 	// If we hit something, only then (not when we fire) do we shake the view
@@ -420,6 +333,7 @@ function DoHit( float Accuracy, float YOffset, float ZOffset )
 defaultproperties
 {
      bShowHint1=True
+	 BloodSkinIndex=0
      BloodTextures(0)=Texture'ED_WeaponSkins.Melee.hedge_clippers_BLOODY'
      BloodTextures(1)=Texture'ED_WeaponSkins.Melee.hedge_clippers_BLOODY'
      bUsesAltFire=True
@@ -457,10 +371,11 @@ defaultproperties
      aimerror=200.000000
      AIRating=0.110000
      MaxRange=95.000000
-     GroupOffset=10
+     GroupOffset=7
 	 InventoryGroup=1
      PickupClass=Class'ShearsPickup'
-     BobDamping=0.970000
+//     BobDamping=0.970000
+	 BobDamping=1.120000
      AttachmentClass=Class'ShearsAttachment'
      ItemName="Shears"
 //     Texture=Texture'ED_Hud.HUDclippers'
@@ -470,5 +385,7 @@ defaultproperties
      AmbientGlow=128
 	 PlayerViewOffset=(X=-2,Y=0,Z=-20)
 	 ThirdPersonRelativeLocation=(Z=4)
-	ThirdPersonRelativeRotation=(Roll=4000)
+	 ThirdPersonRelativeRotation=(Roll=4000)
+	 AlertRadius=150.000000
+	 ThirdPersonBloodSkinIndex=0
 }

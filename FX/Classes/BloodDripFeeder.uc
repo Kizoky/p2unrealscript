@@ -15,7 +15,7 @@ defaultproperties
         ColorScaleRepeats=2.000000
         FadeOutStartTime=0.700000
         FadeOut=True
-        MaxParticles=10
+        MaxParticles=30
         UseSizeScale=True
         UseRegularSizeScale=False
         SizeScale(0)=(RelativeTime=0.000000,RelativeSize=0.500000)
@@ -42,7 +42,7 @@ defaultproperties
         FadeIn=True
         FadeOutStartTime=0.150000
         FadeOut=True
-        MaxParticles=4
+        MaxParticles=8
         StartLocationRange=(X=(Min=-7.000000,Max=7.000000),Y=(Min=-7.000000,Max=7.000000),Z=(Max=10.000000))
         UseSizeScale=True
         UseRegularSizeScale=False

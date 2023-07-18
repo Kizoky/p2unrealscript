@@ -61,6 +61,11 @@ var() const String				JailURL;			// URL of jail map for this day. Gameinfo prefe
 
 var int							ActiveErrands;		// Cached number of active errands (to make it faster)
 
+// xPatch 2.0
+// Classic Loading Screens
+//var globalconfig bool bClassicLoad;
+var array<Texture> SteamLoadTex;
+var array<Texture> ClassicLoadTex;
 
 ///////////////////////////////////////////////////////////////////////////////
 // After traveling this is called to reset this object to it's "normal" state.
@@ -179,6 +184,26 @@ function Sound GetDudeNewsComment()
 
 function Texture GetLoadTexture()
 	{
+	// Man Chrzan: xPatch	
+		local Texture NewLoadTex;
+		local int i;
+		
+		if(class'P2GameInfoSingle'.static.InClassicModeStatic() 
+			|| class'xPatchManager'.static.GetClassicLoading())
+		{
+			NewLoadTex = Texture(DynamicLoadObject(String(LoadTex), class'Texture'));
+			
+			for(i=0; i<SteamLoadTex.Length; i++)
+			{
+				if( NewLoadTex == SteamLoadTex[i] )
+				{
+					NewLoadTex = ClassicLoadTex[i];
+				}
+			}
+			
+			return NewLoadTex;
+		}
+	// Man Chrzan: End
 	return Texture(DynamicLoadObject(String(LoadTex), class'Texture'));
 	}
 
@@ -450,4 +475,20 @@ function Texture GetErrandLocationCrossout(int ErrandIndex, out float x, out flo
 defaultproperties
 	{
 	ActiveErrands=-1
+	
+	SteamLoadTex[0]=Texture'p2misc_full.loading1'
+	SteamLoadTex[1]=Texture'p2misc_full.loading2'
+	SteamLoadTex[2]=Texture'p2misc_full.loading3'
+	SteamLoadTex[3]=Texture'p2misc_full.loading4'
+	SteamLoadTex[4]=Texture'p2misc_full.loading5'
+	SteamLoadTex[5]=Texture'aw_textures.loading_sat'
+	SteamLoadTex[6]=Texture'aw_textures.loading_sun'
+	
+	ClassicLoadTex[0]=Texture'xPatchTex.Loading.loading1'  
+	ClassicLoadTex[1]=Texture'xPatchTex.Loading.loading2'
+	ClassicLoadTex[2]=Texture'xPatchTex.Loading.loading3'
+	ClassicLoadTex[3]=Texture'xPatchTex.Loading.loading4'
+	ClassicLoadTex[4]=Texture'xPatchTex.Loading.loading5'
+	ClassicLoadTex[5]=Texture'xPatchTex.Loading.loading_sat'
+	ClassicLoadTex[6]=Texture'xPatchTex.Loading.loading_sun'
 	}

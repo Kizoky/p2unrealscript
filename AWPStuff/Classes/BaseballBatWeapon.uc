@@ -80,7 +80,7 @@ function Notify_StartHit()
 
 	Super.Notify_StartHit();
 }
-*/
+
 ///////////////////////////////////////////////////////////////////////////////
 // Set first person hands texture
 ///////////////////////////////////////////////////////////////////////////////
@@ -88,6 +88,7 @@ simulated function ChangeHandTexture(Texture NewHandsTexture, Texture DefHandsTe
 {
 	Skins[1] = NewHandsTexture;
 }
+*/
 
 ///////////////////////////////////////////////////////////////////////////////
 // Play our proper idling animation
@@ -120,7 +121,7 @@ defaultproperties
 	WeaponSpeedLoad=2.00
 	bCanThrowMP=True
 	AmmoName=Class'BaseballBatAmmoInv'
-	GroupOffset=8
+	GroupOffset=9
 	PickupClass=Class'BaseballBatPickup'
 	AttachmentClass=Class'BaseballBatAttachment'
 	ItemName="Baseball Bat"
@@ -130,4 +131,5 @@ defaultproperties
 	BloodTextures[0]=Texture'ED_WeaponSkins.Melee.WoodenBat_bloody1'
 	BloodTextures[1]=Texture'ED_WeaponSkins.Melee.WoodenBat_bloody2'
 	BloodSkinIndex=0
+	ThirdPersonBloodSkinIndex=0
 }

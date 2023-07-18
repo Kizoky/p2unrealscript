@@ -11,6 +11,8 @@ var() sound BatSmash;	// Smash sound made when contacting something like a body
 
 var() float AltMomentumHitMag; // Alt-fire momentum hit mag
 
+var() class<DamageType> AltBatonDamage;
+
 ///////////////////////////////////////////////////////////////////////////////
 // Spawns THREE heads and sends them flying (enhanced mode only)
 ///////////////////////////////////////////////////////////////////////////////
@@ -83,7 +85,7 @@ function ProcessTraceHit(Weapon W, Actor Other, Vector HitLocation, Vector HitNo
 	local SparkHitMachineGun spark1;
 	local Rotator NewRot;
 	local vector Momentum;
-	//local BaseballBatJingleMaker Jingler;
+	local BaseballBatJingleMaker Jingler;
 	local float PercentUpBody;
 	local PersonController perc;
 	local bool bDoAlt;
@@ -176,9 +178,12 @@ function ProcessTraceHit(Weapon W, Actor Other, Vector HitLocation, Vector HitNo
 					PersonPawn(Other).MyHead.PlaySound(BatCrack, SLOT_None, 1.0,,TransientSoundRadius,GetRandPitch());
 
 					// set up the stupid jingler
-					//Jingler = spawn(class'BaseballBatJingleMaker', Instigator,, PersonPawn(Other).MyHead.Location);
-					//Jingler.SetupFor(PersonPawn(Other).MyHead);
-
+					if(P2GameInfoSingle(Level.Game) != None 
+						&& P2GameInfoSingle(Level.Game).xManager.bBaseballCounter)
+					{
+						Jingler = spawn(class'BaseballBatJingleMaker', Instigator,, PersonPawn(Other).MyHead.Location);
+						Jingler.SetupFor(PersonPawn(Other).MyHead);
+					}
 					// knock off the head
 					if (P2GameInfoSingle(Level.Game) != None && P2GameInfoSingle(Level.Game).VerifySeqTime() && Pawn(Owner).Controller.bIsPlayer)
 						PopTheirHeadOff(PersonPawn(Other), HitLocation, Momentum);
@@ -190,13 +195,14 @@ function ProcessTraceHit(Weapon W, Actor Other, Vector HitLocation, Vector HitNo
 						P2GameInfoSingle(Level.Game).TheGameState.BaseballHeads++;
 				}
 			}
-			/*
-			else if (AW7Head(Other) != None)
+			// Restored by Man Chrzan: xPatch 2.0
+			else if (Head(Other) != None 
+				&& P2GameInfoSingle(Level.Game) != None 
+				&& P2GameInfoSingle(Level.Game).xManager.bBaseballCounter)
 			{
 				Jingler = spawn(class'BaseballBatJingleMaker', Instigator,, Other.Location);
 				Jingler.SetupFor(Other);
 			}
-			*/
 		}
 		else
 		{
@@ -210,7 +216,14 @@ function ProcessTraceHit(Weapon W, Actor Other, Vector HitLocation, Vector HitNo
 					Momentum.Z += 250000;
 					Momentum *= 3;
 				}
-				Other.TakeDamage(AltDamageAmount, Pawn(Owner), HitLocation, Momentum, AltDamageTypeInflicted);
+			
+				// Other.TakeDamage(AltDamageAmount, Pawn(Owner), HitLocation, Momentum, AltDamageTypeInflicted);
+				// Change by Man Chrzan: xPatch 2.0 Don't insta-kill everyone, do the same damage as primary attack
+				if (PersonPawn(Other) != None && PersonPawn(Other).Health > DamageAmount && AWZombie(Other) == None)
+					Other.TakeDamage(DamageAmount, Pawn(Owner), HitLocation, Momentum, AltBatonDamage);
+				else
+				    Other.TakeDamage(DamageAmount, Pawn(Owner), HitLocation, Momentum, AltDamageTypeInflicted);
+				
 				if (P2GameInfoSingle(Level.Game).VerifySeqTime() && AWPerson(Other) != None && AWPerson(Other).TakesSledgeDamage == 1)
 				{
 					BlastingOffAgain = Spawn(class'TeamRocketizer',Owner,,Other.Location,Owner.Rotation + rot(16384,0,0));
@@ -251,9 +264,9 @@ defaultproperties
 	BatSmash=Sound'AWSoundFX.Sledge.hammersmashbody'
 	MomentumHitMag=480000.000000
 	AltMomentumHitMag=120000.000000
-	DamageAmount=80
-	AltDamageAmount=40
+	DamageAmount=90
 	DamageTypeInflicted=Class'BludgeonDamage'
 	AltDamageTypeInflicted=Class'BaseballBatDamage'
 	Texture=Texture'EDHud.hud_WoodenBat'
+	AltBatonDamage=Class'BaseFX.BatonDamage'
 }

@@ -57,6 +57,9 @@ var P2Dialog myDialog;				// Reference to current dialog object
 var float VoicePitch;
 var float GenAnimSpeed;
 
+// xPatch:
+var() bool bFireFootsteps;
+
 ///////////////////////////////////////////////////////////////////////////////
 // consts
 ///////////////////////////////////////////////////////////////////////////////
@@ -82,6 +85,8 @@ const HEAD_LAUNCH_SPEED	=	300;
 const SPARK_SND_RADIUS	=	800;
 const DEFAULT_SQUIRT_DIST= 400;
 
+const DEFAULT_FUCKING_HEALTH	= 5000;		// I just can't... if someone's reading this, please help me. ~Piotr S. aka Man Chrzan
+const DIFF_CHANGE_HEALTH	= 0.1;
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -106,6 +111,63 @@ function PostBeginPlay()
 	}
 
 	SetupDialog();
+	SetupDifficulty(False);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// xPatch: So the Health and HealthMax often aren't matching if its done 
+// via the Controller and some weird shit happens with it. I have no fucking 
+// clue why it works so abnormally. Moved here, hopefully it will work now.
+///////////////////////////////////////////////////////////////////////////////
+function SetupDifficulty(bool bPostLoad)
+{
+	local float gamediff, diffoffset;
+	local float NewHealth;
+	local bool bLudicrousHealth;
+	
+	gamediff = P2GameInfo(Level.Game).GetGameDifficulty();
+	diffoffset = P2GameInfo(Level.Game).GetDifficultyOffset();
+	
+	// Since we do not have Crackola, Nuke and such make things a bit more fair. 
+	if(P2GameInfoSingle(Level.Game).InLudicrousDifficulty()
+		&& P2GameInfoSingle(Level.Game).InClassicMode())
+	{
+		// diffoffset 10 is Ludicrous
+		// diffoffset 5 is Heston to Impossible, the normal maximum
+		if(diffoffset > 5)
+			diffoffset=5;
+	}
+	
+	//Log(self@"Game Difficulty:"@gamediff@"|"@"Difficulty Offset:"@diffoffset);
+	//Log(self@"Health:"@Health);
+	//Log(self@"HealthMax:"@HealthMax);	
+	
+	// Just to be safe check if it's not more than ususal
+	if(diffoffset != 0 && HealthMax == DEFAULT_FUCKING_HEALTH)
+	{
+		NewHealth = HealthMax += (diffoffset*HealthMax*DIFF_CHANGE_HEALTH);
+		HealthMax = NewHealth;
+		
+		if(!bPostLoad)
+			Health = NewHealth;
+			
+		if(P2GameInfoSingle(Level.Game).InLudicrousDifficulty())
+			bFireFootsteps = true;
+			
+		//Log(self@"NEW HealthMax:"@HealthMax);
+		//Log(self@"NEW Health:"@Health);
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// xPatch: Another fix, so apparently if we quit game to desktop and then
+// load a save HealthMax sometimes gets fucked hard and our health bar gets 
+// so long it doesn't fit on the screen lol, cuz it resets to default 5000...
+///////////////////////////////////////////////////////////////////////////////
+event PostLoadGame()
+{
+	Super.PostLoadGame();
+	SetupDifficulty(True);	
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -679,16 +741,21 @@ function Notify_StepLeft()
 {
 	local coords usecoords;
 	local vector useloc;
-
-	if(firestepclass != None
-		&& Controller != None
-		&& !Controller.bDeleteMe
-		&& Controller.IsInState('LegMotionToTarget'))
+	
+	// xPatch: this Notify_ was not included in animations before.
+	// Added it back BUT it will be only used for Ludicrous difficulty.
+	if(bFireFootsteps)
 	{
-		usecoords = GetBoneCoords(BONE_LEFTFOOT);
-		useloc = usecoords.origin;
-		useloc.z+=STEP_FIRE_OFFSET;
-		spawn(firestepclass, self, , useloc);
+		if(firestepclass != None
+			&& Controller != None
+			&& !Controller.bDeleteMe
+			&& Controller.IsInState('LegMotionToTarget'))
+		{
+			usecoords = GetBoneCoords(BONE_LEFTFOOT);
+			useloc = usecoords.origin;
+			useloc.z+=STEP_FIRE_OFFSET;
+			spawn(firestepclass, self, , useloc);
+		}
 	}
 }
 function Notify_StepRight()
@@ -696,15 +763,20 @@ function Notify_StepRight()
 	local coords usecoords;
 	local vector useloc;
 
-	if(firestepclass != None
-		&& Controller != None
-		&& !Controller.bDeleteMe
-		&& Controller.IsInState('LegMotionToTarget'))
+	// xPatch: this Notify_ was not included in animations before.
+	// Added it back BUT it will be only used for Ludicrous difficulty.
+	if(bFireFootsteps)
 	{
-		usecoords = GetBoneCoords(BONE_RIGHTFOOT);
-		useloc = usecoords.origin;
-		useloc.z+=STEP_FIRE_OFFSET;
-		spawn(firestepclass, self, , useloc);
+		if(firestepclass != None
+			&& Controller != None
+			&& !Controller.bDeleteMe
+			&& Controller.IsInState('LegMotionToTarget'))
+		{
+			usecoords = GetBoneCoords(BONE_RIGHTFOOT);
+			useloc = usecoords.origin;
+			useloc.z+=STEP_FIRE_OFFSET;
+			spawn(firestepclass, self, , useloc);
+		}
 	}
 }
 
@@ -715,7 +787,7 @@ function Notify_FormLeft()
 {
 	local coords usecoords;
 	local P2Emitter handfire;
-
+	
 	if(StraightBurnClass != None)
 	{
 		usecoords = GetBoneCoords(BONE_LEFTHAND);
@@ -1088,4 +1160,5 @@ defaultproperties
      CollisionHeight=200.000000
      Mass=400.000000
      RotationRate=(Pitch=4096,Yaw=40000,Roll=3072)
+	 bFireFootsteps=False
 }

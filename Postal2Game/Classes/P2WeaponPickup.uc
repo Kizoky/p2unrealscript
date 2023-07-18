@@ -79,6 +79,12 @@ const NutsPath = "Postal2Game.P2Player bNuts";
 const ProtestPath = "Postal2Game.P2Player bProtest";
 const RadPath = "Postal2Game.P2Player bRads";
 
+// xPatch: Reload Support
+var byte SaveReloadCount;			// Keep reload count after you dropped reloadable guns
+var bool bReloadableWeaponPickup;	// Player will get full ReloadCount and 0 AmmoInv if this is true.
+var bool bAmmoDropped, bAmmoDroppedNPC;
+var localized string GroupFullMessage, GroupFullMessage2A, GroupFullMessage2B, MeleeModeMessage;
+
 ///////////////////////////////////////////////////////////////////////////////
 // Tick
 // We had a problem with ForTransferOnly pickups falling to the ground,
@@ -446,12 +452,29 @@ function inventory SpawnCopy( pawn Other )
 
 	if(p2weap != None)
 	{
+		// xPatch: We are picking up Reloadable weapon we don't have yet, give us only in-mag ammo.
+		if (bReloadableWeaponPickup && !bAmmoDropped
+			&& AmmoGiveCount == default.AmmoGiveCount		// Make sure it's not modified
+			&& MPAmmoGiveCount == default.MPAmmoGiveCount
+			|| (bAmmoDroppedNPC && bReloadableWeaponPickup))	
+		{
+			AmmoGiveCount = 0;
+			MPAmmoGiveCount = 0;
+		}
+		// End
+		
 		// Multiplayer has different balancing for how much ammo you get with things
 		if(Level.Game != None
 			&& FPSGameInfo(Level.Game).bIsSinglePlayer)
 			p2weap.GiveAmmoFromPickup(Other, AmmoGiveCount);
 		else
 			p2weap.GiveAmmoFromPickup(Other, MPAmmoGiveCount);
+		
+		// xPatch: Restore ReloadCount
+		if(Owner != None)
+			p2weap.ReloadCount = SaveReloadCount;
+		// End
+		
 		p2weap.bJustMade=false;
 	}
 
@@ -466,6 +489,7 @@ function InitDroppedPickupFor(Inventory Inv)
 	local P2Weapon pweap;
 	local Inventory ThisInv;
 	local bool bAmmoInUse;
+	local bool bAllowEmpty;
 
 	Super.InitDroppedPickupFor(Inv);
 
@@ -504,22 +528,38 @@ function InitDroppedPickupFor(Inventory Inv)
 	// Look to seperate and kill the item we came from
 	if(pweap != None)
 	{
+		// xPatch: If we have a reloadable weapon which still has ReloadCount or
+		// if a group is limited and full we DON'T want to destroy it.
+		if( (P2Player(Instigator.Controller) != None && P2Player(Instigator.Controller).UseGroupLimit())
+			 || (pweap.ReloadCount > 0 && bReloadableWeaponPickup) )
+			bAllowEmpty=True;
+		
 		// For MP games, check first to make sure there's any ammo at all. It might be (like with
 		// a single molotov thrown on death) that it had 1, but he threw it and now has 0, but it thought
 		// he still had 1 at the time. So when it gets to here and finally realizes there's 0, we need
 		// to check for it.
 		if(P2AmmoInv(pweap.AmmoType).AmmoAmount > 0
-			|| P2AmmoInv(pweap.AmmoType).bInfinite)
+			|| P2AmmoInv(pweap.AmmoType).bInfinite
+			|| bAllowEmpty) // xPatch: Don't destroy if allowed
 		{
-			bAmmoInUse = false;
-			for (ThisInv = Instigator.Inventory; ThisInv != None; ThisInv = ThisInv.Inventory)
-			{				
-				if (ThisInv != Inv
-					&& Weapon(ThisInv) != None
-					&& Weapon(ThisInv).AmmoType == P2Weapon(Inv).AmmoType)
-				{
-					bAmmoInUse = true;
-					break;
+			// xPatch: For limited inventory we want to always keep ammo.
+			// (so we can swap weapons and keep it between them)
+			if (P2GameInfoSingle(Level.Game) != None 
+				&& P2Player(Instigator.Controller) != None
+				&& P2GameInfoSingle(Level.Game).GetPlayer().UseGroupLimit())
+				bAmmoInUse = True;
+			else
+			{
+				bAmmoInUse = false;
+				for (ThisInv = Instigator.Inventory; ThisInv != None; ThisInv = ThisInv.Inventory)
+				{				
+					if (ThisInv != Inv
+						&& Weapon(ThisInv) != None
+						&& Weapon(ThisInv).AmmoType == P2Weapon(Inv).AmmoType)
+					{
+						bAmmoInUse = true;
+						break;
+					}
 				}
 			}
 			// If the dude's holding the ammo for something else, say it drops zero ammo
@@ -544,7 +584,21 @@ function InitDroppedPickupFor(Inventory Inv)
 				// for ammo to be given from dead npc's for this weapon.
 				AmmoGiveCount = DeadNPCAmmoGiveRange.Min + Rand(DeadNPCAmmoGiveRange.Max - DeadNPCAmmoGiveRange.Min);
 				MPAmmoGiveCount = AmmoGiveCount;
+				
+				// xPatch
+				if(bReloadableWeaponPickup)
+				{
+					SaveReloadCount = AmmoGiveCount;
+					bAmmoDroppedNPC = True;
+				}
 			}
+			
+			// xPatch: Keep ReloadCount
+			if(pweap.ReloadCount > 0 && !bAmmoDroppedNPC)
+				SaveReloadCount = P2Weapon(Inv).ReloadCount;
+			
+			bAmmoDropped=True;
+			// End
 
 			Inventory.Destroy();
 		}
@@ -669,6 +723,7 @@ state Pickup
 	function bool ValidTouch( actor Other )
 	{
 		local vector Top, Bottom, OtherTop, OtherBottom;
+		local int MaxInGr;
 
 		// make sure its a live player/not the one who dropped us, if it's
 		// currently falling
@@ -704,6 +759,28 @@ state Pickup
 			&& !FastTrace(OtherTop, Top)			// check top
 			&& !FastTrace(OtherBottom, Bottom))		// check bottom
 			return false;
+			
+		// xPatch: Melee Mode
+		if(P2GameInfo(Level.Game).InHardLiebermode())
+		{
+			if(!Class<P2Weapon>(InventoryType).default.bMeleeWeapon)
+			{
+				if(P2Player(Pawn(Other).Controller) != None)
+					P2Player(Pawn(Other).Controller).MyHUD.LocalizedMessage(MessageClass, ,,,,MeleeModeMessage);
+				return false;
+			}
+		}
+			
+		// xPatch: Veteran Mode
+		if(P2Player(Pawn(Other).Controller) != None 
+			&& P2Player(Pawn(Other).Controller).GetWeaponGroupFull(InventoryType, MaxInGr))
+		{
+			if(MaxInGr > 1)
+				P2Player(Pawn(Other).Controller).MyHUD.LocalizedMessage(MessageClass, ,,,,GroupFullMessage2A@MaxInGr@GroupFullMessage2B@InventoryType.default.InventoryGroup$".");
+			else
+				P2Player(Pawn(Other).Controller).MyHUD.LocalizedMessage(MessageClass, ,,,,GroupFullMessage@InventoryType.default.InventoryGroup$".");
+			return false;
+		}
 
 		// make sure game will let player pick me up
 		if( Level.Game.PickupQuery(Pawn(Other), self) )
@@ -777,4 +854,8 @@ defaultproperties
 	MPAmmoGiveCount=1
 	ZombieSearchFreq=0.000000
 	ZombieCheckRad=500.000000
+	GroupFullMessage="You can only carry one weapon in group"
+	GroupFullMessage2A="You can only carry"
+	GroupFullMessage2B="weapons in group"
+	MeleeModeMessage="You can't carry any of these in this game mode!"
 }

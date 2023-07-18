@@ -173,6 +173,13 @@ simulated function float SwitchPriority()
 	}
 }
 
+// xPatch: Make sure that this gun is not extension!
+function bool CanSwapHands()
+{
+	return (Class == Class'MatchesWeapon');
+}
+
+
 ///////////////////////////////////////////////////////////////////////////////
 // Default properties
 ///////////////////////////////////////////////////////////////////////////////
@@ -183,7 +190,7 @@ defaultproperties
 	AmmoName=class'MatchesAmmoInv'
 	AttachmentClass=class'MatchesAttachment'
 
-//	Mesh=Mesh'FP_Weapons.FP_Dude_MatchBox'
+	OldMesh=Mesh'FP_Weapons.FP_Dude_MatchBox'
 	Mesh=Mesh'MP_Weapons.MP_LS_MatchBox'
 //	Skins[0]=Texture'WeaponSkins.Dude_Hands'
 	Skins[0]=Texture'MP_FPArms.LS_arms.LS_hands_dude'
@@ -215,7 +222,7 @@ defaultproperties
 	AIRating=0.02
 	AutoSwitchPriority=0
 	InventoryGroup=5
-	GroupOffset=2
+	GroupOffset=1
 	BobDamping=0.975000
 	ReloadCount=0
 	TraceAccuracy=0.9
@@ -235,4 +242,6 @@ defaultproperties
 	DropWeaponHint2="Press %KEY_ThrowWeapon% to drop it."
 	
 	bCannotBeStolen=true
+
+	BobDamping=1.12
 	}

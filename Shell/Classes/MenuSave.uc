@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 // MenuSave.uc
-// Copyright 2003 Running With Scissors, Inc.  All Rights Reserved.
+// Copyright 2023 Running With Scissors Studios LLC.  All Rights Reserved.
 //
 // The Save menu.
 //
@@ -59,13 +59,18 @@ function SaveSlot(int i)
 		// saving it so that when it is loaded it won't be paused, but that
 		// didn't work and I don't know why.  Instead, it seemed just as
 		// easy to handle this after a game has been loaded.
+		
+		// xPatch: A bit tricky method but at least it works, FINALLY!
+		if(GetGameSingle().TheGameState.DidPlayerCheat())
+			ShellLookAndFeel(LookAndFeel).SaveTextColor = CheatedColor;
+		else
+			ShellLookAndFeel(LookAndFeel).SaveTextColor = ShellLookAndFeel(LookAndFeel).NormalTextColor;
 
 		// 02/19/03 JMI Slot value is now represented in a separate sorted
 		//				array and the slots themselves are not sorted.
 		if(GetGameSingle().SaveGame(aiSlotOrder[i], false))
 		{
 		UpdateSlotUI(i);
-
 		SaveCompleteBox = MessageBox(SavedGameTitle, SavedGameText, MB_OK, MR_OK, MR_OK);
 		}
 		else

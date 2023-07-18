@@ -148,12 +148,19 @@ const HestonPath = "Postal2Game.P2GameInfo bHestonMode";
 const TheyHateMePath = "Postal2Game.P2GameInfo bTheyHateMeMode";
 const InsaneoPath = "Postal2Game.P2GameInfo bInsaneoMode";
 const ExpertPath = "Postal2Game.P2GameInfo bExpertMode";
-const ContraPath = "Postal2Game.P2GameInfoSingle bContraMode";
 const LudicrousPath = "Postal2Game.P2GameInfo bLudicrousMode";
+const MasochistPath = "Postal2Game.P2GameInfo bMasochistMode";
+const VeteranPath = "Postal2Game.P2GameInfo bVeteranMode";
+const MeleePath = "Postal2Game.P2GameInfo bMeeleMode";
+const HardLieberPath = "Postal2Game.P2GameInfo bHardLieberMode";
+const NukeModePath = "Postal2Game.P2GameInfo bNukeMode";
 const CustomPath = "Postal2Game.P2GameInfo bCustomMode";
+const ContraPath = "Postal2Game.P2GameInfoSingle bContraMode";
 
 const EnhancedPath = "Shell.ShellMenuCW bShowedEnhancedMode";
 var globalconfig bool bShowedEnhancedMode;
+
+var globalconfig bool bShowedXPatch;	// xPatch
 
 var UWindowComboControl DifficultyCombo;
 var localized string DifficultyText;
@@ -184,7 +191,7 @@ var array<string>           astrTextureDetailNames;	// 01/20/03 JMI Added these 
 													// This array -MUST- -NOT- be localized.
 var int					    c_iTextureIndexForInvalidVal;	// 01/20/03 JMI Not actually a const b/c I want to initalize it right next to astrTextureDetailNames.
 
-var config	bool			bDefaultsStored;		// 03/03/03 JMI Used to detect if defaults have been stored for the derived menu.
+var /*config*/	bool			bDefaultsStored;		// 03/03/03 JMI Used to detect if defaults have been stored for the derived menu.
 var			array<string>	aDefaultPaths;			// 03/03/03 JMI Add paths to defaults that should be restored.
 var /*config*/	array<string>	aDefaultValues;
 
@@ -988,6 +995,29 @@ function GoToWindow(UWindowWindow newWindow)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// xPatch: Go to the new menu without updating GoBack
+///////////////////////////////////////////////////////////////////////////////
+function ShellMenuCW JumpToMenu(class<ShellMenuCW> MenuClass, optional class<ShellMenuCW> GoBackMenu)
+	{
+	local ShellRootWindow shRoot;
+	shRoot = ShellRootWindow(Root);
+	if (shRoot != None)
+		{
+		LastX = Root.MouseX;
+		LastY = Root.MouseY;
+		SaveConfig();
+		LookAndFeel.PlayBigSound(self);
+		shRoot.GoToMenu(GoBackMenu, MenuClass);
+		
+		OnCleanUp();
+		
+		return shRoot.MyMenu;
+		}
+	
+	return None;
+	}
+
+///////////////////////////////////////////////////////////////////////////////
 // Jump to previous menu
 ///////////////////////////////////////////////////////////////////////////////
 function GoBack()
@@ -1006,17 +1036,14 @@ function GoBack()
 // - if bUpdate is false then don't update the real value
 // - if bAsk is false then skip any user confirmations
 ///////////////////////////////////////////////////////////////////////////////
-function DiffChanged(bool bUpdate, optional bool bSkipExplanation)
-	{
+function SetDiff()
+{
 	local string diffname;
 	local int val, diffnum;
 	local P2GameInfoSingle psg;
-	local bool bLieberMode, bHestonMode, bTheyHateMeMode, bInsaneoMode, bExpertMode;
-	local bool bTheyHateMeWarning, bPOSTALWarning;
-	local ShellMenuCW WarningMenu;
-
-	if (bUpdate)
-		{
+	local bool bLieberMode, bHestonMode, bTheyHateMeMode, bInsaneoMode, bExpertMode, bMasochistMode, bVeteranMode, bLudicrousMode;
+	//local bool bTheyHateMeWarning, bPOSTALWarning, bImpossibleWarning, bLudicrousWarning;
+	//local ShellMenuCW WarningMenu;
 
 		psg = P2GameInfoSingle(GetPlayerOwner().Level.Game);
 
@@ -1098,7 +1125,7 @@ function DiffChanged(bool bUpdate, optional bool bSkipExplanation)
 			val = 10;
 			diffnum = 12;
 			bTheyHateMeMode = True;
-			bTheyHateMeWarning = True;
+			//bTheyHateMeWarning = True;
 		}
 		// POSTAL mode - turns on Hestonworld, They Hate Me, and Expert
 		else if(diffname == psg.DifficultyNames[13])
@@ -1108,7 +1135,7 @@ function DiffChanged(bool bUpdate, optional bool bSkipExplanation)
 			bHestonMode = True;
 			bTheyHateMeMode = True;
 			bExpertMode = True;
-			bPOSTALWarning = True;
+			//bPOSTALWarning = True;
 		}
 		// Impossible Mode - turns on Insaneo, They Hate Me, and Expert
 		else if(diffname == psg.DifficultyNames[14])
@@ -1118,7 +1145,19 @@ function DiffChanged(bool bUpdate, optional bool bSkipExplanation)
 			bInsaneoMode = True;
 			bTheyHateMeMode = True;
 			bExpertMode = True;
-			bPOSTALWarning = True;
+			//bImpossibleWarning = True;
+		}
+		// Ludicrous Mode - turns on Masochist, They Hate Me, and Expert... EVERYTHING!
+		else if(diffname == psg.DifficultyNames[15])
+		{
+			val = 15;
+			diffnum = 15;
+			bVeteranMode = True;
+			bMasochistMode = True;
+			bLudicrousMode = True;
+			bTheyHateMeMode = True;
+			bExpertMode = True;
+			//bLudicrousWarning = True;
 		}
 		// Custom mode - reset to Average difficulty
 		else
@@ -1128,6 +1167,7 @@ function DiffChanged(bool bUpdate, optional bool bSkipExplanation)
 		}
 		//log(self$" DiffChanged diff value "$val@"diff num"@diffnum@"Lieber Heston Hate Insane Expert"@bLieberMode@bHestonMode@bTheyHateMeMode@bInsaneoMode@bExpertMode,'Debug');
 		// set diff
+        
 		GetPlayerOwner().ConsoleCommand("set"@c_strDifficultyPath@val);
 		GetPlayerOwner().ConsoleCommand("set"@c_strDifficultyNumberPath@diffnum);
 		GetPlayerOwner().ConsoleCommand("set"@LieberPath@bLieberMode);
@@ -1135,29 +1175,100 @@ function DiffChanged(bool bUpdate, optional bool bSkipExplanation)
 		GetPlayerOwner().ConsoleCommand("set"@TheyHateMePath@bTheyHateMeMode);
 		GetPlayerOwner().ConsoleCommand("set"@InsaneoPath@bInsaneoMode);
 		GetPlayerOwner().ConsoleCommand("set"@ExpertPath@bExpertMode);
+		GetPlayerOwner().ConsoleCommand("set"@VeteranPath@bVeteranMode);
+		GetPlayerOwner().ConsoleCommand("set"@MasochistPath@bMasochistMode);
+		GetPlayerOwner().ConsoleCommand("set"@LudicrousPath@bLudicrousMode);
 		GetPlayerOwner().ConsoleCommand("set"@CustomPath@"false");
-		GetPlayerOwner().ConsoleCommand("set"@LudicrousPath@"false");
+		GetPlayerOwner().ConsoleCommand("set"@MeleePath@"false");
+		GetPlayerOwner().ConsoleCommand("set"@HardLieberPath@"false");
+		GetPlayerOwner().ConsoleCommand("set"@NukeModePath@"false");
 		psg.GameDifficulty = val;
 		// Update the gamestate here, also, if we have one
 		if(psg.TheGameState != None)
 			psg.TheGameState.GameDifficulty = val;	
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Update values when controls have changed.
+// - if bUpdate is false then don't update the real value
+// - if bAsk is false then skip any user confirmations
+///////////////////////////////////////////////////////////////////////////////
+function DiffChanged(bool bUpdate, optional bool bSkipExplanation)
+{
+	local string diffname;
+	local int i, diffnum;
+	local P2GameInfoSingle psg;
+	//local bool bLieberMode, bHestonMode, bTheyHateMeMode, bInsaneoMode, bExpertMode, bMasochistMode, bVeteranMode, bLudicrousMode;
+	local bool bTheyHateMeWarning, bPOSTALWarning, bImpossibleWarning, bLudicrousWarning;
+	local ShellMenuCW WarningMenu;
+	
+	// Actual difficulty change moved to SetDiff due to lag spike
+	// Now we only handle DifficultyNumber and Warnings here.
+
+	if (bUpdate)
+	{
+		psg = P2GameInfoSingle(GetPlayerOwner().Level.Game);
+		diffname = DifficultyCombo.GetValue();
+		//log(self$" DiffChanged diffname after change "$diffname,'Debug');
+		
+		// They Hate Me Mode
+		if(diffname == psg.DifficultyNames[12])
+		{
+			diffnum = 12;
+			bTheyHateMeWarning = True;
 		}
-		if (!bSkipExplanation)
+		// POSTAL mode
+		else if(diffname == psg.DifficultyNames[13])
+		{
+			diffnum = 13;
+			bPOSTALWarning = True;
+		}
+		// Impossible Mode
+		else if(diffname == psg.DifficultyNames[14])
+		{
+			diffnum = 14;
+			bImpossibleWarning = True;
+		}
+		// Ludicrous Mode
+		else if(diffname == psg.DifficultyNames[15])
+		{
+			diffnum = 15;
+			bLudicrousWarning = True;
+		}
+		else
+		{
+			for (i=0; i<ArrayCount(psg.DifficultyNames); i++)
+			{
+				if (diffname == psg.DifficultyNames[i])	
+					diffnum = i;
+			}
+		}
+		
+		GetPlayerOwner().ConsoleCommand("set"@c_strDifficultyNumberPath@diffnum);
+		
+		// Disable custom mode as we change difficulty
+		if(psg.InCustomMode())
+		{
+			psg.TheGameState.bCustomMode = False;
+			psg.bCustomMode = False;
+		}
+		
+		if(!bSkipExplanation)
 		{
 			if (bTheyHateMeWarning)
-			{
 				WarningMenu = GotoMenu(class'MenuTheyHateMe');
-				if (WarningMenu != None && MenuTheyHateMe(WarningMenu) != None)
-					MenuTheyHateMe(WarningMenu).MyMenuStart = MenuStart(Self);
-			}
 			if (bPOSTALWarning)
-			{
 				WarningMenu = GotoMenu(class'MenuNightmare');
-				if (WarningMenu != None && MenuTheyHateMe(WarningMenu) != None)
-					MenuTheyHateMe(WarningMenu).MyMenuStart = MenuStart(Self);
-			}
+			if (bImpossibleWarning)
+				WarningMenu = GotoMenu(class'MenuImpossible');
+			if(bLudicrousWarning)
+				WarningMenu = GotoMenu(class'MenuLudicrous');
+				
+			if (WarningMenu != None && MenuTheyHateMe(WarningMenu) != None)
+				MenuTheyHateMe(WarningMenu).MyMenuStart = MenuStart(Self);
 		}
 	}
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Call to hide the current menu
@@ -1510,6 +1621,24 @@ function NextMenuItem(int Offset)
 	SnapCursorTo(MenuItems[i].Window);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// Man Chrzan: xPatch - Turns out I need it in more than one menu...
+///////////////////////////////////////////////////////////////////////////////
+function string GetColorAsString(color TheColor)
+{
+	local string TheColorStr;
+	local int R, G, B, A;
+	local color TempColor;
+	
+	TempColor = TheColor;
+	R = TempColor.R;
+	G = TempColor.G;
+	B = TempColor.B;
+	A = TempColor.A;
+	TheColorStr = "(R="$R$",G="$G$",B="$B$",A="$A$")";
+	
+	return TheColorStr;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Default properties
@@ -1555,7 +1684,7 @@ defaultproperties
 
 	OptionsText = "Options"
 	RestoreText = "Restore Defaults"
-	RestoreHelp = "Restore default settings for options on this menu"
+	RestoreHelp = "Restore default settings for options on this menu."
 	YesText		= "Yes"
 	NoText		= "No"
 	StartText	= "Start"

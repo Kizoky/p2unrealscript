@@ -43,7 +43,7 @@ state Activated
 	}
 Begin:
 	CheckToPayInterest();
-
+	
 	GotoState('');
 }
 /*

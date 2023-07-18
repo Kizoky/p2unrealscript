@@ -168,12 +168,13 @@ function CreateMenuContents()
 	{
 	Super.CreateMenuContents();
 	AddTitle(VideoTitleText, TitleFont, TitleAlign);
-
-	ResCombo = AddComboBox(ResText, ResHelp, ItemFont);
+    
 	//ColorCombo = AddComboBox(ColorText, ColorHelp, ItemFont);
 	//FullScreenCheckbox = AddCheckbox(FullScreenText, FullScreenHelp, ItemFont);
 	//BorderlessWindowCheckbox = AddCheckbox(BorderlessWindowText, BorderlessWindowHelp, ItemFont);
-	WindowModeCombo = AddComboBox(WindowModeText, WindowModeHelp, ItemFont);
+    
+    ResCombo = AddComboBox(ResText, ResHelp, ItemFont);
+    WindowModeCombo = AddComboBox(WindowModeText, WindowModeHelp, ItemFont);
 	if (!PlatformIsWindows())
 		DisplayNumberSlider = AddSlider(DisplayNumberSliderText, DisplayNumberSliderHelp, ItemFont, 0, 1);
 	WidescreenStretchCheckbox = AddCheckbox(WidescreenStretchText, WidescreenStretchHelp, ItemFont);
@@ -275,9 +276,9 @@ function LoadValues()
 	
 	WindowModeCombo.Clear();
 	WindowModeCombo.AddItem(WindowModeSettings[0]);	// Window
-	WindowModeCombo.AddItem(WindowModeSettings[1]); // Fullscreen
-	//if (PlatformIsWindows())
-		WindowModeCombo.AddItem(WindowModeSettings[2]); // Fullscreen window (not yet supported on mac/linux)
+    if (!PlatformIsSteamDeck())
+        WindowModeCombo.AddItem(WindowModeSettings[1]); // Fullscreen (Does not work properly with Steam Deck)
+	WindowModeCombo.AddItem(WindowModeSettings[2]); // Fullscreen windowed
 
 	// This gets the current fullscreen status instead of getting the value from the ini.
 	// This was done because when users press <Alt+Enter> to toggle full screen mode, we
@@ -1251,12 +1252,12 @@ defaultproperties
 	FullScreenOnlyTitle="Full Screen Only"
 	FullScreenOnlyText="Unable to switch out of full screen mode.  Try changing your desktop color to 32-bit.  Some video cards/drivers may prevent this from working."
 	WidescreenStretchText="Widescreen Stretch"
-	WidescreenStretchHelp="If checked the map screen will stretch screen overlays for widescreen players."
+	WidescreenStretchHelp="Forces certain screen overlays (loading screens, the map) to be stretched to fill a widescreen viewport. Not recommended!"
 	RestartRequiredTitle="Restart Required"
 	RestartRequiredText="Your settings may not take effect until the game is restarted."
 	VSyncText="Vertical Sync"
 	VSyncHelp="Reduces screen tearing."
-	strDefaultRes="1024x768"
+	strDefaultRes="1280x720"
 	MenuWidth=600.000000
 	fCommonCtlArea=0.400000
 	astrTextureDetailNames(0)="UltraLow"
@@ -1270,7 +1271,7 @@ defaultproperties
 	aDefaultValues(2)="1.000000"	// Gamma
 	aDefaultValues(3)="False"		// 16Bit Color
 	aDefaultValues(4)="False"		// Widescreen Stretch
-	aDefaultValues(5)="True" 		// VSync
+	aDefaultValues(5)="False" 		// VSync
 	aDefaultValues(6)="False"		// Triple Buffering
 	VSyncRestartWarningTitle="Warning"
 	VSyncRestartWarningText="Changes to VSync setting will not take effect until the game is restarted"

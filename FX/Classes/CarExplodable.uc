@@ -16,6 +16,24 @@ class CarExplodable extends KActorExplodable;
 var bool bCanHurtAgain;		// Gets reset if he's hurt something recently
 var class<DamageType> SmashingDamage;
 
+// xPatch: Classic Stuff
+var StaticMesh PoliceStaticMesh, PoliceStaticMeshToo;
+var StaticMesh OldStaticMesh, OldBrokenStaticMesh;
+
+struct ReplaceSkinsStr
+{
+	var Material NewSkin;
+	var Material OldSkin;
+};
+var array<ReplaceSkinsStr> ReplaceSkins;
+
+struct ReplaceDamagedSkinsStr
+{
+	var Texture NewSkin;
+	var Texture OldSkin;
+};
+var array<ReplaceDamagedSkinsStr> ReplaceDamagedSkins;
+// End
 
 //const COLLIDE_DAMAGE_SCALE = 0.1;
 const HURT_AGAIN_TIME	= 0.5;
@@ -99,6 +117,60 @@ state Broken
 	}
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// xPatch: Classic Mode - swap to old mesh
+///////////////////////////////////////////////////////////////////////////////
+event PostBeginPlay()
+{
+	local int i;
+	local bool bSwapOK;
+	
+	Super.PostBeginPlay();
+	
+	if(P2GameInfoSingle(Level.Game) != None
+		&& P2GameInfoSingle(Level.Game).GetClassicCars())
+	{
+		if(StaticMesh == PoliceStaticMesh || StaticMesh == PoliceStaticMeshToo)
+		{
+			// Set new (old) default skin
+			if(Skins[2] == None)
+			{
+				Skins[0] = ReplaceSkins[0].OldSkin;
+				bSwapOK=True;
+			}
+			else // Check custom skin
+			{
+				for(i=0; i<ReplaceSkins.Length; i++)
+				{
+					if(Skins[2] == ReplaceSkins[i].NewSkin)
+					{
+						Skins[0] = ReplaceSkins[i].OldSkin;
+						bSwapOK=True;
+					}
+				}
+			}
+			
+			if(!bSwapOK)
+				return;
+			
+			for(i=0; i<ReplaceSkins.Length; i++)
+			{
+				if(DamageSkin == ReplaceDamagedSkins[i].NewSkin)
+					DamageSkin=ReplaceDamagedSkins[i].OldSkin;
+			}
+			
+			if(DamageSkin == None)
+				DamageSkin=ReplaceDamagedSkins[0].OldSkin;
+			
+			SetDrawType(DT_StaticMesh);
+			SetStaticMesh(OldStaticMesh);
+			BrokenStaticMesh=OldBrokenStaticMesh;
+		}
+	}
+}
+
+
+
 defaultproperties
 {
     Begin Object Class=KarmaParams Name=KarmaParams0
@@ -132,5 +204,22 @@ defaultproperties
 	SmashingDamage=class'SmashDamage'
 	bBulletsMoveMe=false
 	bUseCylinderCollision=false
+	
+	// xPatch: Classic Mode
+	PoliceStaticMesh=StaticMesh'P2_Vehicles.cars.PoliceCar_New'
+	PoliceStaticMeshToo=StaticMesh'P2R_Meshes_D.cars.PoliceCar_New'
+	OldStaticMesh=StaticMesh'Timb_mesh.cars.cop_car2_timb'
+	OldBrokenStaticMesh=StaticMesh'Timb_mesh.cars.cop_car2_burnt_timb'
+	ReplaceSkins[0]=(NewSkin=Shader'P2R_Tex_D.cars.police_car_d_shad',OldSkin=Texture'Timb.cars.car_copcar_new')
+	ReplaceSkins[1]=(NewSkin=Shader'P2R_Tex_D.cars.security_car_shader',OldSkin=Texture'Timb.cars.cop_car_security')
+	ReplaceSkins[2]=(NewSkin=Shader'P2R_Tex_D.cars.security_car_vandalized_shader',OldSkin=Texture'Timb.cars.cop_car_security_vandalized')
+	ReplaceSkins[3]=(NewSkin=Texture'P2R_Tex_D.cars.police_car_d',OldSkin=Texture'Timb.cars.car_copcar_new')
+	ReplaceSkins[4]=(NewSkin=Texture'P2R_Tex_D.cars.security_car',OldSkin=Texture'Timb.cars.cop_car_security')	
+	ReplaceSkins[5]=(NewSkin=Texture'P2R_Tex_D.cars.security_car_vandalized',OldSkin=Texture'Timb.cars.cop_car_security_vandalized')
+	ReplaceSkins[6]=(NewSkin=Shader'JW_textures.cars.polarbear_shader',OldSkin=Texture'Zo_Industrial.Other.zo_polarbear_car')
+	ReplaceDamagedSkins[0]=(NewSkin=Texture'P2R_Tex_D.cars.police_car_d_burnt',OldSkin=Texture'Timb.cars.car_copcar_new_burnt')
+	ReplaceDamagedSkins[1]=(NewSkin=Texture'P2R_Tex_D.cars.security_car_burnt',OldSkin=Texture'Timb.cars.car_copcar_security_burnt')
+	ReplaceDamagedSkins[2]=(NewSkin=Texture'P2R_Tex_D.cars.security_car_vandalized_burnt',OldSkin=Texture'Timb.cars.car_copcar_security_vandalized_burnt')
+	ReplaceDamagedSkins[3]=(NewSkin=Texture'JW_textures.cars.zo_polarbear_car_burnt_new',OldSkin=Texture'Timb.cars.car_copcar_new_burnt')
 }
 

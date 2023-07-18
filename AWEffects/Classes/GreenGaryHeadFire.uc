@@ -33,9 +33,9 @@ defaultproperties
      Emitters(0)=SuperSpriteEmitter'AWEffects.SuperSpriteEmitter36'
      AutoDestroy=True
      Physics=PHYS_Trailer
-     AmbientSound=Sound'WeaponSounds.fire_large'
-     SoundRadius=40.000000
-     SoundVolume=255
+//     AmbientSound=Sound'WeaponSounds.fire_large'
+//     SoundRadius=40.000000
+//     SoundVolume=255
      TransientSoundVolume=255.000000
      TransientSoundRadius=40.000000
 

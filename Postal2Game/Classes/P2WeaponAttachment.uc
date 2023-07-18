@@ -26,6 +26,10 @@ var vector EffectLocationOffset[2];		// Used for 1st person vs 3rd person Effect
 // it saves bandwidth.
 var Sound FireSound;
 
+// xPatch: Cat Silencer in 3rd person baby!
+var xCatSilencer CatSilencer3rd;
+var() vector CatOffset;
+
 replication
 {
 	// Things the server should send to the client.
@@ -163,7 +167,9 @@ simulated function Destroyed()
 		if(Pawn(Owner) != None)
 			Pawn(Owner).DetachFromBone(MuzzleFlash3rd);
 		MuzzleFlash3rd.Destroy();
+		MuzzleFlash3rd = None;
 	}
+	SwapCatOff(); // xPatch
 	
 	Super.Destroyed();
 }
@@ -202,8 +208,15 @@ simulated function float GetRandPitch()
 simulated event ThirdPersonEffects()
 {
 	Super.ThirdPersonEffects();
+	
+	// xPatch: Bug Fix
+	if (MuzzleFlash3rd == None 
+		&& MuzzleFlashClass != None)
+		PostBeginPlay();
+	// End
 
-	if (MuzzleFlash3rd!=None)
+	if (MuzzleFlash3rd!=None 
+		&& CatSilencer3rd == None)
 	{
 		MuzzleFlash3rd.Flash();
 
@@ -216,6 +229,47 @@ simulated event ThirdPersonEffects()
 	}
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// xPatch: add our awesome cat silencer
+///////////////////////////////////////////////////////////////////////////////
+simulated function SwapCatOn()
+{
+	local name BoneName;
+	local vector GetCatOffset;
+	local Pawn P;
+	
+	P = Pawn(Owner);
+	
+	if (P!=None)
+	{
+		BoneName = P.GetWeaponBoneFor(P.Weapon);
+		if (BoneName == '')
+			return;
+			
+		if(CatOffset.X == 0 
+		&& CatOffset.Y == 0 
+		&& CatOffset.Z == 0)
+			GetCatOffset = MuzzleOffset;
+		else
+			GetCatOffset = CatOffset;
+		
+		CatSilencer3rd = spawn(Class'xCatSilencer',Owner);
+		P.AttachToBone(CatSilencer3rd,BoneName);
+		CatSilencer3rd.SetRelativeRotation(MuzzleRotationOffset);
+		CatSilencer3rd.SetRelativeLocation(GetCatOffset);
+	}
+}
+
+simulated function SwapCatOff()
+{
+	if(CatSilencer3rd != None)
+	{
+		if(Pawn(Owner) != None)
+			Pawn(Owner).DetachFromBone(CatSilencer3rd);
+		CatSilencer3rd.Destroy();
+		CatSilencer3rd = None;
+	}
+}
 
 defaultproperties
 {

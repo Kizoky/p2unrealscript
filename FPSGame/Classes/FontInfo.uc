@@ -132,7 +132,7 @@ function string ParseForKeys(string S, Canvas Canvas)
 	
 	//ErikFOV Change: For Nick's coop
 	if( MyHud.PlayerOwner != None && MyHud.PlayerOwner.Player != None )
-		bJoyUser = FPSPlayer(MyHud.PlayerOwner).InputTracker.bUsingJoystick || (MyHud.PlayerOwner.Player.InteractionMaster.BaseMenu.IsInState('MenuShowing') && UWindowRootWindow(MyHud.PlayerOwner.Player.InteractionMaster.BaseMenu).bUsingJoystick);
+		bJoyUser = PlatformIsSteamDeck() || FPSPlayer(MyHud.PlayerOwner).InputTracker.bUsingJoystick || (MyHud.PlayerOwner.Player.InteractionMaster.BaseMenu.IsInState('MenuShowing') && UWindowRootWindow(MyHud.PlayerOwner.Player.InteractionMaster.BaseMenu).bUsingJoystick);
 		//bJoyUser = FPSPlayer(MyHud.PlayerOwner).InputTracker.bUsingJoystick || (MyHud.PlayerOwner.Player.InteractionMaster.BaseMenu.IsInState('MenuShowing') && UWindowRootWindow(MyHud.PlayerOwner.Player.InteractionMaster.BaseMenu).bUsingJoystick);
 	//End	
 	
@@ -395,9 +395,10 @@ function DrawIconsOverText(Canvas Canvas, optional float UseX, optional float Us
 ///////////////////////////////////////////////////////////////////////////////
 // Draw text using all the specified atributes.
 ///////////////////////////////////////////////////////////////////////////////
-function DrawTextEx(Canvas Canvas, float CanvasWidth, float x, float y, String str, int FontSize, optional bool bPlainFont, optional EJustify justify)
+function DrawTextEx(Canvas Canvas, float CanvasWidth, float x, float y, String str, int FontSize, optional bool bPlainFont, optional EJustify justify, optional color MyColor )
 	{
 	local float XL, YL;
+	local color EmptyColor;
 
 	Canvas.Style = ERenderStyle.STY_Normal;
 	Canvas.Font = GetFont(FontSize, bPlainFont, CanvasWidth);
@@ -417,7 +418,12 @@ function DrawTextEx(Canvas Canvas, float CanvasWidth, float x, float y, String s
 
 	Canvas.bCenter = false;
 	Canvas.SetPos(x, y);
-	Canvas.DrawColor = TextColor;
+// Change by Man Chrzan: xPatch
+	if(MyColor == EmptyColor)	
+		Canvas.DrawColor = TextColor;
+	else
+		Canvas.DrawColor = MyColor;
+// END
 	DrawText(Canvas, str, 1.0, true);
 	DrawIconsOverText(Canvas, x, y, justify);
 	}

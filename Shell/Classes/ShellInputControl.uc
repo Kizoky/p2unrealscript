@@ -50,6 +50,8 @@ var array<ShellInputBox>	aInputs;
 var array<ShellInputIcon>	aIcons;
 
 var Texture Blank;	// Blank icon
+var Color HighlightColor;
+var Color DefaultColor;
 
 ///////////////////////////////////////////////////////////////////////////////
 // ***Push this into Look and Feel??***
@@ -265,7 +267,8 @@ function SetTargetStatus(int iInput, bool bTarget)
 	{
 		if (bTarget)
 		{
-			SetInputBackColor(iInput, laf.NormalTextColor);
+			//SetInputBackColor(iInput, laf.NormalTextColor);
+			SetInputBackColor(iInput, laf.HighlightBackgroundColor);
 			SetInputTextColor(iInput, laf.HighlightTextColor);
 		}
 		else
@@ -274,7 +277,8 @@ function SetTargetStatus(int iInput, bool bTarget)
 			clr.G = 255;
 			clr.B = 255;
 			clr.A = 255;
-			SetInputBackColor(iInput, clr);
+			//SetInputBackColor(iInput, clr);
+			SetInputBackColor(iInput, laf.NormalBackgroundColor);
 			SetInputTextColor(iInput, laf.NormalTextColor);
 		}
 	}
@@ -361,6 +365,7 @@ function int GetControlIndex(UWindowDialogControl C)
 ///////////////////////////////////////////////////////////////////////////////
 function NotifyInput(UWindowDialogControl C, byte E)
 {
+    local int i;
 	switch (E)
 	{
 	case DE_RClick:
@@ -368,6 +373,14 @@ function NotifyInput(UWindowDialogControl C, byte E)
 		// Identify the control.
 		iCurCtrl = GetControlIndex(C);
 		break;
+    case DE_MouseLeave:
+        i = GetControlIndex(C);
+        SetTargetStatus(i, false);
+        break;
+    case DE_MouseEnter:
+        i = GetControlIndex(C);
+        SetTargetStatus(i, true);
+        break;            
 	}
 }
 

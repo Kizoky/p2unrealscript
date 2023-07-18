@@ -36,4 +36,5 @@ defaultproperties
 	Stomach=1.0
 	ViolenceRankTolerance=1
 	bNoChamelBoltons=True
+	bAllowRandomGuns=True	// xPatch
 	}

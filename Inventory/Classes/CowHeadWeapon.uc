@@ -216,6 +216,13 @@ state DownWeapon
 	}
 }
 
+// xPatch: Make sure that this gun is not extension!
+function bool CanSwapHands()
+{
+	return (Class == Class'CowHeadWeapon');
+}
+
+
 ///////////////////////////////////////////////////////////////////////////////
 // Default properties
 ///////////////////////////////////////////////////////////////////////////////
@@ -228,7 +235,7 @@ defaultproperties
 	PickupClass=class'CowHeadPickup'
 	AttachmentClass=class'CowHeadAttachment'
 
-//	Mesh=Mesh'FP_Weapons.FP_Dude_Cowhead'
+	OldMesh=Mesh'FP_Weapons.FP_Dude_Cowhead'
 	Mesh=Mesh'MP_Weapons.MP_LS_Cowhead'
 //	Skins[0]=Texture'WeaponSkins.Dude_Hands'
 	Skins[0]=Texture'MP_FPArms.LS_arms.LS_hands_dude'
@@ -256,14 +263,15 @@ defaultproperties
 	AIRating=0.5
 	AutoSwitchPriority=7
 	InventoryGroup=7
-	GroupOffset=1
-	BobDamping=0.975000
+	GroupOffset=3
+	//BobDamping=0.975000
+	BobDamping=1.12 
 	ReloadCount=0
 	TraceAccuracy=0.1
 	ShotCountMaxForNotify=0
 	ViolenceRank=1
 	bBumpStartsFight=false
-	bHideFoot=true
+	bHideFoot=false 		// Change by Man Chrzan: xPatch 2.0
 	bThrownByFiring=true
 
 	WeaponSpeedHolster = 1.0
@@ -285,4 +293,7 @@ defaultproperties
 	bShowHints=true
 
 	BuzzingSound=Sound'WeaponSounds.Cowhead_idle_loop'
+	
+	bDropInVeteranMode=1
+	VeteranModeDropChance=0.05
 	}

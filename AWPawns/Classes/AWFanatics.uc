@@ -62,7 +62,7 @@ defaultproperties
 	Stomach=0.900000
 	TalkWhileFighting=0.000000
 	TakesShotgunHeadShot=0.400000
-	TakesRifleHeadShot=0.500000
+	TakesRifleHeadShot=1.0 //0.500000
 	TakesShovelHeadShot=0.500000
 	TakesOnFireDamage=0.100000
 	TakesAnthraxDamage=0.700000
@@ -84,4 +84,5 @@ defaultproperties
 	RandomizedBoltons(5)=None
 	RandomizedBoltons(6)=None
 	RandomizedBoltons(7)=None
+	bAllowRandomGuns=True	// xPatch
 }

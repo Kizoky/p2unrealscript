@@ -23,7 +23,7 @@ defaultproperties
 		SecondsBeforeInactive=0.0
         UseDirectionAs=PTDU_Up
         FadeOut=True
-        MaxParticles=8
+        MaxParticles=20
         UseSizeScale=True
         UseRegularSizeScale=False
         SizeScale(0)=(RelativeSize=0.200000)

@@ -38,6 +38,10 @@ function NotifyControllers()
 				}
 			}
 		}
+		
+		// xPatch: Check below is unnecessary if we use Lifetime method
+		if(P2GameInfo(Level.Game).BodiesLifetimeMax != 0)
+			return;
 
 		// If the player isn't around and the settings let bodies disappear
 		// then consider removing yourself from the world
@@ -91,6 +95,10 @@ static function NotifyControllersStatic(LevelInfo UseLevel,
 			}
 		}
 	}
+	
+	// xPatch: Check below is unnecessary if we use Lifetime method
+	if(P2GameInfo(UseLevel.Game).BodiesLifetimeMax != 0)
+		return;
 
 	// If the player isn't around and the settings let bodies disappear
 	// then consider removing yourself from the world
@@ -114,4 +122,5 @@ defaultproperties
 	CollisionHeight=350
 	NotifyTime=5.0
 	LifeSpan=0
+	//bHidden=False // for testing
 }

@@ -206,6 +206,17 @@ function TakeDamage( int Damage, Pawn instigatedBy, Vector hitlocation,
 ///////////////////////////////////////////////////////////////////////////////
 simulated event AnimEnd(int Channel)
 {
+	// Change by NickP: MP fix
+	if (bReplicateAnimations)
+	{
+		if (Physics == PHYS_Falling)
+			SimAnimChannel = FALLINGCHANNEL;
+		else if (VSize(Acceleration) > 1)
+			SimAnimChannel = MOVEMENTCHANNEL;
+		else SimAnimChannel = RESTINGPOSECHANNEL;
+	}
+	// End
+
 	if ( Channel == TAKEHITCHANNEL )
 		AnimBlendToAlpha(TAKEHITCHANNEL,0,0.1);
 //	else

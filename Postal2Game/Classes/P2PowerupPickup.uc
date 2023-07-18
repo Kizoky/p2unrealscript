@@ -76,6 +76,9 @@ var bool bOKToGrab; // Can't pick up until this value is true.
 
 const MunchPath = "Postal2Game.P2Player bMunch";
 
+// xPatch: 
+var bool bRanomDrop;
+
 ///////////////////////////////////////////////////////////////////////////////
 // Tick
 // We had a problem with ForTransferOnly pickups falling to the ground,
@@ -538,7 +541,7 @@ event Landed(Vector HitNormal)
 	// money) and get people to respond to it. Now I've made it so anyone who's dropped money.
 
 	// Mark this so other pawns want this thing
-	if(DesireMarkerClass != None)
+	if(DesireMarkerClass != None && !bRanomDrop)	// xPatch: Random Drops tend to crash the game due to creating too many pickups with DesireMarkers, this should fix it.
 	{
 		if(DesireMarker == None)
 		{
@@ -554,9 +557,13 @@ event Landed(Vector HitNormal)
 	// Set not moving or ticking
 	SetPhysics(PHYS_None);
 
+	// xPatch: Commented-out -- makes thrown items impossible to pick-up back. 
+	// It's now prevented by TakeDamage function edit instead.
+/*	
 	// Don't let powerups move in nightmare mode (allowing them to kick health "down the road" for later)
 	if(P2GameInfo(Level.Game).InNightmareMode())
 		bAllowMovement=false;
+*/
 
 	// Change by NickP: MP fix
 	P2GameInfo(Level.Game).NotifyPickupDropped(self);
@@ -666,6 +673,7 @@ function TakeDamage( int Dam, Pawn instigatedBy, Vector hitlocation,
 							Vector momentum, class<DamageType> damageType)
 {
 	if(bAllowMovement
+		&& !P2GameInfo(Level.Game).InNightmareMode() 	// xPatch: Don't let powerups move in nightmare mode (new method)
 		&& VSize(Momentum) > 0
 		&& Dam > 0)
 	{

@@ -317,7 +317,8 @@ function Notify(UWindowDialogControl C, byte E)
 						break;
 					case PrevChoice:
 						if (AchIndex <= 0)
-							GotoMenu(class'MenuGame');	// Can't use "GoBack" because it might just pull up the Achievement List again.
+							//GotoMenu(class'MenuGame');	// Can't use "GoBack" because it might just pull up the Achievement List again.
+							GoBack(); 					  	// Change by Man Chrzan: xPatch 2.0
 						else
 						{
 							AchIndex = AchIndex - ACH_MAX;
@@ -328,7 +329,8 @@ function Notify(UWindowDialogControl C, byte E)
 						}
 						break;
 					case BackChoice:
-						GotoMenu(class'MenuGame');
+						//GotoMenu(class'MenuGame');
+						GoBack();							// Change by Man Chrzan: xPatch 2.0
 						break;
 					}
 			break;
@@ -369,7 +371,8 @@ function bool KeyEvent( out EInputKey Key, out EInputAction Action, FLOAT Delta 
 		switch (Key)
 			{
 			case IK_ESCAPE:
-				GotoMenu(class'MenuGame');
+				//GotoMenu(class'MenuGame');
+				GoBack();							// Change by Man Chrzan: xPatch 2.0
 				return true;
 			//case IK_UP:
 			case IK_MOUSEWHEELUP:

@@ -1,18 +1,63 @@
+///////////////////////////////////////////////////////////////////////////////
+// NukeWeapon
+//
+// Edited by Man Chrzan
+// Added a new function -- seeking-rockets!
+///////////////////////////////////////////////////////////////////////////////
 class NukeWeapon extends LauncherWeapon;
 
-function bool ValidTarget(FPSPawn TestTarget)
+var LauncherProjectile FlyingNuke;
+var bool bSearchForTarget;
+
+const KEEP_TARGET_TIME = 0.50;
+
+///////////////////////////////////////////////////////////////////////////////
+// Check to restore proper hints
+///////////////////////////////////////////////////////////////////////////////
+event TravelPostAccept()
 {
-	return false;
+	Super.TravelPostAccept();
+
+	if(bAllowHints)
+	{
+		if(!bShowMainHints)
+		{
+			// Swap out hints to show
+			HudHint1 = AltHint1;
+			HudHint2 = AltHint2;
+		}
+	}
 }
 
-simulated function AltFire( float Value );
-function ServerAltFire();
+///////////////////////////////////////////////////////////////////////////////
+// Allow two sets of hud hints to explain primary, then alternative fire
+///////////////////////////////////////////////////////////////////////////////
+function TurnOffHint()
+{
+	if(bShowMainHints)
+	{
+		bShowMainHints=false;
+		// Swap out hints to show
+		HudHint1 = AltHint1;
+		HudHint2 = AltHint2;
+		UpdateHudHints();
+	}
+	else
+		Super.TurnOffHint();
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // Skip the charge, go straight to the fire
 ///////////////////////////////////////////////////////////////////////////////
 simulated function Fire( float Value )
 {
+	// xPatch: Make the NPCs with Nuke Launcher fire it only if the previously launched projectile exploded already.
+	// Having more than one seeking nuke rocket after our sorry ass would be just... 
+	// Jesus, even I am not that sort of a sado-masochistic psychopath to allow it.
+	if(!PersonPawn(Instigator).bPlayer && FlyingNuke != None)
+		return;
+	
 	if ( AmmoType == None
 		|| !AmmoType.HasAmmo() )
 	{
@@ -21,23 +66,36 @@ simulated function Fire( float Value )
 		return;
 	}
 
-
+	bSeeking=false;
 	bAltFiring=false;
 	ShootIt();
 	ClientShootIt();
-	//ServerFire();
+	
+	// Turn off primary-fire hint
+	TurnOffHint();
 }
-/*
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-function ServerFire()
+
+simulated function AltFire( float Value )
 {
-	PlayFiring();
-	LocalFire();
-	ClientPlayFiring();
+	if ( AmmoType == None
+		|| !AmmoType.HasAmmo() )
+	{
+		ClientForceFinish();
+		ServerForceFinish();
+		return;
+	}
+	
+	bSeeking=true;
+	bAltFiring=true;
 	ShootIt();
 	ClientShootIt();
-}*/
+
+	Instigator.PlaySound(SeekerSound, SLOT_Misc, 1.0);
+	
+	// Turn off alt-fire hint
+	if(!bShowMainHints)
+		TurnOffHint();
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -46,8 +104,8 @@ function Notify_ShootLauncher()
 	local vector StartTrace, X,Y,Z, markerpos, HitNormal, HitLocation;
 	local actor HitActor;
 	local NukeProjectile lpro;
-	//local MPNukeSeekingProjectileTrad lspro;
-	local float giveback;
+	local NukeSeekingProjectile lspro;
+	local PersonController perc;
 
 	if(AmmoType != None)
 	{
@@ -63,13 +121,26 @@ function Notify_ShootLauncher()
 			|| (!HitActor.bStatic
 				&& !HitActor.bWorldGeometry))
 		{
-			/*if(!bSeeking)
-				// fire a normal rocket
-			{*/
+			perc = PersonController(Instigator.Controller);
+			if(perc != None
+				&& perc.Target != None)
+			{
+				if(perc.MyPawn.bAdvancedFiring)
+				{
+					bSeeking=true;
+					Instigator.PlaySound(SeekerSound, SLOT_Misc, 1.0);
+				}
+			}
+			
+			ChargeTime=30;
+			
+			if(!bSeeking) // fire a normal rocket
+			{
 				lpro = spawn(class'NukeProjectile',Instigator,,StartTrace, AdjustedAim);
 				if(lpro != None)
 				{
-					ChargeTime=30;
+					FlyingNuke = lpro;
+					
 					lpro.Instigator = Instigator;
 					// Compensate for catnip time, if necessary. Don't do this for NPCs
 					if(FPSPawn(Instigator) != None
@@ -81,24 +152,18 @@ function Notify_ShootLauncher()
 					if(HitActor != None)
 						HitActor.Bump(lpro);
 				}
-			/*}
+			}
 			else // fire a seeking rocket
 			{
-				// Shoot either a traditional seeking rocket or a new super seeker
-				if(!bShootTradSeeker)
-					lspro = spawn(class'MPNukeSeekingProjectile',Instigator,,StartTrace, AdjustedAim);
-				else
-					lspro = spawn(class'MPNukeSeekingProjectileTrad',Instigator,,StartTrace, AdjustedAim);
-
+				lspro = spawn(class'NukeSeekingProjectile',Instigator,,StartTrace, AdjustedAim);
 				if(lspro != None)
 				{
+					FlyingNuke = lspro;
 					lspro.Instigator = Instigator;
 
 					// if we're not aimed at anything, figure out a target
 					if(CurrentTarget == None)
-					{
 						lspro.DetermineTarget(ProjectedHitLoc);
-					}
 					else
 						lspro.SetNewTarget(CurrentTarget);
 
@@ -110,20 +175,14 @@ function Notify_ShootLauncher()
 					if(HitActor != None)
 						HitActor.Bump(lspro);
 				}
-			}*/
+			}
 		}
 
 		// Clear our target regardless
-		//CurrentTarget = None;
+		CurrentTarget = None;
+		
 		// If we didn't make a valid rocket, then give him his ammo back
-		if(lpro != None)
-			//&& lspro == None)
-		/*{
-			giveback = ChargeStartAmmo - AmmoType.AmmoAmount;
-			if(giveback > 0)
-				AmmoType.AddAmmo(giveback);
-		}
-		else*/
+		if(lpro != None || lspro != None)
 		{
 			// Say we just fired
 			ShotCount++;
@@ -154,26 +213,107 @@ function Notify_ShootLauncher()
 				}
 			}
 		}
-		// Reset the ammo you started with
-		//ChargeStartAmmo = AmmoType.AmmoAmount;
 	}
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// Check to see if we'll hit anything good
+///////////////////////////////////////////////////////////////////////////////
+state Idle
+{
+	function Tick(float DeltaTime)
+	{
+		local vector HitNormal, StartTrace, EndTrace, X,Y,Z;
+		local Actor TestTarget;
+		
+		// If we're dual wielding, forget about it
+		if (bDualWielding || RightWeapon != none)
+			  return;
+
+		// If it's the guy playing that hosts the listen server
+		// or it's a typical client/stand alone game.
+		if(NotDedOnServer())
+		{
+			if (bSearchForTarget)
+			{
+				if(Level.NetMode == NM_Standalone
+					|| Level.NetMode == NM_ListenServer)
+				{
+					// Check if you're hitting a person
+					// shoot a trace out and see where they are pointing.
+					GetAxes(Instigator.GetViewRotation(),X,Y,Z);
+					StartTrace = Instigator.Location + Instigator.EyePosition();//GetFireStart(X,Y,Z);
+					EndTrace = StartTrace + TraceDist*X;
+					TestTarget = Trace(ProjectedHitLoc, HitNormal, EndTrace, StartTrace, true);
+					// Pick this new target. Only pick alive, non-friend people
+					if(ValidTarget(FPSPawn(TestTarget)))
+					{
+						CurrentTargetPickTime = Level.TimeSeconds;
+						CurrentTarget = TestTarget;
+						SetReticleOnTarget();
+					}
+					// If he's not been on the target for too long, then clear it.
+					else if((CurrentTargetPickTime + KEEP_TARGET_TIME) < Level.TimeSeconds)
+					{
+						CurrentTarget = None;
+						SetReticleOffTarget();
+					}
+				}
+			}
+		}
+		else if(bSearchForTarget)// server side only in MP game (not single player
+		{
+			// Check if you're hitting a person
+			// shoot a trace out and see where they are pointing.
+			GetAxes(Instigator.GetViewRotation(),X,Y,Z);
+			StartTrace = Instigator.Location + Instigator.EyePosition();//GetFireStart(X,Y,Z);
+			EndTrace = StartTrace + TraceDist*X;
+			TestTarget = Trace(ProjectedHitLoc, HitNormal, EndTrace, StartTrace, true);
+			// Pick this new target. Only pick alive, non-friend people
+			if(CurrentTarget != TestTarget)
+			{
+				// New pawn
+				if(ValidTarget(FPSPawn(TestTarget)))
+				{
+					CurrentTargetPickTime = Level.TimeSeconds;
+					CurrentTarget = TestTarget;
+					SetReticleOnTarget();
+				}
+			}
+			else if(FPSPawn(CurrentTarget) != None) // if still centered on him, update pick time
+				CurrentTargetPickTime = Level.TimeSeconds;
+
+			if(CurrentTarget != None
+				&& (CurrentTargetPickTime + KEEP_TARGET_TIME) < Level.TimeSeconds)
+			{
+				CurrentTarget = None;
+				SetReticleOffTarget();
+			}
+		}
+	}
+}
+	
 defaultproperties
 {
 	// stay far, far away from ground zero!!!!!
 	MinRange=2048
 	MaxRange=4196
 	ViolenceRank=15
-	bUsesAltFire=False
+	bUsesAltFire=True
 	AmmoName=Class'NukeAmmoInv'
 	FireSound=Sound'WeaponSounds.napalm_fire'
 	GroupOffset=11
 	PickupClass=Class'NukePickup'
 	AttachmentClass=Class'NukeAttachment'
 	ItemName="Mini-Nuke Launcher"
+	
+	bAllowHints=true
+	bShowHints=true
+	bShowMainHints=true
 	HudHint1="Point and shoot this miniature nuke with %KEY_Fire%."
 	HudHint2="Just try not to blow your dumb ass up."
+	AltHint1="Press %KEY_AltFire% to shoot a target-seeking nuke-rocket."
+	AltHint2=""
 
 	Begin Object Class=ConstantColor Name=ConstantBlack
 		Color=(R=32,G=32,B=32)
@@ -191,6 +331,8 @@ defaultproperties
 
 	Skins(0)=Texture'MP_FPArms.LS_arms.LS_hands_dude'
 	Skins(1)=Texture'AW7Tex.Nuke.nuclear_launcher'
-	Skins(2)=ConstantColor'ConstantBlack'
-	Skins(3)=ConstantColor'ConstantBlack'
+	Skins(2)=Shader'xPatchTex.Weapons.NukeLauncherFuelUnit'
+	Skins(3)=Shader'xPatchTex.Weapons.NukeLauncherFuelUnit'
+	
+	bSearchForTarget=True
 }

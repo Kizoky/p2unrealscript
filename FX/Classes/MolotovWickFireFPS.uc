@@ -21,11 +21,17 @@ defaultproperties
         SpinParticles=True
         SpinsPerSecondRange=(X=(Max=0.40000))
         UseSizeScale=True
-        UseRegularSizeScale=False
-        SizeScale(0)=(RelativeSize=0.300000)
-        SizeScale(1)=(RelativeTime=0.250000,RelativeSize=1.000000)
+        UseRegularSizeScale=False	
+// Changed by Man Chrzan: xPatch 2.0
+//       SizeScale(0)=(RelativeSize=0.300000)
+//       SizeScale(1)=(RelativeTime=0.250000,RelativeSize=1.000000)
+//       SizeScale(2)=(RelativeTime=1.000000)
+//       StartSizeRange=(X=(Min=1.00000,Max=1.750000))
+        SizeScale(0)=(RelativeSize=1.800000) 
+        SizeScale(1)=(RelativeTime=0.250000,RelativeSize=6.000000) 
         SizeScale(2)=(RelativeTime=1.000000)
-        StartSizeRange=(X=(Min=1.00000,Max=1.750000))
+        StartSizeRange=(X=(Min=1.000000,Max=1.75000))
+// End		
         UniformSize=True
         DrawStyle=PTDS_Brighten
         Texture=Texture'nathans.Skins.fireball1'

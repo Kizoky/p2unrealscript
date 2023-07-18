@@ -269,7 +269,7 @@ function FillInLines()
 	Addto(lratout,								"VinceDialog2.VinceBystander-4HeDidIt", 1);
 
 	Clear(lfakeratout);
-	Addto(lfakeratout,							"VinceDialog2.VinceBystander-4HeDidItisaw", 1);
+	Addto(lfakeratout,							"VinceDialog2.VinceBystander-4HeDidIt", 1);
 
 	Clear(lcleanshot);
 	Addto(lcleanshot,							"VinceDialog2.VinceBystander-4GetOutOfTheWay", 1);

@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 // ScissorsAltProjectile.
-// Copyright 2003 Running With Scissors, Inc.  All Rights Reserved.
+// Copyright 2023 Running With Scissors Studios LLC.  All Rights Reserved.
 //
 // This are the actual scissors that goes flying through the air.
 // These are alt-fired and spin through the air, bouncing a given number

@@ -6,7 +6,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-class GrenadeWeapon extends P2Weapon;
+class GrenadeWeapon extends CatableWeapon; //P2Weapon;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Vars, structs, consts
@@ -31,6 +31,8 @@ var vector AltFireOffset;		// Spot grenade comes out for alt fire
 var travel bool bShowMainHints;		// Show the main hints
 var localized string AltHint1;	// How to drop an un-armed grenade
 var localized string AltHint2;
+
+var class<AnimalPawn> CatGrenadeClass;
 
 const CHARGE_HINT_TIME	=	0.5;
 const SHAKE_Y_MOD		=	400;
@@ -256,9 +258,21 @@ function ThrowGrenade()
 				// Touch any actor that was in between, just in case.
 				if(HitActor != None)
 					HitActor.Bump(gren);
+				
+				// Added by Man Chrzan: xPatch 2.0 (Enhanced Mode stuff) 
+				if (P2GameInfoSingle(Level.Game).VerifySeqTime() 
+				&& Pawn(Owner).Controller.bIsPlayer
+				&& !bAltFiring)
+					gren.bDoSplit = True;
 			}
 		}
 	}
+	// Added by Man Chrzan: xPatch 2.0
+	// Restored Dude's comment on throwing
+	if(gren != None && !bAltFiring)
+		if(P2Player(Instigator.Controller) != None)
+			P2Player(Instigator.Controller).CommentOnWeaponThrow();
+			
 	// Turn off the thing in his hand as it leaves
 	if(ThirdPersonActor != None)
 		ThirdPersonActor.bHidden=true;
@@ -581,6 +595,98 @@ state NormalFire
 	ignores ServerFire, ServerAltFire, DropFrom;
 }
 
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+//	xPatch
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////
+// 	The same thing as in P2Weapon.uc but with removed shake effect.
+///////////////////////////////////////////////////////////////////////////////
+simulated function LocalAltFire()
+{
+	local PlayerController P;
+
+	bPointing = true;
+	
+	if ( Affector != None )
+		Affector.FireEffect();
+	PlayAltFiring();
+}	
+
+///////////////////////////////////////////////////////////////////////////////
+// Make sure that this gun is not extension!
+///////////////////////////////////////////////////////////////////////////////
+function bool CanSwapHands()
+{
+	return (Class == Class'GrenadeWeapon');
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// This gun is ready for a cat to be put on it
+///////////////////////////////////////////////////////////////////////////////
+function bool ReadyForCat()
+{
+	return (AmmoType.HasAmmo()
+			&& CatOnGun==0
+			&& !bPutCatOnGun
+			&& IsInState('Idle')
+			&& Class == Class'GrenadeWeapon');
+}
+
+function SwapCatOn()
+{
+	DropCat();
+	PlaySound(Sound'WeaponSounds.grenade_pullpin');
+	//CatViolateSound
+}
+
+function DropCat()
+{
+	local AnimalPawn CatGrenade;
+	local CatInv tempcat;
+	
+	if(CatGrenadeClass == None)
+	{
+		CatGrenadeClass = class<AnimalPawn>(DynamicLoadObject("People.CatGrenadePawn", class'Class'));
+		default.CatGrenadeClass = CatGrenadeClass;
+	}
+	
+	if(CatOnGun == 1)
+	{	
+		CatGrenade = spawn(CatGrenadeClass,,, Location + vect(50,0,0), Rotation);
+		if(CatGrenade != None) 
+		{
+			//CatGrenade.AddGrenade(0.9);
+			
+			if( CatSkin != None )
+				CatGrenade.Skins[0] = CatSkin;
+				
+			if ( CatGrenade.Controller == None
+				&& CatGrenade.Health > 0 )
+			{
+				if ( (CatGrenade.ControllerClass != None))
+					CatGrenade.Controller = spawn(CatGrenade.ControllerClass);
+				if ( CatGrenade.Controller != None )
+				{
+					CatGrenade.Controller.Possess(CatGrenade);
+					CatGrenade.Controller.GotoState('FallingGrenade');
+				}
+				// Check for AI Script
+				CatGrenade.CheckForAIScript();
+			}
+			
+			SwapCatOff();
+			CatOnGun=0;
+			P2AmmoInv(AmmoType).UseAmmoForShot();
+		}
+	}
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Default properties
 ///////////////////////////////////////////////////////////////////////////////
@@ -592,7 +698,7 @@ defaultproperties
 	PickupClass=class'GrenadePickup'
 	AttachmentClass=class'GrenadeAttachment'
 
-//	Mesh=Mesh'FP_Weapons.FP_Dude_Grenade'
+	OldMesh=Mesh'FP_Weapons.FP_Dude_Grenade'
 	Mesh=Mesh'MP_Weapons.MP_LS_Grenade'
 
 //	Skins[0]=Texture'WeaponSkins.Dude_Hands'
@@ -624,7 +730,7 @@ defaultproperties
 	AutoSwitchPriority=6
 	InventoryGroup=6
 	GroupOffset=1
-	BobDamping=0.975000
+//	BobDamping=0.975000
 	ReloadCount=0
 	TraceAccuracy=0.05
 	ShotCountMaxForNotify=0
@@ -660,4 +766,9 @@ defaultproperties
 	bAllowHints=true
 	bShowHints=true
 	bShowMainHints=true
+	
+	BobDamping=1.12 
+	bDropInVeteranMode=1
+	VeteranModeDropChance=0.75
+	bAllowMiddleFinger=true
 	}

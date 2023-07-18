@@ -635,6 +635,10 @@ var SLine lDude_UncleDaveRadio_StayHere;	// Stay here
 
 var array<name> TestModeClasses;
 
+// xPatch: Crash Fix
+var bool bCheckDLCDialog;					// Set to true in Dialog Classes which use PL-Dialog packages
+var array<string> PLDialogPackages; 				
+var bool bParadiseLost;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Startup
@@ -645,10 +649,38 @@ function PostBeginPlay()
 
 	if (bTestMode)
 		TestMode();
+		
+	// xPatch: Crash Fix
+	if(bCheckDLCDialog)
+		CheckDLCDialog();
 
 	MemUsage = Clamp(MemUsage, 1, 3);
 	FillInLines();
 	}
+
+///////////////////////////////////////////////////////////////////////////////
+// xPatch: If we can't access any of the required files make sure  
+// that the game doesn't attempt to load DLC dialogues -- To prevent crashing.
+///////////////////////////////////////////////////////////////////////////////
+function CheckDLCDialog()
+{
+	local int i, Size;
+
+	Log(self @ "PLDialogCheck(): BEGIN");
+	bParadiseLost=True;
+	
+	for (i = 0; i < PLDialogPackages.length; i++)
+	{
+		Size = FileSize("..\\Sounds\\"$PLDialogPackages[i]);
+		if( Size <= 0 )
+		{
+			Log(self @ "PLDialogCheck(): END Couldn't find PL Dialog Package "$PLDialogPackages[i]);
+			bParadiseLost=False;
+			return;
+		}
+	}
+	Log(self @ "PLDialogCheck(): SUCCESS! Found all PL Dialog Packages");
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -710,7 +742,12 @@ function SetMemUsage()
 ///////////////////////////////////////////////////////////////////////////////
 // Fill in this character's lines
 ///////////////////////////////////////////////////////////////////////////////
-function FillInLines();
+//function FillInLines();
+function FillInLines()
+{
+	if (P2GameInfo(Level.Game) == None)
+		return;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -978,4 +1015,8 @@ defaultproperties
 	TestModeClasses(20)="BasePeople.DialogMaleMex"
 	TestModeClasses(21)="BasePeople.DialogMikeJ"
 	VolumeMult=1.0
+	
+	// xPatch:
+	PLDialogPackages[0]="PL-Dialog.uax"
+	PLDialogPackages[1]="PL-Dialog2.uax"
 	}

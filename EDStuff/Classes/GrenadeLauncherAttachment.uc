@@ -13,6 +13,7 @@ defaultproperties
 {
      MuzzleFlashClass=Class'PistolMuzzleFlash'
      MuzzleOffset=(X=65.000000,Z=5.000000)
+	 CatOffset=(X=52.000000,Y=-2,Z=11.000000)
      WeapClass=Class'GrenadeLauncherWeapon'
      DrawType=DT_StaticMesh
      RelativeLocation=(Y=1.000000)

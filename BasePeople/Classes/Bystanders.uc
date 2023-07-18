@@ -62,4 +62,5 @@ defaultproperties
 
 	bInnocent=true
 	bCellUser=True
+	bAllowRandomGuns=True	// xPatch
 	}

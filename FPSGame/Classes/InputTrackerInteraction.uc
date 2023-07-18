@@ -12,6 +12,15 @@ class InputTrackerInteraction extends Interaction;
 ///////////////////////////////////////////////////////////////////////////////
 var bool bUsingJoystick;		// The one-and-only thing this class tracks
 
+event Initialized()
+{
+    Super.Initialized();
+    if (PlatformIsSteamDeck())
+    {
+        bUsingJoystick = true;
+    }
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // KeyEvent - receives input and if it was from the joystick, sets
 // bUsingJoystick to true so we can display the proper icons.

@@ -79,6 +79,12 @@ function Timer()
 function TakeDamage( int Dam, Pawn instigatedBy, Vector hitlocation, 
 							Vector momentum, class<DamageType> damageType)
 {
+	// xPatch: ignore our fire damage so it doesn't explode on our face so often
+	if(damageType == class'NapalmDamage' 
+		|| damageType == class'OnFireDamage')
+			return;
+	// End
+	
 	Health-=Dam;
 	if(Health <= 0)
 	{

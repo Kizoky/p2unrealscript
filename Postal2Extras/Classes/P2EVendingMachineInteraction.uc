@@ -132,6 +132,8 @@ function InitializeMenu(Pawn User, P2EVendingMachineTrigger VendingTrigger) {
     }
 
 	UWindowRootWindow(Master.BaseMenu).bAllowJoyMouse = true;
+
+    //log("bIs Steam Deck" @ PlatformIsSteamDeck());
 }
 
 function bool CanAffordItem(P2EVendingMachineTrigger.Item Tmp)
@@ -448,87 +450,100 @@ function PostRender(Canvas Canvas) {
 	GetP2EUtils().SetDrawingRegion(Canvas, 0, Canvas.ClipY * ItemButton.Pos.Y, Canvas.ClipX, Canvas.ClipY - (Canvas.ClipY * ItemButton.Pos.Y));
 
     for (i=0;i<VMT.ItemList.length;i++) {
-	// If this is the item we want, snap the mouse to it. - Rick
-	if (i == DesiredItemButton)
-	{
-		// If the button is off-screen, scroll to it and auto-select when it comes up.
-		//log("Desired button"@i@"scroll"@ItemButtonScrollOffset@ItemButtonScrollCurOffset);
-		if (ItemButtonPos.Y + VMT.ItemButton.VSize * ItemButton.Scale.Y * CanvasScale > Canvas.ClipY
-			&& ItemButtonScrollOffset > ItemButtonScrollRange.Min)
-		{
-			//log("Desired button"@i@"off-screen, scrolling down");
-			ItemButtonScrollOffset = FClamp(ItemButtonScrollOffset - ItemButtonScrollIncrement,
-											ItemButtonScrollRange.Min,
-											ItemButtonScrollRange.Max);
-		}
-		else if (ItemButtonPos.Y < 0
-			&& ItemButtonScrollOffset < ItemButtonScrollRange.Max)
-		{
-			//log("Desired button"@i@"off-screen, scrolling up");
-			ItemButtonScrollOffset = FClamp(ItemButtonScrollOffset + ItemButtonScrollIncrement,
-											ItemButtonScrollRange.Min,
-											ItemButtonScrollRange.Max);
-		}
-		// Really hard to get these to be equal for some reason... so just check to see if they're "close enough"
-		else if (abs(ItemButtonScrollOffset - ItemButtonScrollCurOffset) < 0.01)
-		{
-			SetMouseX = Int(ItemButtonPos.X + VMT.ItemButton.USize * ItemButton.Scale.X * CanvasScale / 2.0);
-			SetMouseY = Int(ItemButtonPos.Y + Canvas.OrgY + VMT.ItemButton.VSize * ItemButton.Scale.Y * CanvasScale / 2.0);
-			MoveMouseTo(SetMouseX, SetMouseY);
-			DesiredItemButton = INDEX_NONE;
-		}
-	}
-	
-	// Steven: Dim the item if the player can't afford it.
-	if(!CanAffordItem(VMT.ItemList[i]))
-		Canvas.DrawColor.A = Max(1, Canvas.DrawColor.A / 2);
+        // If this is the item we want, snap the mouse to it. - Rick
+        if (i == DesiredItemButton)
+        {
+            // If the button is off-screen, scroll to it and auto-select when it comes up.
+            //log("Desired button"@i@"scroll"@ItemButtonScrollOffset@ItemButtonScrollCurOffset);
+            if (ItemButtonPos.Y + VMT.ItemButton.VSize * ItemButton.Scale.Y * CanvasScale > Canvas.ClipY
+                && ItemButtonScrollOffset > ItemButtonScrollRange.Min)
+            {
+                //log("Desired button"@i@"off-screen, scrolling down");
+                ItemButtonScrollOffset = FClamp(ItemButtonScrollOffset - ItemButtonScrollIncrement,
+                                                ItemButtonScrollRange.Min,
+                                                ItemButtonScrollRange.Max);
+            }
+            else if (ItemButtonPos.Y < 0
+                && ItemButtonScrollOffset < ItemButtonScrollRange.Max)
+            {
+                //log("Desired button"@i@"off-screen, scrolling up");
+                ItemButtonScrollOffset = FClamp(ItemButtonScrollOffset + ItemButtonScrollIncrement,
+                                                ItemButtonScrollRange.Min,
+                                                ItemButtonScrollRange.Max);
+            }
+            // Really hard to get these to be equal for some reason... so just check to see if they're "close enough"
+            else if (abs(ItemButtonScrollOffset - ItemButtonScrollCurOffset) < 0.01 && !PlatformIsSteamDeck())
+            {
+                SetMouseX = Int(ItemButtonPos.X + VMT.ItemButton.USize * ItemButton.Scale.X * CanvasScale / 2.0);
+                SetMouseY = Int(ItemButtonPos.Y + Canvas.OrgY + VMT.ItemButton.VSize * ItemButton.Scale.Y * CanvasScale / 2.0);
+                MoveMouseTo(SetMouseX, SetMouseY);
+                DesiredItemButton = INDEX_NONE;
+            }
+        }
+    
+        // Steven: Dim the item if the player can't afford it.
+        if(!CanAffordItem(VMT.ItemList[i]))
+            Canvas.DrawColor.A = Max(1, Canvas.DrawColor.A / 2);
 
         Canvas.SetPos(ItemButtonPos.X, ItemButtonPos.Y);
         DrawTextureClipped(Canvas, VMT.ItemButton, ItemButton.Scale, CanvasScale);
 
-	// Steven: Undo clipping regions when determining the cursor pos.
-        if (ViewportOwner.WindowsMouseX > ItemButtonPos.X &&
-            ViewportOwner.WindowsMouseY - Canvas.OrgY > ItemButtonPos.Y &&
-            ViewportOwner.WindowsMouseX < ItemButtonPos.X + (VMT.ItemButton.USize * ItemButton.Scale.X * CanvasScale) &&
-            ViewportOwner.WindowsMouseY - Canvas.OrgY < ItemButtonPos.Y + (VMT.ItemButton.VSize * ItemButton.Scale.Y * CanvasScale)) {
-            bFoundButton = true;
-            SelectedItemButton = i;
+        // Steven: Undo clipping regions when determining the cursor pos.
+        if (!PlatformIsSteamDeck()) {
+            if (ViewportOwner.WindowsMouseX > ItemButtonPos.X &&
+                ViewportOwner.WindowsMouseY - Canvas.OrgY > ItemButtonPos.Y &&
+                ViewportOwner.WindowsMouseX < ItemButtonPos.X + (VMT.ItemButton.USize * ItemButton.Scale.X * CanvasScale) &&
+                ViewportOwner.WindowsMouseY - Canvas.OrgY < ItemButtonPos.Y + (VMT.ItemButton.VSize * ItemButton.Scale.Y * CanvasScale)) {
+                bFoundButton = true;
+                SelectedItemButton = i;
 
-		if(CanAffordItem(VMT.ItemList[i]))
-			Canvas.SetDrawColor(255, 0, 0, 255);
-		else
-			Canvas.SetDrawColor(127, 0, 0, Canvas.DrawColor.A);
+                if(CanAffordItem(VMT.ItemList[i]))
+                    Canvas.SetDrawColor(255, 0, 0, 255);
+                else
+                    Canvas.SetDrawColor(127, 0, 0, Canvas.DrawColor.A);
+            }
+        }
+        else if (i == DesiredItemButton) {
+                bFoundButton = true;
+                SelectedItemButton = i;
+
+                if(CanAffordItem(VMT.ItemList[i]))
+                    Canvas.SetDrawColor(255, 0, 0, 255);
+                else
+                    Canvas.SetDrawColor(127, 0, 0, Canvas.DrawColor.A);
         }
 
-        Canvas.SetPos(ItemButtonTextPos.X, ItemButtonTextPos.Y);
-        Canvas.DrawTextClipped(VMT.ItemList[i].ItemName);
+            Canvas.SetPos(ItemButtonTextPos.X, ItemButtonTextPos.Y);
+            Canvas.DrawTextClipped(VMT.ItemList[i].ItemName);
 
-        Canvas.SetDrawColor(255, 255, 255, 255);
+            Canvas.SetDrawColor(255, 255, 255, 255);
 
-        ItemButtonPos.Y += ItemButtonIncrement;
-        ItemButtonTextPos.Y += ItemButtonIncrement;
-    }
+            ItemButtonPos.Y += ItemButtonIncrement;
+            ItemButtonTextPos.Y += ItemButtonIncrement;
+        }
 
-    if (!bFoundButton)
-        SelectedItemButton = INDEX_NONE;
+        if (!bFoundButton)
+            SelectedItemButton = INDEX_NONE;
+            
+        log("SelectedItemButton "@SelectedItemButton);
 
-	// Steven: Restore clipping regions.
-	GetP2EUtils().UnsetDrawingRegion(Canvas);
+        // Steven: Restore clipping regions.
+        GetP2EUtils().UnsetDrawingRegion(Canvas);
 
-    /** Draw the player's current funds */
-    MoneyBoxPos.X = TopLeft.X * Canvas.ClipX + MoneyBox.Pos.X * CanvasDimensions.X;
-    MoneyBoxPos.Y = TopLeft.Y * Canvas.ClipY + MoneyBox.Pos.Y * CanvasDimensions.Y;
+        /** Draw the player's current funds */
+        MoneyBoxPos.X = TopLeft.X * Canvas.ClipX + MoneyBox.Pos.X * CanvasDimensions.X;
+        MoneyBoxPos.Y = TopLeft.Y * Canvas.ClipY + MoneyBox.Pos.Y * CanvasDimensions.Y;
 
-    //MoneyIconPos.X = (TopLeft.X + MoneyIcon.Pos.X) * CanvasDimensions.X;
-    //MoneyIconPos.Y = (TopLeft.Y + MoneyIcon.Pos.Y) * CanvasDimensions.Y;
+        //MoneyIconPos.X = (TopLeft.X + MoneyIcon.Pos.X) * CanvasDimensions.X;
+        //MoneyIconPos.Y = (TopLeft.Y + MoneyIcon.Pos.Y) * CanvasDimensions.Y;
 
-    if (VMT.MoneyBox != none) {
-        MoneyBoxTextPos.X = MoneyBoxPos.X + MoneyBox.TextOffset.X * CanvasDimensions.X;
-        MoneyBoxTextPos.Y = MoneyBoxPos.Y + MoneyBox.TextOffset.Y * CanvasDimensions.Y;
+        if (VMT.MoneyBox != none) {
+            MoneyBoxTextPos.X = MoneyBoxPos.X + MoneyBox.TextOffset.X * CanvasDimensions.X;
+            MoneyBoxTextPos.Y = MoneyBoxPos.Y + MoneyBox.TextOffset.Y * CanvasDimensions.Y;
 
-        Canvas.SetPos(MoneyBoxPos.X, MoneyBoxPos.Y);
-        DrawTexture(Canvas, VMT.MoneyBox, MoneyBox.Scale, CanvasScale);
-    }
+            Canvas.SetPos(MoneyBoxPos.X, MoneyBoxPos.Y);
+            DrawTexture(Canvas, VMT.MoneyBox, MoneyBox.Scale, CanvasScale);
+        }
 
     /*
     if (MoneyTexture != none) {

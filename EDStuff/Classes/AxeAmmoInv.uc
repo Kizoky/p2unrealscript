@@ -10,7 +10,9 @@ var Sound MacheteStab;
 var Sound MacheteHitWall;
 var Sound MacheteHitBot, MacheteHitSkel;
 var class<DamageType> BodyDamage;	// damaged caused when we hit the body instead of a limb
-var float SeverMag;
+var float SeverMag, MaxDamageAmount;
+//var float ChargeTime;
+var bool bCharged;
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -22,6 +24,8 @@ function ProcessTraceHit(Weapon W, Actor Other, Vector HitLocation, Vector HitNo
 	local Rotator NewRot;
 	local vector Momentum;
 	local byte BlockedHit;
+	local class<DamageType> UseDamageType;
+	local float UseDamageAmount;
 
 	if ( Other == None )
 		return;
@@ -70,13 +74,38 @@ function ProcessTraceHit(Weapon W, Actor Other, Vector HitLocation, Vector HitNo
 
 	if ( (Other != self) && (Other != Owner) ) 
 	{
+		// xPatch: Handle damage depending on alt fire charge and stuff
+		UseDamageType = DamageTypeInflicted;
+		UseDamageAmount = DamageAmount;
+		//if(ChargeTime > 0)
+		if(bCharged)
+		{
+			//if(ChargeTime >= 0.05)
+				UseDamageType = AltDamageTypeInflicted;
+				
+			/*UseDamageAmount = DamageAmountMP * (ChargeTime * 5);
+			
+			if(UseDamageAmount > MaxDamageAmount)
+				UseDamageAmount = MaxDamageAmount;
+			
+			// DEBUG
+			//P2Player(Instigator.Controller).ClientMessage("UseDamageType"@AltDamageTypeInflicted);
+			//P2Player(Instigator.Controller).ClientMessage("UseDamageAmount"@UseDamageAmount);
+			
+			ChargeTime = 0;	// Reset charge time
+			*/
+			UseDamageAmount = MaxDamageAmount;
+			bCharged=False;
+		}
+		
 		// Sever limbs first (sever people is picked in the machete weapon itself)
 		if(PeoplePart(Other) != None)
 		{
 			Momentum = SeverMag*(-X + VRand()/2);
 			if(Momentum.z<0)
 				Momentum.z=-Momentum.z;
-			Other.TakeDamage(DamageAmount, Pawn(Owner), HitLocation, Momentum, DamageTypeInflicted);
+			
+			Other.TakeDamage(UseDamageAmount, Pawn(Owner), HitLocation, Momentum, UseDamageType);
 			//Instigator.PlayOwnedSound(MacheteHitBody, SLOT_None, 1.0,,TransientSoundRadius,GetRandPitch());
 		}
 		else
@@ -86,7 +115,11 @@ function ProcessTraceHit(Weapon W, Actor Other, Vector HitLocation, Vector HitNo
 			{
 				Momentum = -MomentumHitMag*(Z/2);
 
-				Other.TakeDamage(DamageAmount, Pawn(Owner), HitLocation, Momentum, BodyDamage);
+				// xPatch: for doors and non-FPSPawn things still use AxeDamage
+				if(FPSPawn(Other) == None)
+					UseDamageType = DamageTypeInflicted;
+
+				Other.TakeDamage(UseDamageAmount, Pawn(Owner), HitLocation, Momentum, UseDamageType);
                 //Instigator.PlayOwnedSound(MacheteHitBody, SLOT_None, 1.0,,TransientSoundRadius,GetRandPitch());
 			}
 		}
@@ -167,9 +200,10 @@ defaultproperties
      SeverMag=40000.000000
      DamageAmount=50.000000
 	 DamageAmountMP=100.000000
+	 MaxDamageAmount=500.000000		// max damage we can reach by alt-fire charge
      MomentumHitMag=50000.000000
      DamageTypeInflicted=Class'AxeDamage'
-     AltDamageTypeInflicted=Class'AxeDamage'
+     AltDamageTypeInflicted=Class'ScytheDamage'
      bInstantHit=True
      Texture=Texture'EDHud.hud_Axe'
      TransientSoundRadius=80.000000

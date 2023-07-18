@@ -16,8 +16,10 @@ function AnnouncePickup( Pawn Receiver )
 
 defaultproperties
 	{
-	AmmoGiveCount=12
-	MPAmmoGiveCount=12
+	bReloadableWeaponPickup=True
+	
+	AmmoGiveCount=6 //12		
+	MPAmmoGiveCount=6 //12
 	DeadNPCAmmoGiveRange=(Min=2,Max=5)
 	InventoryType=class'BetaShotgunWeapon'
 	PickupMessage="You picked up a Shotgun...?"

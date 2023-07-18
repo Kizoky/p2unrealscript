@@ -8,7 +8,9 @@ defaultproperties
 {
     Begin Object Class=BeamEmitter Name=BeamEmitter1
 		SecondsBeforeInactive=0.0
-        BeamDistanceRange=(Min=10.000000,Max=12.000000)
+        // Changed by Man Chrzan: xPatch 2.0
+		//BeamDistanceRange=(Min=10.000000,Max=12.000000)
+		BeamDistanceRange=(Min=50.000000,Max=60.000000)  
         DetermineEndPointBy=PTEP_Distance
         LowFrequencyNoiseRange=(X=(Min=-0.100000,Max=0.100000),Y=(Min=-0.100000,Max=0.100000),Z=(Min=-0.1000000,Max=0.100000))
         LowFrequencyPoints=5
@@ -24,8 +26,11 @@ defaultproperties
         CoordinateSystem=PTCS_Relative
         UseSizeScale=True
         UseRegularSizeScale=False
-        SizeScale(0)=(RelativeSize=0.500000)
-        SizeScale(1)=(RelativeTime=1.000000,RelativeSize=1.000000)
+        // Changed by Man Chrzan: xPatch 2.0
+		//SizeScale(0)=(RelativeSize=0.500000)
+        //SizeScale(1)=(RelativeTime=1.000000,RelativeSize=1.000000)
+		SizeScale(0)=(RelativeSize=2.500000)
+        SizeScale(1)=(RelativeTime=1.000000,RelativeSize=5.000000)
         StartSizeRange=(X=(Min=0.800000,Max=1.400000))
         DrawStyle=PTDS_Brighten
         Texture=Texture'nathans.Skins.lightning6'
@@ -48,7 +53,9 @@ defaultproperties
         SpinsPerSecondRange=(X=(Min=1.000000,Max=3.000000))
         UseSizeScale=True
         UseRegularSizeScale=False
-        SizeScale(1)=(RelativeTime=1.000000,RelativeSize=1.000000)
+        // Changed by Man Chrzan: xPatch 2.0
+		//SizeScale(1)=(RelativeTime=1.000000,RelativeSize=1.000000)
+		SizeScale(1)=(RelativeTime=1.000000,RelativeSize=5.000000) 
         StartSizeRange=(X=(Min=1.000000,Max=1.600000))
         DrawStyle=PTDS_Brighten
         Texture=Texture'nathans.Skins.blast1'

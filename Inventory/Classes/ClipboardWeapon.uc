@@ -82,10 +82,20 @@ simulated function PlayIdleAnim()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Don't let the player use altfire.. use CauseAltFire internally.
+// xPatch: Lets the player use middle finger by alt fire.
 ///////////////////////////////////////////////////////////////////////////////
+simulated function Fire( float Value )
+{
+	// Three hands glitch fix
+	if (P2Player(Instigator.Controller) != None && P2Player(Instigator.Controller).bStillTalking)
+		return;
+	
+	Super.Fire(Value);
+}
 simulated function AltFire( float Value )
 {
+	if (P2Player(Instigator.Controller) != None && !bOldHands)
+		P2Player(Instigator.Controller).FlipMiddleFinger();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -313,6 +323,13 @@ state DownWeaponRemove extends DownWeapon
 
 }
 
+// xPatch: Make sure that this gun is not extension!
+function bool CanSwapHands()
+{
+	return (Class == Class'ClipboardWeapon');
+}
+
+
 ///////////////////////////////////////////////////////////////////////////////
 // Default properties
 ///////////////////////////////////////////////////////////////////////////////
@@ -330,7 +347,7 @@ defaultproperties
 
 	bCanThrow=false
 
-	//Mesh=Mesh'FP_Weapons.FP_Dude_Clipboard'
+	OldMesh=Mesh'FP_Weapons.FP_Dude_Clipboard'
 	Mesh=Mesh'MP_Weapons.MP_LS_Clipboard'
 	Skins[0]=Texture'MP_FPArms.LS_arms.LS_hands_dude'
 	Skins[1]=Texture'WeaponSkins.clipboard_timb'
@@ -362,7 +379,8 @@ defaultproperties
 	AutoSwitchPriority=1
 	InventoryGroup=0
 	GroupOffset=4
-	BobDamping=0.975000
+//	BobDamping=0.975000
+	BobDamping=1.12 
 	ReloadCount=0
 	TraceAccuracy=0.0
 	ViolenceRank=0
@@ -381,6 +399,8 @@ defaultproperties
 	AskRadius=512
 	bMoneyGoesToCharity=true
 	WritingSound=Sound'MiscSounds.Map.CheckMark'
+	
+	bAllowMiddleFinger=true
 
 	bAllowHints=true
 	bShowHints=true

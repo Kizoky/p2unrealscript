@@ -6,7 +6,8 @@
 ///////////////////////////////////////////////////////////////////////////////
 // Screen the player can pop up to pick inventory items.
 ///////////////////////////////////////////////////////////////////////////////
-class P2InventorySelector extends P2EInteraction;
+class P2InventorySelector extends P2EInteraction
+	config(Selectors);
 
 ///////////////////////////////////////////////////////////////////////////////
 // Consts, structs, enums, etc.
@@ -45,7 +46,9 @@ var() localized string RowTitle[INV_GROUP_COUNT];	// Row titles
 var() Sound BadClickSound;					// Sound played when clicking a disabled arrow
 var() Sound GoodClickSound;					// Sound played when clicking an enabled arrow
 var() Sound InventorySelectSound;			// Sound made when selecting an inventory item and leaving menu
-var() Sound SelectChangeSound;				// Sound made when selection changes
+var() Sound SelectChangeSound;				// Sound made when selection changes		
+var() Color BackgroundColor, SelectedColor, LockedArrowColor, UnlockedArrowColor, BorderColor;	// xPatch: Colors are now properties
+var() Font oldInvInfoFont, oldRowHeaderFont, oldInvCountFont;									// xPatch: old plain fonts
 
 ///////////////////////////////////////////////////////////////////////////////
 // Vars
@@ -64,15 +67,31 @@ var bool bUpdateMouseSelection;				// True if we should update the mouse selecti
 var int SetMouseX, SetMouseY;
 
 ///////////////////////////////////////////////////////////////////////////////
+// xPatch: Customization
+///////////////////////////////////////////////////////////////////////////////
+var globalconfig bool FancyFont;
+var globalconfig Texture MyLeftArrow;							// Left arrow (duh)
+var globalconfig Texture MyRightArrow;						// Right arrow (duh)
+var globalconfig Color MyBackgroundColor, MySelectedColor, MyLockedArrowColor, MyUnlockedArrowColor, MyBorderColor;
+var bool bReady;
+
+///////////////////////////////////////////////////////////////////////////////
 // ShowMenu - Pops up the inventory menu
 ///////////////////////////////////////////////////////////////////////////////
 function ShowMenu()
 {
-	bMenuVisible = true;
-	PauseGame();
-	
-	// Sort player's items into DisplayItems array.
-	SortItemsIntoArray();
+	// xPatch: Don't allow in cutscenes and map screen (or any other screen)
+	if(P2GameInfo(PlayerOwner.Level.Game) != None 
+		&& !P2GameInfo(PlayerOwner.Level.Game).IsCinematic()
+		&& PlayerOwner.CurrentScreen == None)
+	{
+		SetupSelector(False, False);  // xPatch: Setup custom design if needed	
+		bMenuVisible = true;
+		PauseGame();
+		
+		// Sort player's items into DisplayItems array.
+		SortItemsIntoArray();
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -295,7 +314,8 @@ function PostRender(Canvas Canvas)
 	IconYSize = CanvasDimensions.Y * (MenuDrawInfo.Scale.Y / INV_GROUP_COUNT);
 	
 	// Draw background
-	Canvas.SetDrawColor(255, 255, 255, BackgroundAlpha * 255);
+	//Canvas.SetDrawColor(255, 255, 255, BackgroundAlpha * 255);
+	Canvas.DrawColor = BackgroundColor;
 	Canvas.SetPos(TopLeft.X, TopLeft.Y);
 	Canvas.DrawTile(BackgroundTex, CanvasDimensions.X * MenuDrawInfo.Scale.X, CanvasDimensions.Y * MenuDrawInfo.Scale.Y, 0, 0, BackgroundTex.USize, BackgroundTex.VSize);
 	Canvas.SetDrawColor(255, 255, 255, 255);
@@ -333,15 +353,21 @@ function PostRender(Canvas Canvas)
 		// Draw selection tile
 		if (SelectedLeftArrow == i)
 		{
-			Canvas.SetDrawColor(64, 64, 64, 255);
+			//Canvas.SetDrawColor(64, 64, 64, 255);
+			if(bLockLeftArrow[i] == 1)
+				Canvas.SetDrawColor(0, 0, 0, 1);
+			else
+				Canvas.DrawColor = SelectedColor;
 			Canvas.SetPos(PosX, PosY);
 			Canvas.DrawPattern(Texture'engine.WhiteSquareTexture', IconXSize, IconYSize, 1.0);
 		}
 		// Dim arrow if it's locked and unusable
 		if (bLockLeftArrow[i] == 1)
-			Canvas.SetDrawColor(64, 64, 64, 255);
+			//Canvas.SetDrawColor(64, 64, 64, 255);
+			Canvas.DrawColor = LockedArrowColor;
 		else
-			Canvas.SetDrawColor(255, 255, 255, 255);
+			//Canvas.SetDrawColor(255, 255, 255, 255);
+			Canvas.DrawColor = UnlockedArrowColor;
 		FitTile(Canvas, LeftArrow, PosX, PosY, IconXSize, IconYSize);
 		
 		// Forward arrow
@@ -358,15 +384,21 @@ function PostRender(Canvas Canvas)
 		// Draw selection tile
 		if (SelectedRightArrow == i)
 		{
-			Canvas.SetDrawColor(64, 64, 64, 255);
+			//Canvas.SetDrawColor(64, 64, 64, 255);
+			if(bLockRightArrow[i] == 1)
+				Canvas.SetDrawColor(0, 0, 0, 1);
+			else
+				Canvas.DrawColor = SelectedColor;
 			Canvas.SetPos(PosX, PosY);
 			Canvas.DrawPattern(Texture'engine.WhiteSquareTexture', IconXSize, IconYSize, 1.0);
 		}
 		// Dim arrow if it's locked and unusable
 		if (bLockRightArrow[i] == 1)
-			Canvas.SetDrawColor(64, 64, 64, 255);
+			//Canvas.SetDrawColor(64, 64, 64, 255);
+			Canvas.DrawColor = LockedArrowColor;
 		else
-			Canvas.SetDrawColor(255, 255, 255, 255);
+			//Canvas.SetDrawColor(255, 255, 255, 255);
+			Canvas.DrawColor = UnlockedArrowColor;
 		FitTile(Canvas, RightArrow, PosX, PosY, IconXSize, IconYSize);
 	}
 	
@@ -399,7 +431,8 @@ function PostRender(Canvas Canvas)
 				// Draw selection tile
 				if (SelectedItem == i)
 				{
-					Canvas.SetDrawColor(64, 64, 64, 255);
+					//Canvas.SetDrawColor(64, 64, 64, 255);
+					Canvas.DrawColor = SelectedColor;
 					Canvas.SetPos(PosX, PosY);
 					Canvas.DrawPattern(Texture'engine.WhiteSquareTexture', IconXSize, IconYSize, 1.0);
 					Canvas.SetDrawColor(255, 255, 255, 255);
@@ -407,7 +440,8 @@ function PostRender(Canvas Canvas)
 				FitTile(Canvas, Texture(DisplayItems[i].Inv.Icon), PosX, PosY, IconXSize, IconYSize, 0.75);
 				
 				// Draw inv count
-				if (P2PowerupInv(DisplayItems[i].Inv).Amount > 1)
+				if (P2PowerupInv(DisplayItems[i].Inv).Amount > 1
+					&& P2PowerupInv(DisplayItems[i].Inv).bDisplayAmount)	// xPatch: bDisplayAmount needs to be true
 				{
 					Canvas.Font = InvCountFont;
 					amount = P2PowerupInv(DisplayItems[i].Inv).Amount;
@@ -429,7 +463,8 @@ function PostRender(Canvas Canvas)
 	GetP2EUtils().UnsetDrawingRegion(Canvas);
 
 	// Border box
-	Canvas.SetDrawColor(255, 255, 255, 255);
+	//Canvas.SetDrawColor(255, 255, 255, 255);
+	Canvas.DrawColor = BorderColor;
 	Canvas.SetPos(TopLeft.X - 1, TopLeft.Y - 1);
 	Canvas.DrawBox(Canvas, CanvasDimensions.X * MenuDrawInfo.Scale.X, CanvasDimensions.Y * MenuDrawInfo.Scale.Y);
 	
@@ -589,6 +624,12 @@ function MouseClick()
 		//PlayerOwner.SwitchToThisPowerup(DisplayItems[SelectedItem].Inv.InventoryGroup, DisplayItems[SelectedItem].Inv.GroupOffset);
 		PlayerOwner.Pawn.SelectedItem = Powerups(DisplayItems[SelectedItem].Inv);
 		PlayerOwner.InvChanged();
+
+		// Change by NickP: MP fix
+		if (PlayerOwner.Role < ROLE_Authority)
+			PlayerOwner.ServerOnSelectedItem(PlayerOwner.Pawn.SelectedItem);
+		// End
+
 		GetSoundActor().PlaySound(InventorySelectSound);
 		HideMenu();
 	}
@@ -778,23 +819,109 @@ function bool KeyEvent(out EInputKey Key, out EInputAction Action, float Delta)
 		return false;	
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// xPatch: Setup custom colors etc.
+///////////////////////////////////////////////////////////////////////////////
+function SetupSelector(bool bForced, bool bDefault)
+{
+	local color Blank;
+	
+	Blank.R = 0;
+	Blank.G = 0;
+	Blank.B = 0;
+	Blank.A = 0;
+	
+	if(bReady && !bForced)
+		return;
+		
+	if(bDefault)
+		DefaultSelector();
+	
+	if(!FancyFont)
+	{
+		InvInfoFont = oldInvInfoFont;
+		RowHeaderFont = oldRowHeaderFont;
+		InvCountFont = oldInvCountFont;
+	}
+	else
+	{
+		InvInfoFont = default.InvInfoFont;
+		RowHeaderFont = default.RowHeaderFont;
+		InvCountFont = default.InvCountFont;
+	}
+
+	if(MyLeftArrow != None)
+		LeftArrow = MyLeftArrow;
+	if(MyRightArrow != None)
+		RightArrow = MyRightArrow;
+		
+	if(MyBackgroundColor != Blank)	
+		BackgroundColor = MyBackgroundColor;
+	if(MySelectedColor != Blank)	
+		SelectedColor = MySelectedColor;
+	if(MyBorderColor != Blank)	
+		BorderColor = MyBorderColor;
+	if(MyLockedArrowColor != Blank)	
+		LockedArrowColor = MyLockedArrowColor;
+	if(MyUnlockedArrowColor != Blank)	
+		UnlockedArrowColor = MyUnlockedArrowColor;
+	
+
+	bReady = True;
+}
+
+function DefaultSelector()
+{
+	ViewportOwner.Actor.ConsoleCommand("Set P2InventorySelector" @ "FancyFont" @ True );
+	ViewportOwner.Actor.ConsoleCommand("Set P2InventorySelector" @ "MyLeftArrow" @ default.LeftArrow);
+	ViewportOwner.Actor.ConsoleCommand("Set P2InventorySelector" @ "MyRightArrow" @ default.RightArrow);
+	ViewportOwner.Actor.ConsoleCommand("Set P2InventorySelector" @ "MyBackgroundColor" @ GetColorAsString(default.BackgroundColor));
+	ViewportOwner.Actor.ConsoleCommand("Set P2InventorySelector" @ "MySelectedColor" @ GetColorAsString(default.SelectedColor));
+	ViewportOwner.Actor.ConsoleCommand("Set P2InventorySelector" @ "MyBorderColor" @ GetColorAsString(default.BorderColor));
+	ViewportOwner.Actor.ConsoleCommand("Set P2InventorySelector" @ "MyLockedArrowColor" @ GetColorAsString(default.LockedArrowColor));
+	ViewportOwner.Actor.ConsoleCommand("Set P2InventorySelector" @ "MyUnlockedArrowColor" @ GetColorAsString(default.UnlockedArrowColor));
+}
+
+function string GetColorAsString(color TheColor)
+{
+	local string TheColorStr;
+	local int R, G, B, A;
+	local color TempColor;
+	
+	TempColor = TheColor;
+	R = TempColor.R;
+	G = TempColor.G;
+	B = TempColor.B;
+	A = TempColor.A;
+	
+	TheColorStr = "(R="$R$",G="$G$",B="$B$",A="$A$")";
+	
+	log(self$" GetColorAsString = "$TheColorStr);
+	return TheColorStr;
+}
+
 defaultproperties
 {
     bActive=true
     bVisible=true
     bRequiresTick=true
 	
-    InvInfoFont=Font'P2Fonts.Plain24'
-    RowHeaderFont=Font'P2Fonts.Plain19'
-	InvCountFont=Font'P2Fonts.Plain19'
+	oldInvInfoFont=Font'P2Fonts.Plain24'
+	oldRowHeaderFont=Font'P2Fonts.Plain19'
+	oldInvCountFont=Font'P2Fonts.Plain19'
+	InvInfoFont=Font'P2Fonts.Fancy24'
+    RowHeaderFont=Font'P2Fonts.Fancy19'  
+	InvCountFont=Font'P2Fonts.Fancy19'
 	MenuDrawInfo=(Pos=(X=0.15,Y=0.2),Scale=(X=0.7,Y=0.6))
 	InvDescDrawInfo=(Pos=(X=0.15,Y=0.85),Scale=(X=0.7,Y=0.05)
 	InvCountDrawInfo=(Pos=(X=0.95,Y=0.95))
 	IconsPerRow=4
 	BackgroundTex=Texture'nathans.Inventory.blackbox64'
 	BackgroundAlpha=0.7
-	LeftArrow=Texture'P2Misc.Icons.InvArrowLeft'
-	RightArrow=Texture'P2Misc.Icons.InvArrowRight'
+//	LeftArrow=Texture'P2Misc.Icons.InvArrowLeft'
+//	RightArrow=Texture'P2Misc.Icons.InvArrowRight'
+	LeftArrow=Texture'xPatchTex.HUD.xArrowLeft'
+	RightArrow=Texture'xPatchTex.HUD.xArrowRight'
 	RowHeader(0)=Texture'Josh-textures.signs.Cell_Block_A'
 	RowHeader(1)=Texture'Josh-textures.signs.Cell_Block_B'
 	RowHeader(2)=Texture'Josh-textures.signs.Cell_Block_H'
@@ -812,4 +939,12 @@ defaultproperties
 	SelectedItem=-1
 	SelectedLeftArrow=-1
 	SelectedRightArrow=-1
+	
+	// xPatch: 
+	SelectedColor = (R=255,G=255,B=255,A=20)
+	BackgroundColor = (R=255,G=255,B=255,A=175)
+	BorderColor = (R=180,G=10,B=10,A=175)
+	UnlockedArrowColor = (R=180,G=10,B=10,A=175)
+	LockedArrowColor = (R=180,G=10,B=10,A=64) 
+	FancyFont = True
 }

@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 // Stump
-// Copyright 2003 Running With Scissors, Inc.  All Rights Reserved.
+// Copyright 2023 Running With Scissors Studios LLC.  All Rights Reserved.
 //
 // Bloody bone stump where limb was.
 //
@@ -24,6 +24,10 @@ var const byte LeftLegI, RightLegI, LeftArmI, RightArmI;	// indices into Meshes 
 var const byte TorsoI, PelvisI;
 
 var bool bClientSync;
+
+// Added by Man Chrzan: xPatch 2.0
+var const array<StaticMesh> FatMeshes;	// various stumps
+var const array<StaticMesh> FatFemaleMeshes; // same stumps, but for girls
 
 ///////////////////////////////////////////////////////////////////////////////
 // CONSTS
@@ -84,17 +88,37 @@ function ConvertToTorso()
 {
 	StumpIndex=TorsoI;
 	if(bFemale)
-		SetStaticMesh(FemaleMeshes[TorsoI]);
+	{
+		if(bFat)	// Change by Man Chrzan: xPatch 2.0
+			SetStaticMesh(FatFemaleMeshes[TorsoI]);
+		else
+			SetStaticMesh(FemaleMeshes[TorsoI]);
+	}
 	else
-		SetStaticMesh(Meshes[TorsoI]);
+	{
+		if(bFat)	// Change by Man Chrzan: xPatch 2.0
+			SetStaticMesh(FatMeshes[TorsoI]);
+		else
+			SetStaticMesh(Meshes[TorsoI]);
+	}
 }
 function ConvertToPelvis()
 {
 	StumpIndex=PelvisI;
 	if(bFemale)
-		SetStaticMesh(FemaleMeshes[PelvisI]);
+	{
+		if(bFat)	// Change by Man Chrzan: xPatch 2.0
+			SetStaticMesh(FatFemaleMeshes[PelvisI]);
+		else
+			SetStaticMesh(FemaleMeshes[PelvisI]);
+	}
 	else
-		SetStaticMesh(Meshes[PelvisI]);
+	{
+		if(bFat)	// Change by Man Chrzan: xPatch 2.0
+			SetStaticMesh(FatMeshes[PelvisI]);
+		else
+			SetStaticMesh(Meshes[PelvisI]);
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -164,4 +188,10 @@ defaultproperties
      Skins(0)=Texture'ChameleonSkins.Special.RWS_Shorts'
      bBlockZeroExtentTraces=False
      bBlockNonZeroExtentTraces=False
+	 
+	 // Added by Man Chrzan: xPatch 2.0
+	FatMeshes[4]=StaticMesh'xPatchMesh.Stump.fat_male_upper_torso'
+	FatMeshes[5]=StaticMesh'xPatchMesh.Stump.fat_male_lower_torso'
+	FatFemaleMeshes[4]=StaticMesh'xPatchMesh.Stumps.fat_fem_upper_torso'
+	FatFemaleMeshes[5]=StaticMesh'xPatchMesh.Stumps.fat_fem_lower_torso'
 }

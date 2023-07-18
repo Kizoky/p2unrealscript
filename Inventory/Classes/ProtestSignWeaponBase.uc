@@ -1,3 +1,3 @@
 class ProtestSignWeaponBase extends ShovelWeapon;
 
-var Material ProtestSkin;
+var travel Material ProtestSkin;

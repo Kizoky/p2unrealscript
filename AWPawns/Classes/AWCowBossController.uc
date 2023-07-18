@@ -67,7 +67,6 @@ const DIFF_CHANGE_HEALTH	= 0.1;
 
 const START_HEADS_DAMAGE	= 10;
 
-
 ///////////////////////////////////////////////////////////////////////////////
 // Possess the pawn
 ///////////////////////////////////////////////////////////////////////////////
@@ -83,15 +82,20 @@ function Possess(Pawn aPawn)
 ///////////////////////////////////////////////////////////////////////////////
 function RampDifficulty()
 {
-	local float gamediff, diffoffset;
-
+	local float gamediff, diffoffset, oldhealth, newhealth;
+	local AWCowBossPawn Mikey;
+	
 	gamediff = P2GameInfo(Level.Game).GetGameDifficulty();
 	diffoffset = P2GameInfo(Level.Game).GetDifficultyOffset();
-
+	
 	if(diffoffset != 0)
 	{
+		// xPatch: The Health and HealthMax scaling had some issues.
+		// It was moved to AWCowBossPawn instead to fix it.
+		
 		// more/less health based on difficulty
-		MyPawn.HealthMax				  += (diffoffset*MyPawn.HealthMax*DIFF_CHANGE_HEALTH);
+		/*MyPawn.HealthMax += (diffoffset*MyPawn.HealthMax*DIFF_CHANGE_HEALTH);*/
+		
 		// Make cowboss slightly faster animating as the difficulty increases
 		AWCowBossPawn(MyPawn).GenAnimSpeed+= (diffoffset*DIFF_CHANGE_ANIM_SPEED);
 	}
@@ -100,7 +104,7 @@ function RampDifficulty()
 	// Also make him meaner and tougher
 	if (P2GameInfoSingle(Level.Game).InImpossibleMode())
 	{
-		MyPawn.HealthMax *= 2;
+		/*MyPawn.HealthMax *= 2;*/
 		AWCowBossPawn(MyPawn).GenAnimSpeed *= 1.5;
 		
 		// Attack more
@@ -332,7 +336,8 @@ event StandBump(actor Other, optional out byte StateChange)
 	local float fcheck, usedam, dot1;
 
 	if(Other != None
-		&& Other.Owner != Pawn)
+		&& (Other.Owner != Pawn 
+			|| AWCowBossPawn(MyPawn).bFireFootsteps))	// xPatch: for Ludicrous Difficulty, set the player on fire if he attempts to block Mikey's way!
 	{
 		TakeDamage(touchdnum, MyPawn, Other.Location, vect(0,0,1), touchdtype);
 	}

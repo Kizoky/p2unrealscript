@@ -1,60 +1,46 @@
-class SawnOffWeapon extends P2Weapon;
+//////////////////////////////////////////////////////////////////////////////////////////////////
+// SawnOffWeapon.uc
+//
+// Edited by Man Chrzan
+// Brand new clean code, better balancing and new feature -- dual wielding!
+//
+// Short summary of the rebalance. Weapon now uses 2 shells per shot.
+// ShotCountMaxForNotify (pellets) is now 12, should be 8 (2x Normal Shotgun) but whatever, 
+// it was 16 originally but it was way too much for performance, I increased DamageAmount 
+// per pellet instead (see ShotgunBulletAmmoInv) to keep the original damage per shot close to original. 
+// 
+// Also to let them have some fun with the whole "overpowerd" feeling
+// This weapon can be now dual-wielded allowing to fire 2 times as it used to originally.
+// The only difference being that it will still use up 2x more ammunition and is time limited.
+//
+// PS. Hopefully I wont get cricificated for the whole rebalance thing.
+// But just in case, if it's my last message... I regret nothing!
+//////////////////////////////////////////////////////////////////////////////////////////////////
+class SawnOffWeapon extends DualCatableWeapon;
+
+var int ShotAmmoUse;
 
 ///////////////////////////////////////////////////////////////////////////////
-// Give hints about this item
+// Fire the weapon
 ///////////////////////////////////////////////////////////////////////////////
-function bool GetHints(out String str1, out String str2, out String str3,
-				out byte InfiniteHintTime)
+simulated function Fire( float Value )
 {
-	if(bShowHints
-		&& bAllowHints
-		&& ReloadCount < Default.ReloadCount)
+	if (!HasAmmo())		
 	{
-		str1=HudHint1;
-		return true;
+		ClientForceFinish();
+		ServerForceFinish();
+		return;
 	}
-	return false;
-}
-
-simulated function PlayFiring()
-{
-	//bForceReload=true;
-	SetupMuzzleFlash();
-	Super.PlayFiring();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// This will randomly change the color and the size of the dynamic
-// light associate with the flash. Change in each weapon's file,
-// but call each time you start up the flash again.
-// This function is also used by the third-person muzzle flash, so the
-// colors will look the same
-///////////////////////////////////////////////////////////////////////////////
-simulated function PickLightValues()
-{
-	LightBrightness=150;
-	LightSaturation=150;
-	LightHue=12+FRand()*15;
-	LightRadius=12+FRand()*6;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// Make sure the muzzle flash renders, and move it around some
-///////////////////////////////////////////////////////////////////////////////
-simulated function SetupMuzzleFlash()
-{
-	bMuzzleFlash = true;
-	bSetFlashTime = false;
-	// Gets turned off in weapon, in RenderOverlays
-	// Slightly change colors each time
-	if(IsFirstPersonView()
-		&& bDrawMuzzleFlash)
-	{
-		PickLightValues();
-		bDynamicLight=bAllowDynamicLights;
+	
+	Super.Fire(Value);
+	
+	// We do that reload stuff only if it's not Enhanced Game or if its NPC using the gun.
+	if(!P2GameInfoSingle(Level.Game).VerifySeqTime() || !Pawn(Owner).Controller.bIsPlayer)
+	{	
+		if(HasAmmo())
+			bForceReload=True;
 	}
 }
-
 
 ///////////////////////////////////////////////////////////////////////////////
 // See what we hit
@@ -62,205 +48,162 @@ simulated function SetupMuzzleFlash()
 function TraceFire( float Accuracy, float YOffset, float ZOffset )
 {
 	local int i;
-	local PersonController perc;
-	local vector dir;
+	local bool bProj;
 
-	// Reduce the ammo only by 1 here, for the shotgun, but shoot
-	// ShotCountMaxForNotify number of pellets each time.
-	P2AmmoInv(AmmoType).UseAmmoForShot();
+	P2AmmoInv(AmmoType).UseAmmoForShot(ShotAmmoUse);
 
-	perc = PersonController(Instigator.Controller);
-
-	if(perc != None
-		&& perc.Target != None)
-	{
-		if(perc.MyPawn.bAdvancedFiring)
-			bAltFiring=true;
-	}
-
+	// Reduce the cat ammo if we're using one
+	if(CatOnGun == 1)
+		CatAmmoLeft--;
+		
 	for(i=0; i<ShotCountMaxForNotify; i++)
-	{
+	{	
+		// FIXME this could probably be handled better by having the aim assist pick a vector to fire in and then let the gun's accuracy handle the
+		// pellet hits but... whatever, we're on a time constraint here.
+		if (i == 0)
+			bAllowAimAssist = Default.bAllowAimAssist;
+		else
+			bAllowAimAssist = false;
 		Super.TraceFire(Accuracy, YOffset, ZOffset);
 	}
 }
 
-state ClientFiring
-{
-}
-
-state NormalFire
-{
-}
-
 ///////////////////////////////////////////////////////////////////////////////
-// Same as original
-// DO reloadcounts for these.
-///////////////////////////////////////////////////////////////////////////////
-function ServerFire()
-{
-    local bool bEnhancedMode;
-
-    bEnhancedMode = P2GameInfoSingle(Level.Game).VerifySeqTime();
-
-	DQShovel();
-
-	if ( AmmoType == None )
-	{
-		// ammocheck
-		log("WARNING "$self$" HAS NO AMMO!!!");
-		GiveAmmo(Pawn(Owner));
-	}
-
-	//log(self$" serverfire, ammo "$AmmoType.AmmoAmount$" get state "$GetStateName());
-
-	if ( AmmoType.HasAmmo() )
-	{
-		GotoState('NormalFire');
-
-		// Don't do reloadcount because we usually force reloads (grenades) or don't
-		// do them at all (machinegun)
-
-		if (!bEnhancedMode)
-		{
-		    ReloadCount--;
-			UpdateHudHints();
-		}
-
-		if ( AmmoType.bInstantHit )
-			TraceFire(TraceAccuracy,0,0);
-		else
-			ProjectileFire();
-		LocalFire();
-	}
-}
-///////////////////////////////////////////////////////////////////////////////
-// Same as original
-// DO reloadcounts for these.
-///////////////////////////////////////////////////////////////////////////////
-simulated function Fire( float Value )
-{
-	//log(self$" Fire, ammo "$AmmoType.AmmoAmount);
-	if ( AmmoType == None
-		|| !AmmoType.HasAmmo() )
-	{
-		ClientForceFinish();
-		ServerForceFinish();
-		return;
-	}
-
-	if ( !RepeatFire() )
-		ServerFire();
-	else if ( StopFiringTime < Level.TimeSeconds + 0.3 )
-	{
-		StopFiringTime = Level.TimeSeconds + 0.6;
-		ServerRapidFire();
-	}
-	if ( Role < ROLE_Authority )
-	{
-		ReloadCount--;
-		LocalFire();
-		//log(self$" going to client firing");
-		GotoState('ClientFiring');
-	}
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// play reloading sounds
+// Reloading 
 ///////////////////////////////////////////////////////////////////////////////
 simulated function PlayReloading()
 {
-	// temp speed up because with no animation, you can't tell you're
-	// why you can't shoot (becuase it's playing a reload anim)
-	PlayAnim('Reload', WeaponSpeedReload, 0.05);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-function ServerAltFire()
-{
-	// Forces a reload on alt-fire.
-	if (ReloadCount < Default.ReloadCount)
+	// First-Person Reload
+	if (bDualWielding && LeftWeapon != none || RightWeapon != none) 
 	{
-		GotoState('Reloading');
-		TurnOffHint();
+		PlayAnim('DualReload', WeaponSpeedReload, 0.05);
+		return;	// Return to prevent 3rd person reload issues.
 	}
+	else
+		PlayAnim('Reload', WeaponSpeedReload, 0.05);
+	
+	// Third-Person Reload
+	P2MocapPawn(Instigator).PlayWeaponReload(self);
 }
 
-// Change by NickP: MP fix
-simulated function PlayAltFiring()
+///////////////////////////////////////////////////////////////////////////////
+// Sawn-Off needs to have more than 1 ammo to be used
+///////////////////////////////////////////////////////////////////////////////
+simulated function bool HasAmmo()
 {
-	PlayReloading();
+	if(P2AmmoInv(AmmoType) != None)
+	{
+		return ( AmmoType.AmmoAmount > 1 ); 	
+	}
+	return false;
 }
-// End
+
+simulated function bool HasAmmoFinished()
+{
+	return HasAmmo();	
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Cat-Silencer 
+///////////////////////////////////////////////////////////////////////////////
+function SwapCatOn()
+{
+	Super.SwapCatOn();
+	
+	TraceAccuracy=0.8;
+}
+
+function SwapCatOff()
+{
+	Super.SwapCatOff();
+	
+	TraceAccuracy=default.TraceAccuracy;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Default properties
 ///////////////////////////////////////////////////////////////////////////////
-
 defaultproperties
 {
-	// Only primary fire for now
-	bUsesAltFire=False
-	//bUsesAltFire=False
-	ViolenceRank=4
-	RecognitionDist=1100.000000
-	ShotCountMaxForNotify=16
-	//AltShotCountMaxForNotify=8
-	AI_BurstCountMin=16
-	holdstyle=WEAPONHOLDSTYLE_Double
-	switchstyle=WEAPONHOLDSTYLE_Double
-	firingstyle=WEAPONHOLDSTYLE_Double
-	MinRange=200.000000
-	ShakeOffsetTime=2.500000
-	CombatRating=4.000000
-	WeaponSpeedLoad=1.500000
-	WeaponSpeedHolster=1.500000
-	WeaponSpeedShoot1Rand=0.300000
-	WeaponSpeedShoot2=0.250000
-	WeaponSpeedShoot2Rand=0.300000
-	WeaponSpeedIdle=0.800000
-	AmmoName=Class'ShotgunBulletAmmoInv'
-	AutoSwitchPriority=3
-	ShakeRotMag=(X=400.000000)
-	ShakeRotTime=2.500000
-	ShakeOffsetMag=(X=20.000000,Y=4.000000,Z=4.000000)
-	TraceAccuracy=2.000000
-	aimerror=400.000000
-	AIRating=0.300000
-	MaxRange=512.000000
-	FireSound=Sound'AW7Sounds.MiscWeapons.SawnOff_Fire'
-	//AltFireSound=Sound'WeaponSounds.shotgun_fire'
-	FlashOffsetY=-0.050000
-	FlashOffsetX=0.060000
-	FlashLength=0.050000
-	MuzzleFlashSize=128.000000
-	MFTexture=Texture'Timb.muzzle_flash.shotgun_corona'
-	bDrawMuzzleFlash=False
-	MuzzleFlashScale=2.400000
-	MuzzleFlashStyle=STY_Normal
-	InventoryGroup=3
-	GroupOffset=11
-	PickupClass=Class'SawnOffPickup'
-	BobDamping=0.975000
-	AttachmentClass=Class'SawnOffAttachment'
+	OverrideHUDIcon=Texture'EDHud.hud_SawnOffShotgun'
+	ShotAmmoUse = 2
+
 	ItemName="Sawed-Off Shotgun"
+	AmmoName=class'ShotGunBulletAmmoInv'
+	PickupClass=class'SawnOffPickup'
+	AttachmentClass=class'SawnOffAttachment'
+
 	Mesh=SkeletalMesh'AW7_EDWeapons.ED_SawnOff_NEW'
 	Skins(0)=Texture'AW7EDTex.Weapons.SawnOff'
 	Skins(1)=Texture'MP_FPArms.LS_arms.LS_hands_dude'
-	SoundRadius=255.000000
-	WeaponsPackageStr="AW7_EDWeapons."
-	//ReloadSound=Sound'WeaponSounds.Sniper_EjectShell'
-	//BettyIncSound=Sound'WeaponSounds.Explosion_Small'
-	ThirdPersonRelativeRotation=(Pitch=-1600)
-	ReloadCount = 2
-    OverrideHUDIcon=Texture'AW7EDTex.Icons.hud_SawnOff'
 
+	holdstyle=WEAPONHOLDSTYLE_Double
+	switchstyle=WEAPONHOLDSTYLE_Double
+	firingstyle=WEAPONHOLDSTYLE_Double
+
+	ShakeOffsetMag=(X=40.0,Y=8.0,Z=8.0)
+	ShakeOffsetRate=(X=1000.0,Y=1000.0,Z=1000.0)
+	ShakeOffsetTime=3.5
+	ShakeRotMag=(X=800.0,Y=100.0,Z=100.0)
+	ShakeRotRate=(X=10000.0,Y=10000.0,Z=10000.0)
+	ShakeRotTime=3.5
+
+	FireSound=Sound'AW7Sounds.MiscWeapons.SawnOff_Fire'
+	SoundRadius=255
+	CombatRating=4.0
+	AIRating=1.0
+	AutoSwitchPriority=3
+	InventoryGroup=3
+	GroupOffset=3
+	BobDamping=1.125000
+	ReloadCount=0
+	TraceAccuracy=2.0
+	ShotCountMaxForNotify=12
+	//AltShotCountMaxForNotify=6
+	AI_BurstCountMin=12
+	ViolenceRank=8
+
+	WeaponSpeedIdle	   = 0.8
+	WeaponSpeedHolster = 1.5
+	WeaponSpeedLoad    = 1.5
+	WeaponSpeedReload  = 1.35
+	WeaponSpeedShoot1  = 1.0
+	WeaponSpeedShoot1Rand=0.3
+	WeaponSpeedShoot2  = 1.0
+
+	AimError=400
+	RecognitionDist=1100
+
+	MaxRange=512
+	MinRange=200
+
+	HudHint1="Press %KEY_AltFire% to reload manually."
+	bAllowHints=false
+	bShowHints=false
+
+	bUsesAltFire=False
+	bDrawMuzzleFlash=False
+	
 	ShotMarkerMade=class'GunfireMarker'
 	BulletHitMarkerMade=class'BulletHitMarker'
 	PawnHitMarkerMade=class'PawnShotMarker'
-
-	HudHint1="Press %KEY_AltFire% to reload manually."
-	bAllowHints=true
-	bShowHints=true
-	bUsesAltFire=true	
+	
+	// Muzzle Flash
+	bSpawnMuzzleFlash=True
+	MFBoneName="tube2"
+	MFClass=class'MuzzleFlash_SawnOff'
+	MFClass[2]=class'FX2.MuzzleFlash02'
+	MFRelativeLocation=(X=0,Y=0,Z=0)
+	MFRelativeRotation=(Yaw=15000)
+	MFScale=(Min=0.8,Max=1.3) 
+	MFSizeRange=(Min=20,Max=25) 
+	MFLifetime=(Min=0.1,Max=0.1)
+	
+	// Meow! 
+	CatFireSound=Sound'WeaponSounds.shotgun_catfire'
+	CatBoneName="MESH_Barrel"
+	CatRelativeLocation=(X=0,Y=-4.5,Z=16)
+	CatRelativeRotation=(Pitch=16384,Yaw=0,Roll=-16384)
+	StartShotsWithCat=4
+	bAttachCat=True
 }

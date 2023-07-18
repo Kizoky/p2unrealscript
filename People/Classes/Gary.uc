@@ -69,7 +69,7 @@ defaultproperties
 	HealthMax=550.0
 	bStartupRandomization=false
 	TakesShotgunHeadShot=	0.05
-	TakesRifleHeadShot=		0.15
+	TakesRifleHeadShot=		0.35 //0.15
 	TakesShovelHeadShot=	0.15
 	TakesOnFireDamage=		0.25
 	TakesAnthraxDamage=		0.25
@@ -89,4 +89,11 @@ defaultproperties
 	ExtraAnims(5)=None
 	ExtraAnims(6)=None
 	HEAD_RATIO_OF_FULL_HEIGHT=0.1
+	
+	// Addded by Man Chrzan: xPatch 2.0
+	// Seems like it switches to PLAnims intead of using PLAnims_Mini
+	// after loading saved game... well, that should do the trick.
+	PLAnims_Mini=MeshAnimation'Gary_Characters.animMini_PL'
+	PLAnims=MeshAnimation'Gary_Characters.animMini_PL'
+	PLAnims_Fat=MeshAnimation'Gary_Characters.animMini_PL'
 	}

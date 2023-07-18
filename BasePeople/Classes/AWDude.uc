@@ -1,6 +1,6 @@
 //=============================================================================
 // AWDude.uc
-// Copyright 2003 Running With Scissors, Inc.  All Rights Reserved.
+// Copyright 2023 Running With Scissors Studios LLC.  All Rights Reserved.
 //
 // Weekend pack version
 //
@@ -923,10 +923,11 @@ auto simulated state Living
 	{
 		local float Speed;
 		
+		if (Controller == None) 
+			return;
+		
 		Super.Tick(dT);
-		
-		if (Controller == None) return;
-		
+				
 		Speed = VSize(Velocity);
 		if (Speed > 0 && Controller.bRun == 0)
 			// While moving, play footsteps based on movement speed
@@ -960,6 +961,15 @@ auto simulated state Living
 				DrawFootprint();
 		}
 	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Added by Man Chrzan: xPatch 2.0
+// Allow running/walking backwards animations in SP for the Postal Dude
+///////////////////////////////////////////////////////////////////////////////
+simulated function bool AllowBackpeddle()
+{
+	return true;
 }
 
 //HeadMesh=Mesh'AW_Heads.Avg_Dude'

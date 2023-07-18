@@ -16,6 +16,8 @@
 //
 //	09/04/02 MJR	Major rework for new system.
 //
+//  03/22/21 Man Chrzan: Added Quit to desktop, moved achievements. 
+//
 ///////////////////////////////////////////////////////////////////////////////
 // This class describes the game menu details and processes game menu events.
 ///////////////////////////////////////////////////////////////////////////////
@@ -45,6 +47,9 @@ var localized string	SaveText;
 var ShellMenuChoice		QuitChoice;
 var localized string	QuitText;
 
+var ShellMenuChoice		DesktopQuitChoice;
+var localized string	DesktopQuitText;
+
 var localized string	DisabledForCinematicHelpText;
 var localized string	DisabledNowText;
 
@@ -54,6 +59,11 @@ var localized string CheatWarningTitle, CheatWarningText;
 var ShellMenuChoice		DebugChoice;
 var localized string	DebugText;
 var localized string	DebugHelp;
+
+// xPatch: In-Game Workshop Menu
+var ShellMenuChoice		WorkshopChoice;
+var localized string	WorkshopText, WorkshopHelpText;
+var localized string 	WaitforWorkshopTitle, WaitforWorkshopText;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Create menu contents
@@ -106,8 +116,12 @@ function CreateMenuContents()
 	SaveChoice		= AddChoice(SaveText,		SaveHelpText,		ItemFont, ItemAlign);
 	LoadChoice		= AddChoice(LoadGameText,	LoadHelpText,		ItemFont, ItemAlign);
 	OptionsChoice	= AddChoice(OptionsText,	OptionsHelpText,	ItemFont, ItemAlign);
-	AchChoice		= AddChoice(AchText,		AchHelpText,		ItemFont, ItemAlign);
+	if(GetGameSingle().GetWorkshopGame())	// xPatch: QoL addition, in-game Workshop Menu for workshop games.
+		WorkshopChoice	= AddChoice(WorkshopText,		WorkshopHelpText,		ItemFont, ItemAlign); 
+	if(!GetGameSingle().xManager.bMoveAchevements)
+		AchChoice		= AddChoice(AchText,		AchHelpText,		ItemFont, ItemAlign); 
 	QuitChoice		= AddChoice(QuitText,		"",					ItemFont, ItemAlign);
+	DesktopQuitChoice		= AddChoice(DesktopQuitText,		"",					ItemFont, ItemAlign);
 	ResumeChoice	= AddChoice(ResumeText,		"",					ItemFont, ItemAlign);
 
 	// Enable/disable various options (only works with MenuChoice)
@@ -168,6 +182,17 @@ function Notify(UWindowDialogControl C, byte E)
 				case DebugChoice:
 					LaunchDebugMenu();
 					break;
+				// Added by Man Chrzan: xPatch 2.0
+				case DesktopQuitChoice:
+					GoToMenu(class'MenuQuitToDesktop');	
+					break;	
+				case WorkshopChoice:
+					if (Root.GetLevel().SteamGetWorkshopStatus() != "")
+						MessageBox(WaitforWorkshopTitle, WaitforWorkshopText, MB_OK, MR_OK, MR_OK);
+					else
+						GotoWindow(Root.CreateWindow(Class'WorkshopGameWindow', 0, 0, 1, 1, Self, True));
+					break;
+				// End
 				}
 			break;
 		}
@@ -223,6 +248,7 @@ defaultproperties
 	ResumeText = "Resume Game"
 	SaveText = "Save Game"
 	QuitText = "Quit Game"
+	DesktopQuitText = "Quit to Desktop"
 	
 	CheatsText = "Cheats"
 	CheatsHelp = "Grant yourself various cheats for extra fun!"
@@ -240,4 +266,10 @@ defaultproperties
 	
 	DebugText="Debug"
 	DebugHelp="Various features for debug/QA purposes."
+	
+	WorkshopText="Mods/Maps"
+	WorkshopHelpText="Toggle mods or load maps as you wish!"
+	
+	WaitforWorkshopTitle="Warning"
+	WaitforWorkshopText="Wait for all Workshop content to initialize before attempting to start a Workshop game."
 	}

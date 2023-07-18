@@ -121,4 +121,5 @@ defaultproperties
 	ExpectedProtestSign=StaticMesh'Timb_mesh.Items.picket_timb'
 	DefaultProtestTex=Texture'Timb.picket.protest19'
 	ProtestSignClass="P2R.ProtestSignWeapon"
+	bAllowRandomGuns=True	// xPatch
 	}

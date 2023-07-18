@@ -8,7 +8,7 @@ defaultproperties
     Begin Object Class=SpriteEmitter Name=SpriteEmitter3
 		SecondsBeforeInactive=0.0
         Acceleration=(Z=-600.000000)
-        MaxParticles=10
+        MaxParticles=20
         RespawnDeadParticles=False
         StartLocationRange=(X=(Min=-3.000000,Max=3.000000),Y=(Min=-3.000000,Max=3.000000),Z=(Min=-3.000000,Max=3.000000))
         SpinParticles=True
@@ -35,7 +35,7 @@ defaultproperties
         Acceleration=(Z=-1000.000000)
         UseCollision=True
         DampingFactorRange=(X=(Min=0.500000,Max=0.500000),Y=(Min=0.500000,Max=0.500000),Z=(Min=0.000000,Max=0.300000))
-        MaxParticles=6
+        MaxParticles=12
         RespawnDeadParticles=False
         StartLocationRange=(X=(Min=-3.000000,Max=3.000000),Y=(Min=-3.000000,Max=3.000000),Z=(Min=-3.000000,Max=3.000000))
 		DampRotation=True
@@ -67,7 +67,7 @@ defaultproperties
         DampingFactorRange=(X=(Min=0.500000,Max=0.500000),Y=(Min=0.500000,Max=0.500000),Z=(Min=0.000000,Max=0.300000))
         RespawnDeadParticles=False
         StartLocationRange=(X=(Min=-3.000000,Max=3.000000),Y=(Min=-3.000000,Max=3.000000),Z=(Min=-3.000000,Max=3.000000))
-        MaxParticles=3
+        MaxParticles=6
 		DampRotation=True
         RotationDampingFactorRange=(X=(Min=0.100000,Max=0.300000))
         SpinParticles=True
@@ -96,7 +96,7 @@ defaultproperties
         ColorScale(0)=(Color=(A=255,R=255))
         ColorScale(1)=(RelativeTime=1.000000,Color=(A=255,R=255))
         RespawnDeadParticles=False
-        MaxParticles=2
+        MaxParticles=4
         StartLocationRange=(X=(Min=-5.000000,Max=5.000000),Y=(Min=-5.000000,Max=5.000000),Z=(Min=-5.000000,Max=5.000000))
         SpinParticles=True
         SpinsPerSecondRange=(X=(Max=0.100000))

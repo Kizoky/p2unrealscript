@@ -144,6 +144,9 @@ function FillInLines()
 //	AddTo(lDude_KillWithProjectile,					"DudeDialog.dude_iseedeadpeople", 1);
 	AddTo(lDude_KillWithProjectile,					"DudeDialog.imprettygoodatthis", 1);
 	AddTo(lDude_KillWithProjectile,					"DudeDialog.Laughing", 1);
+// xPatch 2.0 Unused Lines below:
+	AddTo(lDude_KillWithProjectile,					"DudeDialog.dude_imsoryapparently", 1);
+	AddTo(lDude_KillWithProjectile,					"DudeDialog.dude_nicecatch", 1);
 
 	Clear(lDude_KillWithMelee);
 	AddTo(lDude_KillWithMelee,						"DudeDialog.dude_isupposeitwould", 1);
@@ -193,7 +196,10 @@ function FillInLines()
 	AddTo(lDude_PlayerCheating,						"DudeDialog.dude_yougogirl", 1);
 	AddTo(lDude_PlayerCheating,						"DudeDialog.dude_youvegottabekid", 1);
 	AddTo(lDude_PlayerCheating,						"DudeDialog.dude_buttsauce", 1);
-
+// xPatch 2.0 Unused Lines below:
+	AddTo(lDude_PlayerCheating,						"DudeDialog.dude_saywhatsthis", 1);
+	AddTo(lDude_PlayerCheating,						"DudeDialog.dude_didiaskforcheese", 1); 	
+	
 	Clear(lDude_PlayerSissy);
 	AddTo(lDude_PlayerSissy,						"DudeDialog.dude_sissy", 1);
 
@@ -229,9 +235,9 @@ function FillInLines()
 	AddTo(lDude_ShootOlds,						"DudeDialog.dude_oohmedicareaint", 1);
 
 	Clear(lDude_ShootBum);
-	AddTo(lDude_ShootBum,						"DudeDialog.dude_heressomeleadfor", 1);
-	AddTo(lDude_ShootBum,						"DudeDialog.dude_heresyertaxrelief", 1);
 	AddTo(lDude_ShootBum,						"DudeDialog.dude_nowthatswhaticall", 1);
+	AddTo(lDude_ShootBum,						"DudeDialog.dude_heresyertaxrelief", 1);
+	AddTo(lDude_ShootBum,						"DudeDialog.dude_heressomeleadfor", 1);
 
 	Clear(lDude_DidSomethingCool);
 	AddTo(lDude_DidSomethingCool,						"DudeDialog.dude_wellwhodathought", 1);
@@ -605,6 +611,22 @@ function FillInLines()
 	AddTo(lDude_AchievementUnlockedGrind,		"DudeDialog.dude_map_anddone", 1);
 	AddTo(lDude_AchievementUnlockedGrind,		"DudeDialog.dude_geethatwasntso", 1);
 	
+	
+	///////////////////////////////////////////////////////////////////////////////
+	// Added by Man Chrzan: xPatch 2.0
+	// "New" dialogs for Paradise Lost features backport.
+	///////////////////////////////////////////////////////////////////////////////	
+	
+	// Fuck You Lines
+	Clear(lDude_FuckYou);
+	AddTo(lDude_FuckYou,						"DudeDialog.dude_fuckyou", 1);
+	
+	// Dual Wielding
+	Clear(lDude_BeginDualWielding);
+	AddTo(lDude_BeginDualWielding, 				"DudeDialog.dude_sothatswhatthat", 1);
+	AddTo(lDude_BeginDualWielding, 				"DudeDialog.dude_fascinating", 1);
+	AddTo(lDude_BeginDualWielding, 				"DudeDialog.dude_sweet", 1);
+	AddTo(lDude_BeginDualWielding, 				"DudeDialog.dude_viagraworks", 1);
 	}
 
 

@@ -11,7 +11,9 @@
 ///////////////////////////////////////////////////////////////////////////////
 class DustersWeapon extends FistsWeapon;
 
-var array<Material> FistBloodTextures;
+
+// Removed by Man Chrzan: xPatch 2.0 (It's handled in FistsWeapon now)
+/* var array<Material> FistBloodTextures;
 var int FistBloodSkinIndex;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -49,6 +51,7 @@ function CleanWeapon()
 	SetFistBloodTexture(default.Skins[FistBloodSkinIndex]);
 	//log(self$" clean weapon "$BloodTextureIndex$" new skin "$Skins[1]);
 }
+*/
 
 ///////////////////////////////////////////////////////////////////////////////
 // Default properties
@@ -64,15 +67,28 @@ defaultproperties
 	WeaponSpeedShoot2=1.00
 	WeaponSpeedShoot1Rand=0.100000
 	WeaponSpeedShoot2Rand=0.100000
-	bArrestableWeapon=false
+	bArrestableWeapon=true
 	bCanThrow=true
-	GroupOffset=9
+	GroupOffset=3
 	DropWeaponHint1="Press %KEY_ThrowWeapon% to drop your weapon."
 	DropWeaponHint2=""
-	BloodTextures[0]=Texture'ED_WeaponSkins.Melee.DustersBloodMed'
-	BloodTextures[1]=Texture'ED_WeaponSkins.Melee.DustersBloodHigh'
+
+	// Change by Man Chrzan: xPatch 2.0 
+	//BloodTextures[0]=Texture'ED_WeaponSkins.Melee.DustersBloodMed'
+	//BloodTextures[1]=Texture'ED_WeaponSkins.Melee.DustersBloodHigh'
+	BloodTextures[0]=Shader'xPatchTex.Weapons.Dusters_BloodyShad1'
+	BloodTextures[1]=Shader'xPatchTex.Weapons.Dusters_BloodyShad2'
 	BloodSkinIndex=0
-	FistBloodTextures[0]=Texture'WeaponSkins_Bloody.LS_hands_dude_blood01'
-	FistBloodTextures[1]=Texture'WeaponSkins_Bloody.LS_hands_dude_blood02'
+	ThirdPersonBloodSkinIndex=0
+	
+	// Change by Man Chrzan: xPatch 2.0 
+	//FistBloodTextures[0]=Texture'WeaponSkins_Bloody.LS_hands_dude_blood01'
+	//FistBloodTextures[1]=Texture'WeaponSkins_Bloody.LS_hands_dude_blood02'
+	FistsBloodTextures[0]=Texture'xPatchTex.Weapons.Fists_Bloody1'
+	FistsBloodTextures[1]=Texture'xPatchTex.Weapons.Fists_Bloody2'
+	FistsBloodTextures[2]=Texture'xPatchTex.Weapons.Fists_Bloody3'
 	FistBloodSkinIndex=1
+	
+	bBumpStartsFight=true
+	bCannotBeStolen=false
 }

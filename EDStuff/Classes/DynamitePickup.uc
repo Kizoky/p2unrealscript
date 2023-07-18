@@ -16,4 +16,6 @@ defaultproperties
      StaticMesh=StaticMesh'ED_TPMeshes.Emitter.dynamite'
      CollisionRadius=35.000000
      CollisionHeight=20.000000
+	 AmmoGiveCount=3
+	 MPAmmoGiveCount=1
 }

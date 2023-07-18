@@ -49,6 +49,14 @@ var() localized string PowerupName;	// Name of this powerup to display in the in
 										// Inventory.ItemName is not localized so we made this version just in case
 var() localized string PowerupDesc;	// Description of this powerup to display in the inv selector.
 
+// xPatch:
+struct ClassicIconsReplaceStr
+{
+	var Material NewIcon;
+	var Material OldIcon;
+};
+var array<ClassicIconsReplaceStr> ClassicIcons;
+// End
 
 ///////////////////////////////////////////////////////////////////////////////
 // Replication
@@ -58,6 +66,31 @@ replication
 	// Variables the server should send to the client.
 	reliable if( bNetDirty && (Role==ROLE_Authority) && bNetOwner )
 		Amount;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// xPatch: Optional classic icons
+///////////////////////////////////////////////////////////////////////////////
+event PostBeginPlay()
+{
+	SwapIcons();
+	Super.PostBeginPlay();
+}
+function SwapIcons()
+{
+	local int i;
+
+	if(P2GameInfoSingle(Level.Game) != None 
+		&& P2GameInfoSingle(Level.Game).GetClassicIcons()
+		&& Icon != None)
+	{
+		for(i=0; i<ClassicIcons.Length; i++)
+		{
+			if(Icon == ClassicIcons[i].NewIcon 
+			&& ClassicIcons[i].OldIcon != None)
+				Icon = ClassicIcons[i].OldIcon;
+		}
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -594,4 +627,20 @@ defaultproperties
 	bAllowHints=true
 	bAllowedToRespawn=true
 	TossVel=800
+	
+	// xPatch: Classic Icons
+	ClassicIcons(0)=(NewIcon=Texture'HUDPack.Icon_Inv_Map',OldIcon=Texture'HUDPack.Icons.Icon_Inv_Map_Alt')
+	ClassicIcons(1)=(NewIcon=Texture'HUDPack.Icon_Inv_Cat',OldIcon=Texture'ClassicIcons.Inventory.Icon_Inv_Cat')
+	ClassicIcons(2)=(NewIcon=Texture'HUDPack.Icon_Inv_Crack',OldIcon=Texture'ClassicIcons.Inventory.Icon_Inv_Crack')
+	ClassicIcons(3)=(NewIcon=Texture'Hudpack.icons.icon_inv_doughnut',OldIcon=Texture'ClassicIcons.Inventory.Icon_Inv_Donut')
+	ClassicIcons(4)=(NewIcon=Texture'Hudpack.icons.icon_inv_food',OldIcon=Texture'ClassicIcons.Inventory.icon_inv_food')
+	ClassicIcons(5)=(NewIcon=Texture'hudpack.icons.Icon_Inv_GimpUniform',OldIcon=Texture'ClassicIcons.Inventory.Icon_Inv_GimpUniform')
+	ClassicIcons(6)=(NewIcon=Texture'HUDPack.Icons.Icon_Inv_Newspaper',OldIcon=Texture'ClassicIcons.Inventory.Icon_Inv_Newspaper')
+	ClassicIcons(7)=(NewIcon=Texture'Hudpack.icons.icon_inv_pizza',OldIcon=Texture'ClassicIcons.Inventory.Icon_Inv_Pizza')
+	ClassicIcons(8)=(NewIcon=Texture'HUDPack.Icon_Inv_Paycheck',OldIcon=Texture'ClassicIcons.Inventory.Icon_Inv_Paycheck')
+	ClassicIcons(9)=(NewIcon=Texture'nathans.Inventory.MilkInv',OldIcon=Texture'ClassicIcons.Inventory.MilkInv')
+	ClassicIcons(10)=(NewIcon=Texture'HUDpack.icons.Icon_Inv_Penicillin',OldIcon=Texture'ClassicIcons.Inventory.Icon_Inv_Penicillin')
+	ClassicIcons(11)=(NewIcon=Texture'nathans.Inventory.MoneyInv',OldIcon=Texture'ClassicIcons.Inventory.MoneyInv')
+	ClassicIcons(12)=(NewIcon=Texture'HUDPack.Icons.Icon_Inv_CopUniform',OldIcon=Texture'ClassicIcons.Inventory.Icon_Inv_CopUniform')
+	ClassicIcons(13)=(NewIcon=Texture'HUDPack.Icons.Icon_Inv_DudeUniform',OldIcon=Texture'ClassicIcons.Inventory.Icon_Inv_DudeUniform')
 }

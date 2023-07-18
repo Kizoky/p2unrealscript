@@ -9,4 +9,6 @@ class BloodMachinegunSplatMaker extends SplatMaker;
 defaultproperties
 {
 	mysplatclass=class'BloodMachinegunSplat'
+	//mysplatclassEnh = class'xBloodDripSplat'
+	//mysplatclassAWP = class'xAWPBloodDripSplat'
 }

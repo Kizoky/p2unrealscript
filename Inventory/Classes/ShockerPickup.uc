@@ -40,8 +40,8 @@ function FitToGround()
 
 defaultproperties
 	{
-	AmmoGiveCount=25
-	MPAmmoGiveCount=25
+	AmmoGiveCount=30
+	MPAmmoGiveCount=30
 	Rotation=(Pitch=48000))
 	InventoryType=class'ShockerWeapon'
 	PickupMessage="You picked up a Stun Gun."

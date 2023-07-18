@@ -12,6 +12,7 @@ var Sound InhaleSound;
 var Sound ExhaleSound;	// sounds for smokin'!
 var bool bWorked;
 var vector SmokeColor;
+var float AltHealingPct;
 
 /*
 replication
@@ -68,8 +69,12 @@ state Activated
 
 		TurnOffHints();	// When you use it, turn off the hints
 
-		// calc how much we need to get to our max health goal
-		HealingAmount = (CheckPawn.HealthMax*CheckPawn.CrackMaxHealthPercentage) - CheckPawn.Health;
+
+		// calc how much we need to get to our max health goal		
+		if (P2GameInfo(Level.Game).InVeteranMode())	// xPatch: In veteran mode it gives +25% health.
+			HealingAmount = Min(CheckPawn.HealthPctConversion*AltHealingPct, (CheckPawn.HealthMax*CheckPawn.CrackMaxHealthPercentage - CheckPawn.Health));
+		else
+			HealingAmount = (CheckPawn.HealthMax*CheckPawn.CrackMaxHealthPercentage) - CheckPawn.Health;
 
 		if(CheckPawn.AddHealth(HealingAmount,,,true, true))
 		{
@@ -126,4 +131,5 @@ defaultproperties
 	Hint2="Warning: Causes unnatural health boosts"
 	Hint3="and severe addiction in laboratory animals."
 	SmokeColor=(X=255,Y=255,Z=255)
+	AltHealingPct=30
 	}

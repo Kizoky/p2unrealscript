@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 // MpPlayer.uc
-// Copyright 2003 Running With Scissors.  All Rights Reserved.
+// Copyright 2023 Running With Scissors Studios LLC.  All Rights Reserved.
 //
 // Base multiplayer player controller, although it's also included in single
 // the singleplayer player hierarchy!

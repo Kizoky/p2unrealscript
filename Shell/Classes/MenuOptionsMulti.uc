@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 // MenuOptionsMulti.uc
-// Copyright 2003 Running With Scissors, Inc.  All Rights Reserved.
+// Copyright 2023 Running With Scissors Studios LLC.  All Rights Reserved.
 //
 // The Multiplayer Options menu.
 // Can't set Performance Options, Audio Options, load a Custom Map, or see the Credits.

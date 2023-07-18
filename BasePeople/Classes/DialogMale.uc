@@ -859,65 +859,69 @@ never used
 	Addto(lChampPhotoReaction,	"WMaleDialog.wm_sweetlordno", 1);
 	Addto(lChampPhotoReaction,	"WMaleDialog.wm_ghasp", 1);
 
-	Clear(lPhoto_FindWiseWang);
-	Addto(lPhoto_FindWiseWang,					"PL-Dialog.MondayA.WMale-SpeakToTheWiseMan", 1);
 
-	Clear(lNumbers_6);
-	AddTo(lNumbers_6,							"PL-Dialog.TuesdayA.6", 1);
-	Clear(lNumbers_7);
-	AddTo(lNumbers_7,							"PL-Dialog.TuesdayA.7", 1);
-	Clear(lNumbers_8);
-	AddTo(lNumbers_8,							"PL-Dialog.TuesdayA.8", 1);
-	Clear(lNumbers_9);
-	AddTo(lNumbers_9,							"PL-Dialog.TuesdayA.9", 1);
-	Clear(lNumbers_11);
-	AddTo(lNumbers_11,							"PL-Dialog.TuesdayA.11", 1);
-	Clear(lNumbers_12);
-	AddTo(lNumbers_12,							"PL-Dialog.TuesdayA.12", 1);
-	Clear(lNumbers_13);
-	AddTo(lNumbers_13,							"PL-Dialog.TuesdayA.13", 1);
-	Clear(lNumbers_14);
-	AddTo(lNumbers_14,							"PL-Dialog.TuesdayA.14", 1);
-	Clear(lNumbers_15);
-	AddTo(lNumbers_15,							"PL-Dialog.TuesdayA.15", 1);
-	Clear(lNumbers_16);
-	AddTo(lNumbers_16,							"PL-Dialog.TuesdayA.16", 1);
-	Clear(lNumbers_17);
-	AddTo(lNumbers_17,							"PL-Dialog.TuesdayA.17", 1);
-	Clear(lNumbers_18);
-	AddTo(lNumbers_18,							"PL-Dialog.TuesdayA.18", 1);
-	Clear(lNumbers_19);
-	AddTo(lNumbers_19,							"PL-Dialog.TuesdayA.19", 1);
-	Clear(lNumbers_30);
-	AddTo(lNumbers_30,							"PL-Dialog.TuesdayA.30", 1);
-	Clear(lNumbers_50);
-	AddTo(lNumbers_50,							"PL-Dialog.TuesdayA.50", 1);
-	Clear(lNumbers_70);
-	AddTo(lNumbers_70,							"PL-Dialog.TuesdayA.70", 1);
-	Clear(lNumbers_90);
-	AddTo(lNumbers_90,							"PL-Dialog.TuesdayA.90", 1);
-	Clear(lNumbers_600);
-	AddTo(lNumbers_600,							"PL-Dialog.TuesdayA.600", 1);
-	Clear(lNumbers_700);
-	AddTo(lNumbers_700,							"PL-Dialog.TuesdayA.700", 1);
-	Clear(lNumbers_800);
-	AddTo(lNumbers_800,							"PL-Dialog.TuesdayA.800", 1);
-	Clear(lNumbers_900);
-	AddTo(lNumbers_900,							"PL-Dialog.TuesdayA.900", 1);
-	Clear(lCCCP_Cashier_Welcome);
-	AddTo(lCCCP_Cashier_Welcome, "PL-Dialog.MondayB.Receptionist-WelcomeCCCP", 1);
-	Clear(lCCCP_CheckKennels);
-	AddTo(lCCCP_CheckKennels, "PL-Dialog.MondayB.Receptionist-CheckAroundTheBack", 1);
-	Clear(lArcade_Yeeland_MoralGrounds);
-	AddTo(lArcade_Yeeland_MoralGrounds, "PL-Dialog.TuesdayB.ArcadeOwner-1MoralGrounds", 1);
-	Clear(lArcade_Yeeland_MeetMeInBack);
-	AddTo(lArcade_Yeeland_MeetMeInBack, "PL-Dialog.TuesdayB.ArcadeOwner-2YouGotSpunk", 1);
-	Clear(lKaraoke_Response1);
-	AddTo(lKaraoke_Response1,					"PL-Dialog2.ThursdayErrandC.GenericMaleBystander-1Boo", 1);
-	AddTo(lKaraoke_Response1,					"PL-Dialog2.ThursdayErrandC.GenericMaleBystander-1ThatReallySucked", 1);
-	Clear(lKaraoke_Response2);
-	AddTo(lKaraoke_Response2,					"PL-Dialog2.ThursdayErrandC.GenericMaleBystander-1GetOffTheStage", 1);
-	AddTo(lKaraoke_Response2,					"PL-Dialog2.ThursdayErrandC.GenericMaleBystander-1YouSuck", 1);
+	if(bParadiseLost) // xPatch: Crash Fix
+	{
+		Clear(lPhoto_FindWiseWang);
+		Addto(lPhoto_FindWiseWang,					"PL-Dialog.MondayA.WMale-SpeakToTheWiseMan", 1);
+
+		Clear(lNumbers_6);
+		AddTo(lNumbers_6,							"PL-Dialog.TuesdayA.6", 1);
+		Clear(lNumbers_7);
+		AddTo(lNumbers_7,							"PL-Dialog.TuesdayA.7", 1);
+		Clear(lNumbers_8);
+		AddTo(lNumbers_8,							"PL-Dialog.TuesdayA.8", 1);
+		Clear(lNumbers_9);
+		AddTo(lNumbers_9,							"PL-Dialog.TuesdayA.9", 1);
+		Clear(lNumbers_11);
+		AddTo(lNumbers_11,							"PL-Dialog.TuesdayA.11", 1);
+		Clear(lNumbers_12);
+		AddTo(lNumbers_12,							"PL-Dialog.TuesdayA.12", 1);
+		Clear(lNumbers_13);
+		AddTo(lNumbers_13,							"PL-Dialog.TuesdayA.13", 1);
+		Clear(lNumbers_14);
+		AddTo(lNumbers_14,							"PL-Dialog.TuesdayA.14", 1);
+		Clear(lNumbers_15);
+		AddTo(lNumbers_15,							"PL-Dialog.TuesdayA.15", 1);
+		Clear(lNumbers_16);
+		AddTo(lNumbers_16,							"PL-Dialog.TuesdayA.16", 1);
+		Clear(lNumbers_17);
+		AddTo(lNumbers_17,							"PL-Dialog.TuesdayA.17", 1);
+		Clear(lNumbers_18);
+		AddTo(lNumbers_18,							"PL-Dialog.TuesdayA.18", 1);
+		Clear(lNumbers_19);
+		AddTo(lNumbers_19,							"PL-Dialog.TuesdayA.19", 1);
+		Clear(lNumbers_30);
+		AddTo(lNumbers_30,							"PL-Dialog.TuesdayA.30", 1);
+		Clear(lNumbers_50);
+		AddTo(lNumbers_50,							"PL-Dialog.TuesdayA.50", 1);
+		Clear(lNumbers_70);
+		AddTo(lNumbers_70,							"PL-Dialog.TuesdayA.70", 1);
+		Clear(lNumbers_90);
+		AddTo(lNumbers_90,							"PL-Dialog.TuesdayA.90", 1);
+		Clear(lNumbers_600);
+		AddTo(lNumbers_600,							"PL-Dialog.TuesdayA.600", 1);
+		Clear(lNumbers_700);
+		AddTo(lNumbers_700,							"PL-Dialog.TuesdayA.700", 1);
+		Clear(lNumbers_800);
+		AddTo(lNumbers_800,							"PL-Dialog.TuesdayA.800", 1);
+		Clear(lNumbers_900);
+		AddTo(lNumbers_900,							"PL-Dialog.TuesdayA.900", 1);
+		Clear(lCCCP_Cashier_Welcome);
+		AddTo(lCCCP_Cashier_Welcome, "PL-Dialog.MondayB.Receptionist-WelcomeCCCP", 1);
+		Clear(lCCCP_CheckKennels);
+		AddTo(lCCCP_CheckKennels, "PL-Dialog.MondayB.Receptionist-CheckAroundTheBack", 1);
+		Clear(lArcade_Yeeland_MoralGrounds);
+		AddTo(lArcade_Yeeland_MoralGrounds, "PL-Dialog.TuesdayB.ArcadeOwner-1MoralGrounds", 1);
+		Clear(lArcade_Yeeland_MeetMeInBack);
+		AddTo(lArcade_Yeeland_MeetMeInBack, "PL-Dialog.TuesdayB.ArcadeOwner-2YouGotSpunk", 1);
+		Clear(lKaraoke_Response1);
+		AddTo(lKaraoke_Response1,					"PL-Dialog2.ThursdayErrandC.GenericMaleBystander-1Boo", 1);
+		AddTo(lKaraoke_Response1,					"PL-Dialog2.ThursdayErrandC.GenericMaleBystander-1ThatReallySucked", 1);
+		Clear(lKaraoke_Response2);
+		AddTo(lKaraoke_Response2,					"PL-Dialog2.ThursdayErrandC.GenericMaleBystander-1GetOffTheStage", 1);
+		AddTo(lKaraoke_Response2,					"PL-Dialog2.ThursdayErrandC.GenericMaleBystander-1YouSuck", 1);
+	}
 	
 	Clear(lSneezing);
 	AddTo(lSneezing, "WMaleDialog.MSneezing01", 1);
@@ -930,5 +934,6 @@ never used
 // Default properties
 ///////////////////////////////////////////////////////////////////////////////
 defaultproperties
-	{
-	}
+{
+	bCheckDLCDialog=True
+}

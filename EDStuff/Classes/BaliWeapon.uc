@@ -2,12 +2,14 @@
 //   Butterfly Knife Weapon
 //   Eternal Damnation
 //   Dopamine / MaDJacKaL
+//
+//   Edited by Man Chrzan, for xPatch
 //=============================================================
 
 class BaliWeapon extends P2BloodWeapon;
 
-var float saveTime, PlayEvery, WeaponSpeedEnd;							// we *don't* want them pissed off (attacking) because we couldn't know they
-							// we're on the other side and for the most part we didn't mean to do that.
+var float WeaponSpeedAltIdle;	// Alternative idle animation (knife sipin) speed
+const IDLE_PLAY_FREQ = 0.15;	// How often do we play it.
 
 replication
 {
@@ -45,43 +47,47 @@ function RefreshHints()
 simulated function PlayFiring()
 {
 	Super.PlayFiring();
+	
 	if(bShowHint1)
 	{
 		bShowHint1=false;
 		UpdateHudHints();
 	}
 
-       //randomly pick the animation to use (left)
-       switch ( rand(2) ){
-
+    // randomly pick the animation to use
+    switch ( rand(4) )
+	{
        case 0:
             PlayAnim('Shoot1Down1', WeaponSpeedShoot1 + (WeaponSpeedShoot1Rand*FRand()), 0.05);
             break;
        case 1:
             PlayAnim('Shoot1Down2', WeaponSpeedShoot1 + (WeaponSpeedShoot1Rand*FRand()), 0.05);
             break;
-
-       }
+	   case 2:
+            PlayAnim('Shoot1Right', WeaponSpeedShoot1 + (WeaponSpeedShoot1Rand*FRand()), 0.05);
+            break;
+       case 3:
+            PlayAnim('Shoot1Left', WeaponSpeedShoot1 + (WeaponSpeedShoot1Rand*FRand()), 0.05);
+            break;
+    }
 }
 simulated function PlayAltFiring()
 {
 	Super.PlayAltFiring();
+	
 	if(!bShowHint1)
 		TurnOffHint();
-       //randomly pick the animation to use (right)
-       switch ( rand(3) ){
-
-       case 0:
-            PlayAnim('Shoot1Left', WeaponSpeedShoot1 + (WeaponSpeedShoot1Rand*FRand()), 0.05);
-            break;
-       case 1:
-            PlayAnim('Shoot1Right', WeaponSpeedShoot1 + (WeaponSpeedShoot1Rand*FRand()), 0.05);
-            break;
-       case 2:
-            PlayAnim('Shoot1', WeaponSpeedShoot1 + (WeaponSpeedShoot1Rand*FRand()), 0.05);
-            break;
-
-       }
+		
+    // pick the fastest animations
+    switch ( rand(2) )
+	{
+		case 0:	
+			PlayAnim('Shoot1', WeaponSpeedShoot2 + (WeaponSpeedShoot1Rand*FRand()), 0.05);
+			break;
+		case 1:
+			PlayAnim('Shoot1Left', WeaponSpeedShoot2 + (WeaponSpeedShoot1Rand*FRand()), 0.05);
+			break;
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -292,10 +298,11 @@ function DoHit( float Accuracy, float YOffset, float ZOffset )
 	if(LivePawnHit != None)
 	{
 		bHitSolid = false;
-		if (P2MocapPawn(LivePawnHit) == None
+// Handled in ammoinv now - for both dead and alive 
+/*		if (P2MocapPawn(LivePawnHit) == None
 			|| P2MocapPawn(LivePawnHit).MyRace < RACE_Automaton)
-			DrewBlood();
-	}
+			DrewBlood();	*/
+	}	
 
 	//log(self$" shovel hit something 0, inst "$Instigator$" hit something "$bHitSomething$" role "$Role);
 	// If we hit something, only then (not when we fire) do we shake the view
@@ -351,65 +358,49 @@ function DoHit( float Accuracy, float YOffset, float ZOffset )
 ///////////////////////////////////////////////////////////////////////////////
 simulated function PlayIdleAnim()
 {
-	PlayAnim('Idle_Static', WeaponSpeedIdle, 0.0);
+	if ( FRand() <= IDLE_PLAY_FREQ )
+		PlayAnim('Idle', WeaponSpeedAltIdle, 0.0);
+	else
+		PlayAnim('Idle_Static', WeaponSpeedIdle, 0.0);
 }
 
-state Idle
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+function PostBeginPlay()
 {
-	simulated function BeginState()
+	local float diffoffset;
+
+	Super.PostBeginPlay();
+
+	if(Level.Game != None
+		&& FPSGameInfo(Level.Game).bIsSinglePlayer)
+	{
+		// On hard difficulty and above, disable the reticle 
+		diffoffset = P2GameInfo(Level.Game).GetDifficultyOffset();
+		if(diffoffset > 1)
 		{
-		// If instigator doesn't want to fire anymore then we can finally
-		// end the whole pouring sequence.
-		if (!Instigator.PressingFire())
-			{
-			if (Owner != None)
-				ForceEndFire();
-			}
+			bNoHudReticle = True;
 		}
-
-
-
-
-	        event Tick(float DeltaTime)
-                {
-                local int i;
-
-	        i = frand() * 5;
-
-                //dopamine if they have reached the amount of time in talk every
-	        If (Level.TimeSeconds - SaveTime > PlayEvery){
-
-                   //if they are not currently firing then play the animation
-    	           if (!IsFiring()){
-                        PlayAnim('Idle', WeaponSpeedEnd, 0.05);
-                   }
-	           SaveTime = Level.TimeSeconds;
-                }
-        }
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // Default properties
 ///////////////////////////////////////////////////////////////////////////////
-
 defaultproperties
 {
      bShowHint1=True
-     BloodTextures(0)=Texture'ED_WeaponSkins.Melee.knifehalfbloody'
-     BloodTextures(1)=Texture'ED_WeaponSkins.Melee.knifebloody'
-     BloodTextures(2)=Texture'ED_WeaponSkins.Melee.knifebloodyfull'
-     PlayEvery=12.000000
-     WeaponSpeedEnd=1.000000
      bUsesAltFire=True
      ViolenceRank=2
      RecognitionDist=700.000000
      PawnHitMarkerMade=Class'Postal2Game.PawnBeatenMarker'
-     holdstyle=WEAPONHOLDSTYLE_Melee
+     //holdstyle=WEAPONHOLDSTYLE_Melee
+	 holdstyle=WEAPONHOLDSTYLE_Toss
      switchstyle=WEAPONHOLDSTYLE_Single
      firingstyle=WEAPONHOLDSTYLE_Melee
-     bNoHudReticle=True
+     bNoHudReticle=False
      ShakeOffsetTime=6.000000
-     PlayerMeleeDist=60.000000
+     PlayerMeleeDist=80.000000
      NPCMeleeDist=60.000000
      bAllowHints=True
      bShowHints=True
@@ -422,7 +413,7 @@ defaultproperties
      WeaponSpeedHolster=0.700000
      WeaponSpeedShoot1=1.000000
      WeaponSpeedShoot1Rand=0.100000
-     WeaponSpeedShoot2=1.000000
+     WeaponSpeedShoot2=1.2500000
      AltFireSound=Sound'EDWeaponSounds.Weapons.Meatcleaver_slash'
      bCanThrowMP=False
      AmmoName=Class'BaliAmmoInv'
@@ -437,15 +428,30 @@ defaultproperties
      MaxRange=95.000000
      FireSound=Sound'EDWeaponSounds.Weapons.Meatcleaver_slash'
      SelectSound=Sound'EDWeaponSounds.Fight.bali_load'
-     GroupOffset=12
+     GroupOffset=5
 	 InventoryGroup=1
      PickupClass=Class'BaliPickup'
-     BobDamping=0.970000
+//     BobDamping=0.970000
      AttachmentClass=Class'BaliAttachment'
      ItemName="Bali"
      //Texture=Texture'ED_Hud.HUDbali'
      Mesh=SkeletalMesh'ED_Weapons.ED_ButterflyKnife_NEW'
+    
      Skins(0)=Texture'MP_FPArms.LS_arms.LS_hands_dude'
-     Skins(1)=Texture'ED_WeaponSkins.Melee.knifedds'
-     AmbientGlow=128
+     //Skins(1)=Texture'ED_WeaponSkins.Melee.knifedds'
+	 Skins(1)=Shader'xPatchTex.Weapons.BaliShad'
+	 
+	 //BloodTextures(0)=Texture'ED_WeaponSkins.Melee.knifehalfbloody'
+     //BloodTextures(1)=Texture'ED_WeaponSkins.Melee.knifebloody'
+     //BloodTextures(2)=Texture'ED_WeaponSkins.Melee.knifebloodyfull'
+	 BloodTextures(0)=Shader'xPatchTex.Weapons.Bali_BloodyShad1'
+     BloodTextures(1)=Shader'xPatchTex.Weapons.Bali_BloodyShad2'
+     BloodTextures(2)=Shader'xPatchTex.Weapons.Bali_BloodyShad3'
+
+	 AmbientGlow=128
+	 BobDamping=1.120000
+	 ThirdPersonBloodSkinIndex=0
+	 
+	 WeaponSpeedAltIdle=1.0
+	 bAllowMiddleFinger=True
 }

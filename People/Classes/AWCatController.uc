@@ -772,7 +772,7 @@ event Touch(actor Other)
 	local int IsTainted;
 
 	otherpawn = P2Pawn(Other);
-
+	
 	if(MyPawn.Health > 0)
 	{
 		if(otherpawn != None)
@@ -887,7 +887,7 @@ event Touch(actor Other)
 function TurnOnDervish(optional bool bDontSetState)
 {
 	local float usetime;
-
+	
 	if(!bDervish)
 	{
 		bDervish=true;

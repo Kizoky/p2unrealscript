@@ -49,6 +49,7 @@ function SpecificInits(P2Projectile SpawnedProj)
 	// STUB. Nothing needed here yet.
 }
 
+/*
 ///////////////////////////////////////////////////////////////////////////////
 // Set first person hands texture
 ///////////////////////////////////////////////////////////////////////////////
@@ -56,6 +57,7 @@ simulated function ChangeHandTexture(Texture NewHandsTexture, Texture DefHandsTe
 {
 	Skins[2] = NewHandsTexture;
 }
+*/
 
 ///////////////////////////////////////////////////////////////////////////////
 // Spawn the flamethrower projectile
@@ -156,8 +158,27 @@ state Streaming
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Added by Man Chrzan: xPatch 2.0 
+// Fix for sometimes skiping PrepFire animation.
+///////////////////////////////////////////////////////////////////////////////
+state Idle
+{
+	simulated function BeginState()
+		{
+		// If instigator doesn't want to fire anymore then we can finally
+		// end the whole pouring sequence.
+		if (!Instigator.PressingFire())
+			{
+			if (Owner != None)
+				ForceEndFire();
+			}
+		}
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Default properties
 ///////////////////////////////////////////////////////////////////////////////
+
 defaultproperties
 {
 	ProjClass=class'FlameProjectile'
@@ -176,7 +197,8 @@ defaultproperties
 
 	//PlayerViewOffset=(X=0.0000,Y=-1.000000,Z=-2.0000)
 	PlayerViewOffset=(X=0.0000,Y=-8.000000,Z=-10.0000)
-	FireOffset=(X=50.0000,Y=-10.00000,Z=0.00000)
+	//FireOffset=(X=50.0000,Y=-10.00000,Z=0.00000)
+	FireOffset=(X=50.000000,Y=-7.000000,Z=-20.000000)
 
     bDrawMuzzleFlash=False
 
@@ -197,7 +219,8 @@ defaultproperties
 	AutoSwitchPriority=1
 	InventoryGroup=5
 	GroupOffset=10
-	BobDamping=0.975000
+	//BobDamping=0.975000
+	BobDamping=1.120000
 	ReloadCount=0
 	ViolenceRank=1
 	TraceAccuracy=0.01

@@ -355,6 +355,17 @@ function DudeErrandComplete()
 function bool DudeDressedAsDude(FPSPawn CheckP)
 {
 	local P2Player p2p;
+	
+	// xPatch: Solution to the issue with NPCs not attacking Dude
+	// on TheyHateMe and higher difficulties if he wears these clothes.
+	if (P2GameInfo(Level.Game).InNightmareMode())
+	{
+		if(CheckP != None 
+			&& P2Player(CheckP.Controller) != None)
+			return true;
+		return false;
+	}
+	// End
 
 	if(CheckP != None)
 	{
@@ -373,7 +384,13 @@ function bool DudeDressedAsDude(FPSPawn CheckP)
 function bool DudeDressedAsCop(FPSPawn CheckP)
 {
 	local P2Player p2p;
-
+	
+	// xPatch: Solution to the issue with NPCs not attacking Dude
+	// on TheyHateMe and higher difficulties if he wears these clothes.
+	if (P2GameInfo(Level.Game).InNightmareMode())
+		return false;
+	// End
+	
 	if(CheckP != None)
 	{
 		p2p = P2Player(CheckP.Controller);
@@ -391,6 +408,12 @@ function bool DudeDressedAsCop(FPSPawn CheckP)
 function bool DudeDressedAsGimp(FPSPawn CheckP)
 {
 	local P2Player p2p;
+	
+	// xPatch: Solution to the issue with NPCs not attacking Dude
+	// on TheyHateMe and higher difficulties if he wears these clothes.
+	if (P2GameInfo(Level.Game).InNightmareMode())
+		return false;
+	// End
 
 	if(CheckP != None)
 	{

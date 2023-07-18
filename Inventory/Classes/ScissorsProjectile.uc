@@ -405,7 +405,7 @@ defaultproperties
 	 StaticMesh=StaticMesh'stuff.stuff1.scissors'
 	 CollisionHeight=18
 	 CollisionRadius=18
-     AmbientGlow=64
+     AmbientGlow=128
      bBounce=true
 	 VelDampen=1.0
 	 RotDampen=1.0

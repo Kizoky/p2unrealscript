@@ -116,10 +116,10 @@ simulated event RenderOverlays( canvas Canvas )
 	local bool bPlayerOwner;
 	local  PlayerController PlayerOwner;
 	local int Hand;
-	local float ControllerFOV;
+/*	local float ControllerFOV;
     // We need something to match the controller so it's not constantly setting the fov.
 	ControllerFOV = 0;
-
+*/
 	if ( Instigator == None
 		|| !bDraw)
 		return;
@@ -136,7 +136,7 @@ simulated event RenderOverlays( canvas Canvas )
 
 	//
 	// Find the correct view model FOV
-    if(!bOverrideAutoFOV)
+/*    if(!bOverrideAutoFOV)
     {
         if(ControllerFOV != PlayerOwner.DefaultFOV)
 	    {
@@ -145,7 +145,7 @@ simulated event RenderOverlays( canvas Canvas )
 	        ControllerFOV = PlayerOwner.DefaultFOV;
         }
     }
-
+*/
 	SetLocation( Instigator.Location + Instigator.CalcDrawOffset(self) );
 	NewRot = Instigator.GetViewRotation();
 
@@ -274,6 +274,8 @@ defaultproperties
 	ItemName="Foot"
 	AmmoName=class'FootAmmoInv'
 	PickupClass=None // make sure not to inherit from shovel
+	
+	DisplayFOV=80
 
 	Mesh=Mesh'FP_Weapons.FP_Dude_Foot'
 	Skins[0]=Texture'ChameleonSkins.Special.Dude'

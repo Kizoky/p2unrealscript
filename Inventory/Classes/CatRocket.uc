@@ -17,6 +17,10 @@ var bool	bExploded;
 var bool    bDoBounces;
 var int		BounceCount;
 var Sound BouncingSound;
+// xPatch: AW-Style Cat-Rocket
+var bool    bCrazyCat;		
+var bool	bSpawned;
+var class<AnimalPawn> CrazyCatClass;
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -154,9 +158,17 @@ auto state Flying
 	{
 		local CatExplosion exp;
 		local Rotator NewRot;
-
+		
 		if(!bExploded)
 		{
+			// xPatch:
+			if(bCrazyCat)
+			{
+				SpawnCrazyCat(HitLocation, HitNormal);
+				return;
+			}
+			// End
+			
 			if(class'P2Player'.static.BloodMode())
 			{
 				exp = spawn(class'CatExplosion',,,HitLocation);
@@ -226,6 +238,78 @@ auto state Flying
 		SetTimer(GetSoundDuration(CatStartFlying), false);
 
 		LoopAnim('fall');
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// xPatch: Spawn Dervish Cat Rocket Pawn 
+// Lives for a while to massacre people and then explodes.
+///////////////////////////////////////////////////////////////////////////////
+function SpawnCrazyCat(vector HitLocation, vector HitNormal)
+{
+	local AnimalPawn CrazyCat;
+	local CatExplosion exp;
+	local Rotator NewRot;
+	local vector NewLoc;
+	
+	log(self@"SpawnCrazyCat()");
+	
+	if(CrazyCatClass == None)
+	{
+		CrazyCatClass = class<AnimalPawn>(DynamicLoadObject("AWPStuff.CatRocketPawn", class'Class'));
+		default.CrazyCatClass = CrazyCatClass;
+	}
+	
+	if(!bExploded)
+	{
+		if(!bSpawned)
+		{
+			log(self@"SpawnCrazyCat() -- Spawning");
+			CrazyCat = spawn(CrazyCatClass,,, Location, Rotation);
+			// Try once more if it didn't make it.
+			if (CrazyCat == None)
+				CrazyCat = spawn(CrazyCatClass,,, Location + vect(0,0,20), Rotation);
+			
+			bSpawned=True;
+		}
+		
+		if(CrazyCat != None) 
+		{
+			// Destroy glitched cats
+			if(Skins[0] == None)
+				CrazyCat.Destroy();
+			
+			CrazyCat.Skins[0] = Skins[0];
+			if ( CrazyCat.Controller == None && CrazyCat.Health > 0 )
+			{
+				if ( (CrazyCat.ControllerClass != None))
+					CrazyCat.Controller = spawn(CrazyCat.ControllerClass);
+				if ( CrazyCat.Controller != None )
+				{
+					CrazyCat.Controller.Possess(CrazyCat);
+					CrazyCat.Controller.GotoState('FallingStartDervishRocket');
+				}
+			}
+		}
+		else // Falied to spawn it
+		{
+			log(self@"SpawnCrazyCat() --  Falied to spawn it!");
+			
+			if(class'P2Player'.static.BloodMode())
+			{
+				exp = spawn(class'CatExplosion',,,HitLocation);
+				exp.FitToNormal(HitNormal);
+				
+				NewRot = Rotator(-HitNormal);
+				NewRot.Roll=(65536*FRand());
+				spawn(class'BloodMachineGunSplat',self,,HitLocation,NewRot);
+			}
+			else
+				spawn(class'RocketSmokePuff',,,Location);	// gotta give the lame no-blood mode something!
+		}
+		
+		bExploded=true;
+		Destroy();
 	}
 }
 

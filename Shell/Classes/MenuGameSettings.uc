@@ -48,7 +48,7 @@
 //	08/31/02 MJR	Started it.
 //
 ///////////////////////////////////////////////////////////////////////////////
-class MenuGameSettings extends ShellMenuCW;
+class MenuGameSettings extends xPatchMenuBase; //ShellMenuCW;
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -148,6 +148,13 @@ var UWindowCheckbox SelectorFullCheckbox;
 var localized string SelectorFullText;
 var localized string SelectorFullHelp;
 
+var ShellMenuChoice	 SelectorChoice;
+var localized string SelectorsText;
+var localized string SelectorsHelp;
+
+var ShellMenuChoice	 WeaponsChoice;
+var localized string WeaponsText;
+var localized string WeaponsHelp;
 
 const c_strCrouchTogglePath = "Postal2Game.P2Player bCrouchToggle";
 var UWindowCheckbox CrouchToggleCheckbox;
@@ -159,6 +166,34 @@ var UWindowCheckbox DualWieldSwapCheckbox;
 var localized string DualWieldSwapText;
 var localized string DualWieldSwapHelp;
 
+//== xPatch Stuff:
+
+// Food Effect
+var UWindowCheckbox		FoodCheckbox;
+var localized string	FoodText;
+var localized string	FoodHelp;
+const FoodPath = "Postal2Game.xPatchManager bEatEffect";
+
+// Catnip Effect
+var UWindowCheckbox		CatnipCheckbox;
+var localized string	CatnipText;
+var localized string	CatnipHelp;
+const CatnipPath = "Postal2Game.xPatchManager bCatnipEffect";
+
+// Multiplayer Blood Effects
+var UWindowCheckbox		BloodCheckbox;
+var localized string	BloodText;
+var localized string	BloodHelp;
+const BloodPath = "BaseFX.EffectMaker bSTPBloodFX";
+
+// Main menu background
+var UWindowCheckbox		ClassicBackgroundCheckbox;
+var localized string	ClassicBackgroundText;
+var localized string	ClassicBackgroundHelp;
+const ClassicBackgroundPath = "Postal2Game.xPatchManager bClassicBackground";
+
+//== End
+
 var bool bUpdate;
 var bool bAsk;
 
@@ -168,22 +203,28 @@ var bool bAsk;
 ///////////////////////////////////////////////////////////////////////////////
 function CreateMenuContents()
 	{
-	Super.CreateMenuContents();
+	Super(ShellMenuCW).CreateMenuContents();
 	AddTitle(GameSettingsTitleText, TitleFont, TitleAlign);
 	
 	ReticleChoice			= AddChoice(ReticleText, ReticleHelp, ItemFont, ItemAlign);
+	SelectorChoice			= AddChoice(SelectorsText, SelectorsHelp, ItemFont, ItemAlign);
+	WeaponsChoice			= AddChoice(WeaponsText, WeaponsHelp, ItemFont, ItemAlign);
 	AutoSaveCheckbox		= AddCheckbox(AutoSaveText, AutoSaveHelp, ItemFont);
 	GoreCheckbox			= AddCheckbox(GoreText, GoreHelp, ItemFont);
+	BloodCheckbox			= AddCheckbox(BloodText, BloodHelp, ItemFont);	
 	InvHintsCheckbox		= AddCheckbox(InvHintsText, InvHintsHelp, ItemFont);
 	GameHintsCheckbox		= AddCheckbox(GameHintsText, GameHintsHelp, ItemFont);
 	//MpHintsCheckbox			= AddCheckbox(MpHintsText, MpHintsHelp, ItemFont);
-	SelectorCheckbox		= AddCheckbox(SelectorText, SelectorHelp, ItemFont);
-	SelectorFullCheckbox	= AddCheckbox(SelectorFullText, SelectorFullHelp, ItemFont);
-	SelectorSwitchCheckbox	= AddCheckbox(SelectorSwitchText, SelectorSwitchHelp, ItemFont);
-	WeaponSwitchCheckbox    = AddCheckbox(WeaponSwitchText, WeaponSwitchHelp, ItemFont);
-	WeaponEmptyCheckbox     = AddCheckbox(WeaponEmptyText, WeaponEmptyHelp, ItemFont);
+	//SelectorCheckbox		= AddCheckbox(SelectorText, SelectorHelp, ItemFont);
+	//SelectorFullCheckbox	= AddCheckbox(SelectorFullText, SelectorFullHelp, ItemFont);
+	//SelectorSwitchCheckbox	= AddCheckbox(SelectorSwitchText, SelectorSwitchHelp, ItemFont);
+// NOTE: Moved to Weapons Settings sub-menu to save up some space for new options
+//	WeaponSwitchCheckbox    = AddCheckbox(WeaponSwitchText, WeaponSwitchHelp, ItemFont);
+//	WeaponEmptyCheckbox     = AddCheckbox(WeaponEmptyText, WeaponEmptyHelp, ItemFont);
 	WeaponBobCheckbox		= AddCheckbox(WeaponBobText, WeaponBobHelp, ItemFont);
-	DualWieldSwapCheckbox	= AddCheckbox(DualWieldSwapText, DualWieldSwapHelp, ItemFont);
+	CatnipCheckbox			= AddCheckbox(CatnipText, CatnipHelp, ItemFont);
+	FoodCheckbox			= AddCheckbox(FoodText, FoodHelp, ItemFont);
+//	DualWieldSwapCheckbox	= AddCheckbox(DualWieldSwapText, DualWieldSwapHelp, ItemFont);
 	ItemSwitchCheckbox    	= AddCheckbox(ItemSwitchText, ItemSwitchHelp, ItemFont);
 	AutoAimSlider			= AddSlider(AutoAimText, AutoAimHelp, ItemFont, 0, 2);
 	CrouchToggleCheckbox	= AddCheckbox(CrouchToggleText, CrouchToggleHelp, ItemFont);
@@ -192,6 +233,8 @@ function CreateMenuContents()
 	DrawTimeCheckbox		= AddCheckbox(DrawTimeText, DrawTimeHelp, ItemFont);
 	StrictTimeCheckbox		= AddCheckbox(StrictTimeText, StrictTimeHelp, ItemFont);
 	AchCheckbox				= AddCheckbox(AchText, AchHelp, ItemFont);
+	//if(!bParadiseLost)
+		ClassicBackgroundCheckbox = AddCheckbox(ClassicBackgroundText, ClassicBackgroundHelp, ItemFont);	
 
 	RestoreChoice    = AddChoice(RestoreText, RestoreHelp,	ItemFont, ItemAlign);
 	BackChoice       = AddChoice(BackText,    "",			ItemFont, ItemAlign, true);
@@ -213,15 +256,19 @@ function SetDefaultValues()
 	MpHintsCheckbox.SetValue(true);
 	WeaponBobCheckbox.SetValue(true);
 	TracersCheckbox.SetValue(true);
-	WeaponSwitchCheckbox.SetValue(false);
-	ItemSwitchCheckbox.SetValue(true);
-	WeaponEmptyCheckbox.SetValue(true);
+//	WeaponSwitchCheckbox.SetValue(false);
+	ItemSwitchCheckbox.SetValue(false);
+//	WeaponEmptyCheckbox.SetValue(true);
 	DamageFlashSlider.SetValue(200);
 	AutoAimSlider.SetValue(0);
-	SelectorCheckbox.SetValue(true);
-	SelectorSwitchCheckbox.SetValue(false);
+//	SelectorCheckbox.SetValue(true);
+//	SelectorSwitchCheckbox.SetValue(false);
 	CrouchToggleCheckbox.SetValue(false);
 	DualWieldSwapCheckbox.SetValue(false);
+	FoodCheckbox.SetValue(true);
+	CatnipCheckbox.SetValue(true);
+	BloodCheckbox.SetValue(false);
+	ClassicBackgroundCheckbox.SetValue(false);
 
 	bAsk = true;
 	}
@@ -301,17 +348,28 @@ function LoadValues()
 	AutoAimSlider.SetValue((1.0 - val) * 100.0);
 
 	// Value 0 or 1
-	flag = bool(GetPlayerOwner().ConsoleCommand("get"@c_strSelectorPath));
+/*	flag = bool(GetPlayerOwner().ConsoleCommand("get"@c_strSelectorPath));
 	SelectorCheckbox.SetValue(flag);	
 	flag = bool(GetPlayerOwner().ConsoleCommand("get"@c_strSelectorFullPath));
 	SelectorFullCheckbox.SetValue(flag);	
 	flag = bool(GetPlayerOwner().ConsoleCommand("get"@c_strSelectorSwitchPath));
-	SelectorSwitchCheckbox.SetValue(flag);	
+	SelectorSwitchCheckbox.SetValue(flag);	*/
 	
 	flag = bool(GetPlayerOwner().ConsoleCommand("get"@c_strCrouchTogglePath));
 	CrouchToggleCheckbox.SetValue(flag);
 	flag = bool(GetPlayerOwner().ConsoleCommand("get"@c_strDualWieldSwapPath));
 	DualWieldSwapCheckbox.SetValue(flag);
+	
+	// xPatch
+	flag = bool(GetPlayerOwner().ConsoleCommand("get"@FoodPath));
+	FoodCheckbox.SetValue(flag);
+	flag = bool(GetPlayerOwner().ConsoleCommand("get"@CatnipPath));
+	CatnipCheckbox.SetValue(flag);
+	flag = bool(GetPlayerOwner().ConsoleCommand("get"@BloodPath));
+	BloodCheckbox.SetValue(flag);
+	flag = bool(GetPlayerOwner().ConsoleCommand("get"@ClassicBackgroundPath));
+	ClassicBackgroundCheckbox.SetValue(flag);
+	
 	
 	bUpdate = True;
 	}
@@ -321,7 +379,7 @@ function LoadValues()
 ///////////////////////////////////////////////////////////////////////////////
 function Notify(UWindowDialogControl C, byte E)
 	{
-	Super.Notify(C, E);
+	Super(ShellMenuCW).Notify(C, E);
 	
 	switch (E)
 		{
@@ -346,15 +404,15 @@ function Notify(UWindowDialogControl C, byte E)
 				case WeaponBobCheckbox:
 					WeaponBobCheckboxChanged();
 					break;
-				case WeaponSwitchCheckbox:
+/*				case WeaponSwitchCheckbox:
 					WeaponSwitchCheckboxChanged();
-					break;
+					break;	*/
 				case ItemSwitchCheckbox:
 					ItemSwitchCheckboxChanged();
 					break;
-				case WeaponEmptyCheckbox:
+/*				case WeaponEmptyCheckbox:
 					WeaponEmptyCheckboxChanged();
-					break;
+					break;	*/
 				case DamageFlashSlider:
 					DamageFlashSliderChanged();
 					break;
@@ -373,7 +431,7 @@ function Notify(UWindowDialogControl C, byte E)
 				case AutoAimSlider:
 					AutoAimSliderChanged();
 					break;
-				case SelectorCheckbox:
+/*				case SelectorCheckbox:
 					SelectorCheckboxChanged();
 					break;
 				case SelectorFullCheckbox:
@@ -381,12 +439,28 @@ function Notify(UWindowDialogControl C, byte E)
 					break;
 				case SelectorSwitchCheckbox:
 					SelectorSwitchCheckboxChanged();
-					break;
+					break;*/
 				case CrouchToggleCheckbox:
 					CrouchToggleCheckboxChanged();
 					break;
-				case DualWieldSwapCheckbox:
+/*				case DualWieldSwapCheckbox:
 					DualWieldSwapCheckboxChanged();
+					break;*/
+				case FoodCheckbox:
+					xCheckboxChange(FoodPath, FoodCheckbox.GetValue());
+					break;
+				case CatnipCheckbox:
+					xCheckboxChange(CatnipPath, CatnipCheckbox.GetValue());
+					break;
+				case BloodCheckbox:
+					xCheckboxChange(BloodPath, BloodCheckbox.GetValue());
+					break;
+				case ClassicBackgroundCheckbox:
+					if(bUpdate) 
+					{
+						xCheckboxChange(ClassicBackgroundPath, ClassicBackgroundCheckbox.GetValue());
+						GetGameSingle().ChangeMenuBackground();
+					}
 					break;
 				}
 			break;
@@ -401,6 +475,12 @@ function Notify(UWindowDialogControl C, byte E)
 					break;
 				case ReticleChoice:
 					GoToMenu(class'MenuReticle');
+					break;
+				case SelectorChoice:
+					GoToMenu(class'MenuSelectors');
+					break;
+				case WeaponsChoice:
+					GoToMenu(class'xPatchMenuWeapons');
 					break;
 				}
 			break;
@@ -556,7 +636,7 @@ function AchChanged()
 		GetPlayerOwner().ConsoleCommand("set"@c_strAchPath@AchCheckbox.bChecked);
 		}
 	}
-
+/*
 function SelectorCheckboxChanged()
 {
 	if (bUpdate)
@@ -571,7 +651,7 @@ function SelectorSwitchCheckboxChanged()
 {
 	if (bUpdate)
 		GetPlayerOwner().ConsoleCommand("set"@c_strSelectorSwitchPath@SelectorSwitchCheckbox.GetValue());
-}
+}*/
 function CrouchToggleCheckboxChanged()
 {
 	if (bUpdate)
@@ -583,6 +663,14 @@ function DualWieldSwapCheckboxChanged()
 		GetPlayerOwner().ConsoleCommand("set"@c_strDualWieldSwapPath@DualWieldSwapCheckbox.GetValue());
 }
 
+// The CheckboxChange one doesn't work for some reason ??
+function xCheckboxChange(string ConfigPath, bool bValue)
+	{
+	if (bUpdate)
+		{
+		GetPlayerOwner().ConsoleCommand("set"@ConfigPath@bValue);
+		}
+	}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Default properties
@@ -611,17 +699,11 @@ defaultproperties
 	MpHintsText = "Multiplayer Hints"
 	MpHintsHelp = "Shows tips at start/finish of MP games"
 
-	WeaponBobText = "Weapon Bob"
+	WeaponBobText = "View Bob"
 	WeaponBobHelp = "Makes the view bob up and down as you walk"
-
-	WeaponSwitchText = "Auto-Switch Weapons on Pickup"
-	WeaponSwitchHelp = "Switches to weapons when they are picked up"
 
 	ItemSwitchText = "Auto-Switch Inventory on Pickup"
 	ItemSwitchHelp = "Switches to inventory items when they are picked up"
-
-	WeaponEmptyText = "Auto-Switch Weapons on Empty"
-	WeaponEmptyHelp = "Switches to next-best weapon when ammo runs out"
 
 	DamageFlashText = "Damage Flash Brightness"
 	DamageFlashHelp = "Controls red flashes that show direction of attacks"
@@ -641,16 +723,32 @@ defaultproperties
 	AutoAimText = "Aiming Assistance"
 	AutoAimHelp = "How much aiming assistance should be applied. (0 = none, 1 = some, 2 = lots)"
 
-	SelectorText = "Use Weapon Selector"
-	SelectorHelp = "Use the pop-up weapon selector."
-	SelectorFullText = "Weapon Selector Full Screen"
-	SelectorFullHelp = "Allows the weapon selector to fill the entire screen instead of a smaller area."
-	SelectorSwitchText = "Weapon Selector Auto-Switch"
-	SelectorSwitchHelp = "Automatically switches between weapons while using the weapon selector."
+	SelectorsText = "Item Selection Settings..."
+	SelectorsHelp = "Adjust Weapon Selector and Inventory Menu settings."
+	
+	WeaponsText = "Weapons Settings..."
+	WeaponsHelp = "Adjust weapons settings."
+	
+	//SelectorText = "Use Weapon Selector"
+	//SelectorHelp = "Use the pop-up weapon selector."
+	//SelectorFullText = "Weapon Selector Full Screen"
+	//SelectorFullHelp = "Allows the Weapon Selector to fill the entire screen instead of a smaller area."
+	//SelectorSwitchText = "Weapon Selector Auto-Switch"
+	//SelectorSwitchHelp = "Automatically switches between weapons while using the Weapon Selector."
 	
 	CrouchToggleText = "Crouch Toggle"
 	CrouchToggleHelp = "If enabled, the crouch button acts as a toggle switch instead of hold-to-crouch."
 
-	DualWieldSwapText = "Dual Wielding Swap"
-	DualWieldSwapHelp = "Switches the Fire and Alt Fire buttons while dual-wielding or for specific weapons that request it."
+	FoodText="Food Particles"
+    FoodHelp="Enables Share The Pain-style food particles when eating."
+	
+	BloodText="STP Blood Effects"
+	BloodHelp="Enables alternate Share The Pain-style blood effects."
+	 
+	CatnipText="Catnip Effects"
+	CatnipHelp="Toggles catnip visual effects."
+	
+	ClassicBackgroundText = "Classic Menu Background"
+	ClassicBackgroundHelp = "Toggles the main menu background image."
+	 
 	}

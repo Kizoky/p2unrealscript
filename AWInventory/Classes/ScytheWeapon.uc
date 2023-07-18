@@ -147,6 +147,10 @@ function ThrowScythe()
 	AdjustedAim = Instigator.AdjustAim(AmmoType, StartTrace, 2*AimError);	
 	TurnOffHint();
 	macproj = spawn(class'ScytheProjectile',Instigator,,StartTrace, AdjustedAim);
+//xPatch
+	if(BloodTextureIndex != 0)
+		macproj.BloodTextureIndex = BloodTextureIndex;
+//end	
 
 	// Shake the view when you throw it
 	if ( Instigator != None)
@@ -969,7 +973,7 @@ defaultproperties
      AIRating=0.110000
      MaxRange=120.000000
      FireSound=Sound'AWSoundFX.Scythe.scytheswingmiss'
-     GroupOffset=7
+     GroupOffset=11
      PickupClass=Class'AWInventory.ScythePickup'
      BobDamping=0.970000
      AttachmentClass=Class'AWInventory.ScytheAttachment'
@@ -977,6 +981,11 @@ defaultproperties
      Mesh=SkeletalMesh'AWWeaponAnim.LS_Scythe'
      Skins(0)=Texture'MP_FPArms.LS_arms.LS_hands_dude'
      Skins(1)=Texture'AWWeaponSkins.Weapons.ScytheBlade'
-     AmbientGlow=128
-	 PlayerViewOffset=(X=2,Y=0,Z=-7)
+     AmbientGlow=90 //128
+	 //PlayerViewOffset=(X=2,Y=0,Z=-7)
+	 
+	 // Change by Man Chrzan: xPatch 2.0
+	 PlayerViewOffset=(X=2,Y=0,Z=-8)
+	 BobDamping=1.10
+	 ThirdPersonBloodSkinIndex=0
 }

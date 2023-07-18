@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 // Limb
-// Copyright 2003 Running With Scissors, Inc.  All Rights Reserved.
+// Copyright 2023 Running With Scissors Studios LLC.  All Rights Reserved.
 //
 // Cut off from the person, acts similar to a disembodied head
 // Skins[0] should be the same texture as the person this limb was connected to
@@ -102,6 +102,11 @@ function PostBeginPlay()
 
 	// Change by NickP: MP fix
 	MultiplayerSetupDestruction();
+	// End
+	
+	// xPatch: Remove limbs earlier if desired.
+	if(P2GameInfo(Level.Game).LimbsLifetimeMax < default.LifeSpan)
+		LifeSpan = P2GameInfo(Level.Game).LimbsLifetimeMax;
 	// End
 }
 
@@ -542,7 +547,8 @@ function TakeDamage( int Damage, Pawn instigatedBy, Vector hitlocation,
 		}
 		else
 		{
-			if(ThisDamage == class'ShotgunDamage')
+			if(ThisDamage == class'ShotgunDamage'
+				|| ThisDamage == class'SuperShotgunDamage')	// xPatch: SuperShotgunDamage Fix
 			{
 				CheckDist = DISTANCE_TO_EXPLODE_LIMB_SHOTGUN;
 				bCheckExplode=true;

@@ -20,6 +20,7 @@ defaultproperties
 	//MuzzleFlashClass=class'EmitterMuzzleFlash'
 	MuzzleRotationOffset=(Pitch=0,Yaw=0,Roll=0)
 	MuzzleOffset=(X=68.000000,Y=-4.000000,Z=8.000000)
+	CatOffset=(X=55.000000,Y=-3.000000,Z=10.000000)		// xPatch
 	WeapClass=class'MachinegunWeapon'
 
 	FireSound=Sound'WeaponSounds.machinegun_fire'

@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////
 // 12/2/13 MrD	- New MuzzleFlash to replace old staticmesh ones... //
 //////////////////////////////////////////////////////////////////////
-class MachineGunMuzzleFlash extends MuzzleFlashEmitter;
+class MachineGunMuzzleFlash extends xMuzzleFlashEmitter;
 
 defaultproperties
 {

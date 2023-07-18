@@ -8,14 +8,14 @@ simulated event ThirdPersonEffects()
 		if (BaseballBatWeapon(Instigator.Weapon).bAltFiring)
 			Instigator.PlayFiring(1.0, FiringMode);
 		else
-			Instigator.PlayFiring(1.5, FiringMode);
+			Instigator.PlayFiring(1.25, FiringMode);
 	}
 }
 
 defaultproperties
 {
 	WeapClass=Class'BaseballBatWeapon'
-	FiringMode="BATON1"
+	FiringMode="BASEBALLBAT1"
 	DrawType=DT_StaticMesh
 	StaticMesh=StaticMesh'AW7EDMesh.Weapons.TP_BaseballBat'
 	Skins[0]=Texture'ED_WeaponSkins.Melee.WoodenBat'

@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 // ACTION_KillCounter.uc
-// Copyright 2003 Running With Scissors, Inc.  All Rights Reserved.
+// Copyright 2023 Running With Scissors Studios LLC.  All Rights Reserved.
 //
 // Starts a mission that has the player needing to kill a certain
 // number of pawns. 

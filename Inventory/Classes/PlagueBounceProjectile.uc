@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 // PlagueBounceProjectile.
-// Copyright 2003 Running With Scissors, Inc.  All Rights Reserved.
+// Copyright 2023 Running With Scissors Studios LLC.  All Rights Reserved.
 //
 // Shoots straight, but heavier than normal one. Also bounces everywhere, but
 // doesn't seek.

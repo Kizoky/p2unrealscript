@@ -25,6 +25,10 @@ class MenuOptions extends ShellMenuCW;
 // Vars, structs, consts, enums...
 ///////////////////////////////////////////////////////////////////////////////
 
+var ShellMenuChoice     AchChoice;
+var localized string	AchText;
+var localized string	AchHelp;
+
 var ShellMenuChoice		CreditsChoice;
 var localized string	CreditsText;
 var localized string	CreditsHelp;
@@ -54,6 +58,19 @@ var int					CustomMapHeight;
 var string RollCreditsURL;
 var Texture BlackBackground;
 
+// xPatch:
+var ShellMenuChoice		xPatchChoice;
+var localized string	xPatchText;
+var localized string	xPatchHelp;
+
+var ShellMenuChoice		ClassicChoice;
+var localized string	ClassicText;
+var localized string	ClassicHelp;
+
+var color MyTextColor;
+var color MyHighlightColor;
+// End
+
 ///////////////////////////////////////////////////////////////////////////////
 // Seekrit code allowed?
 // Defaults to false, must override if your menu has a seekrit code.
@@ -82,6 +99,7 @@ function CreateMenuContents()
 	AddTitle(OptionsText, TitleFont, TitleAlign);
 
 	GameChoice			= AddChoice(GameOptionsText,	GameOptionsHelp,	ItemFont, ItemAlign);
+	ClassicChoice		= AddChoice(ClassicText,		ClassicHelp,	ItemFont, ItemAlign);
 	ControlsChoice		= AddChoice(ControlOptionsText, ControlOptionsHelp,	ItemFont, ItemAlign);
 	VideoChoice			= AddChoice(VideoOptionsText,	VideoOptionsHelp,	ItemFont, ItemAlign);
 	AudioChoice			= AddChoice(AudioOptionsText,	AudioOptionsHelp,	ItemFont, ItemAlign);
@@ -97,14 +115,27 @@ function CreateMenuContents()
 	*/
 		
 	// Holiday stuff.
-	if (GetPlayerOwner().GetEntryLevel().GetAchievementManager().GetAchievement(UNLOCK_ACHIEVEMENT))
+	if (GetPlayerOwner().GetEntryLevel().GetAchievementManager().GetAchievement(UNLOCK_ACHIEVEMENT) || FPSPlayer(GetPlayerOwner()).bEnableDebugMenu)
 	{
 		UnlockedChoice	= AddChoice(UnlockedText,		UnlockedHelp,		ItemFont, ItemAlign);
 	}
 	else
 	{
 		LockedChoice	= AddChoice(LockedText,			LockedHelp,			ItemFont, ItemAlign);
+		//UnlockedChoice	= AddChoice(UnlockedText,		UnlockedHelp,		ItemFont, ItemAlign);
 	}
+	
+	// xPatch: 
+	if (!IsGameMenu() || GetGameSingle().xManager.bMoveAchevements)	// Show if we are in main menu or if the setting to move it here is on
+		AchChoice		= AddChoice(AchText,	        AchHelp,        	ItemFont, ItemAlign);
+		
+	//	xPatchChoice         = AddChoice(xPatchText,	        xPatchHelp,        	ItemFont, ItemAlign);
+	//if(!bShowedXPatch) {
+	//	xPatchChoice.SetTextColor(MyTextColor);
+	//	xPatchChoice.SetHighlightTextColor(MyHighlightColor);
+	//}
+	// End
+	
 	if (GetLevel().IsSteamBuild())
 		PurgeChoice			= AddChoice(PurgeText,			PurgeHelp,			ItemFont, ItemAlign);
 	if (!GetLevel().IsDemoBuild())
@@ -139,6 +170,14 @@ function Notify(UWindowDialogControl C, byte E)
 					case GameChoice:
 						GoToMenu(class'MenuGameSettings');
 						break;
+					// xPatch:
+					case AchChoice:		
+					    GoToMenu(class'MenuAchievementList');
+						break;
+					case ClassicChoice:
+						GotoWindow(Root.CreateWindow(Class'xPatchWindow', 0, 0, 1, 1, Self, True));
+						break;	
+					// End
 					case PerformanceChoice:
 						GoToMenu(class'MenuPerformanceAdvanced');
 						break;
@@ -185,46 +224,33 @@ function RollCredits()
 ///////////////////////////////////////////////////////////////////////////////
 // Default properties
 ///////////////////////////////////////////////////////////////////////////////
+
 defaultproperties
 {
-	MenuWidth=275	// 01/26/03 JMI Decreased menu size for better centered
-						//				appearance.
-	HintLines=4		// 01/26/03 JMI Increased hint lines b/c we made this menu
-						//				even thinner.
-						// 01/19/03 JMI Increased number of hint lines required
-						//				b/c this is a particularly thin menu.
-
-	CreditsText="Credits"
-	CreditsHelp=""
-
-	CustomMapText="Custom Map"
-	CustomMapHelp="Opens a browser for playing user-made levels created with the editor."
-	CustomMapWidth=350
-	CustomMapHeight=250
-	
-	LockedText="??????????"
-	LockedHelp="Beat 'A Week in Paradise' on Hestonworld difficulty to unlock this option!"
-	
-	UnlockedText="Holidays"
-	UnlockedHelp="Turn on date-restricted holiday content at any time!"
-	
-	PurgeText="Purge Workshop"
-	PurgeHelp="Permanently erase unsubscribed Workshop items."
-
-	SeekritKode[9]=38
-	SeekritKode[8]=38
-	SeekritKode[7]=40
-	SeekritKode[6]=40
-	SeekritKode[5]=37
-	SeekritKode[4]=39
-	SeekritKode[3]=37
-	SeekritKode[2]=39
-	SeekritKode[1]=66
-	SeekritKode[0]=65
-	KeyAccepted=Sound'arcade.arcade_12'
-	KodeAccepted=Sound'arcade.arcade_138'
-	KodeWrong=Sound'arcade.arcade_126'	
-
-	RollCreditsURL	= "Credits?Game=GameTypes.CreditsGameInfoP2?Mutator=?Workshop=0"
-	BlackBackground=Texture'Nathans.Inventory.BlackBox64'
+     AchText="Achievements"
+     AchHelp="View super-cool achievements."
+     CreditsText="Credits"
+     CustomMapText="Custom Map"
+     CustomMapHelp="Opens a browser for playing user-made levels created with the editor."
+     LockedText="??????????"
+     LockedHelp="Beat 'A Week In Paradise' on Hestonworld difficulty to unlock this option!"
+     UnlockedText="Holidays"
+     UnlockedHelp="Turn on date-restricted holiday content at any time!"
+     PurgeText="Purge Workshop"
+     PurgeHelp="Permanently erase unsubscribed Workshop items."
+     xPatchText="xPatch Settings"
+	 xPatchHelp="You can change some pretty nice stuff there, yup."
+	 ClassicText="Classic"
+	 ClassicHelp="Customize Classic Mode or apply some of its features to the regular game."
+     CustomMapWidth=350
+     CustomMapHeight=250
+     RollCreditsURL="Credits?Game=GameTypes.CreditsGameInfoP2?Mutator=?Workshop=0"
+     BlackBackground=Texture'nathans.Inventory.blackbox64'
+     MenuWidth=275.000000
+     HintLines=4
+     KeyAccepted=Sound'arcade.arcade_12'
+     KodeAccepted=Sound'arcade.arcade_138'
+     KodeWrong=Sound'arcade.arcade_126'
+	 MyTextColor=(R=0,G=255,B=0,A=255)
+	 MyHighlightColor=(R=160,G=255,B=160,A=255)
 }

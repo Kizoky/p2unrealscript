@@ -47,7 +47,8 @@ function TakeDamage( int Dam, Pawn instigatedBy, Vector hitlocation,
 			bDoExplode=true;
 		}
 		// Close range shotgun will kill head on body
-		else if(ThisDamage == class'ShotgunDamage')
+		else if(ThisDamage == class'ShotgunDamage'
+				|| ThisDamage == class'SuperShotgunDamage')		// xPatch: SuperShotgunDamage Fix
 		{
 			CheckDist = DISTANCE_TO_EXPLODE_HEAD_SHOTGUN;
 			bCheckExplode=true;

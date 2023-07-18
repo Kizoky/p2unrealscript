@@ -2,6 +2,9 @@ class WorkshopStartGameCW extends UTMenuBotmatchCW;
 
 var bool bEnhanced;
 var bool bNoHolidays;
+var bool bClassic;
+var bool bSkipIntro;
+
 var Texture DefaultLoadingTexture;
 var string SelectedMap;
 
@@ -220,7 +223,7 @@ function StartPressed()
 			StartGameURL = UseClass.Default.MainMenuURL $ UseClass.Static.GetStartURL(false);
 		}
 		else // Otherwise, just start the game with the specified startup URL
-			StartGameURL = UseClass.Static.GetStartURL(true);
+			StartGameURL = UseClass.Static.GetStartURL(true, bSkipIntro);	// xPatch: added bSkipIntro
 	}
 	else
 		StartGameURL = SelectedMap $ UseClass.Static.GetStartURL(false);
@@ -244,9 +247,21 @@ function StartPressed()
 
 	// Stop any active SceneManager so player will have a pawn
 	usegame.StopSceneManagers();
+	
+	// xPatch: Okay so it seems like if the last game we played had different GameState
+	// than the new one we are starting currently causes some weird issues with the game. 
+	// Like the day selection option not changing the day, save being marked as cheated for "Testing maps via command line" 
+	// and other wierd stuff. Thankfully, changing the GameState here and now fixes these issues.
+	if(usegame.GameStateClass != UseClass.Default.GameStateClass)
+		usegame.ChangeGameState(UseClass.Default.GameStateClass);
+	// End
 
 	usegame.PrepIniStartVals();
 	usegame.TheGameState.bEGameStart = bEnhanced;
+	
+	// xPatch: Classic Game
+	usegame.bNoEDWeapons = bClassic;
+	usegame.TheGameState.bNoEDWeapons = bClassic; 
 
 	usegame.bNoHolidays = bNoHolidays;
 		
@@ -287,6 +302,10 @@ function StartPressed()
 		usegame.ForcedLoadTex = DefaultLoadingTexture;
 		usegame.bForceNoLoadFade = true;
 	}
+	
+	// xPatch: Force map for intro skip
+	if(bSkipIntro && (UseClass == class'GameSinglePlayer' || UseClass == Class'AWPGameInfo'))
+		usegame.TheGameState.bForceMap = True; 
 	
 	// Actually start the game with the selected level
 	//usegame.bQuitting = true;	// discard gamestate

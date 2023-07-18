@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 // ACTION_EnemyHealth.uc
-// Copyright 2003 Running With Scissors, Inc.  All Rights Reserved.
+// Copyright 2023 Running With Scissors Studios LLC.  All Rights Reserved.
 //
 // Find the first instance of EnemyTag in the level and tell the player.
 // Then with the HudPawnIcon picture of that enemy, we'll show the health of

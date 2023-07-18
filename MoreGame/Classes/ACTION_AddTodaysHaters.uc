@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 // ACTION_AddTodaysHater.uc
-// Copyright 2003 Running With Scissors, Inc.  All Rights Reserved.
+// Copyright 2023 Running With Scissors Studios LLC.  All Rights Reserved.
 //
 //	Add only this day's Haters. Handles adding haters twice. Doesn't make the map pop right now
 // and show the haters, but *does* make all pawns in the level that are supposed to

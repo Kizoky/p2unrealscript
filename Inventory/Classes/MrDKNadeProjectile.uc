@@ -176,4 +176,5 @@ defaultproperties
      SoundVolume=100
      CollisionRadius=17.000000
      CollisionHeight=17.000000
+	 GrenadeBounce=Sound'WeaponSoundsToo.KGrenade_fall'	// Added by Man Chrzan: xPatch 2.0
 }

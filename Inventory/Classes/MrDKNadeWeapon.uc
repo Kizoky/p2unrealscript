@@ -53,7 +53,10 @@ simulated function AttachFPPart()
 	if( P.IsLocallyControlled() && PC != None && !PC.bBehindView )
 	{
 		if( Krotch == None )
+		{
 			Krotch = Spawn(class'MrDKNade',self);
+			Krotch.AmbientGlow = AmbientGlow;	// xPatch: Make it match the weapon 
+		}
 		AttachToBone(Krotch, 'k');
 	}
 
@@ -214,6 +217,21 @@ function DropFrom(vector StartLocation)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Added by Man Chrzan: xPatch 2.0
+///////////////////////////////////////////////////////////////////////////////
+function ThrowIt()
+{
+	local PlayerController P;
+	
+	GotoState('NormalFire');
+
+	// Determine shake speeds here--they are determined by throw strength
+	if(!bAltFiring)
+		ShakeRotMag.y = SHAKE_Y_MOD;
+	PlayFiring();
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Default properties
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -243,8 +261,10 @@ defaultproperties
      AttachmentClass=Class'MrDKNadeAttachment'
      ItemName="Krotchy Grenade"
      Mesh=SkeletalMesh'P2R_Anims_D.Weapons.MP_KGrenade'
-     Skins(0)=Texture'P2R_Tex_D.Weapons.hands'
+//	 Skins(0)=Texture'P2R_Tex_D.Weapons.hands'					// Change by Man Chrzan: xPatch 2.0 
+	 Skins(0)=Texture'MP_FPArms.LS_arms.LS_hands_dude' 			// proper arms texture, clothes change fix
      Skins(1)=Shader'P2R_Tex_D.Weapons.fake'
      Skins(2)=Texture'WeaponSkins.jailbars'
 	 PlayerViewOffset=(X=1,Y=0,Z=-14)
+	 FireSound=Sound'EDWeaponSounds.Heavy.DynamiteThrow'		// Added by Man Chrzan: xPatch 2.0 
 }

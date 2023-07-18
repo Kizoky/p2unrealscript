@@ -1,4 +1,4 @@
-class FlashBangDamage extends ExplodedDamage
+class FlashBangDamage extends P2Damage//ExplodedDamage
 	abstract;
 
 defaultproperties

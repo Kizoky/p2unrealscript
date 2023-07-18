@@ -261,4 +261,9 @@ defaultproperties
 	 CollisionHeight=100;
 	 FadeTime=5.0
 	 WaitAfterFadeTime=3.0
+	 
+	 // Change by Man Chrzan: xPatch 2.0
+	 // Missing properties restored
+	 NapalmTexture=Texture'nathans.Skins.firenapalm'
+	 NapalmSpeedRatio=1.15
 }

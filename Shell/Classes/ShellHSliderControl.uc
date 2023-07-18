@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 // ShellHSliderControl.uc
-// Copyright 2003 Running With Scissors, Inc.  All Rights Reserved.
+// Copyright 2023 Running With Scissors Studios LLC.  All Rights Reserved.
 //
 // A control that adds the ability to display the value of the slider in the
 // text area.

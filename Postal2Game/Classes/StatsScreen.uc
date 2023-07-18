@@ -42,10 +42,16 @@ var localized string Difficulty;
 var localized string Ranking;
 var localized string GameMode;
 var localized string ModsUsed;
+var localized string StartDay;					// xPatch: Day we started game on
+var localized string BaliStabs;					
+var localized string CheatsUsed;
+
 var string PlayerRank;
 
 var int StatNum;
 var int StatMax;				// This must include all the localized strings above
+
+var string classicmode, dayname;	// xPatch: new stuff
 
 var String URL;
 
@@ -55,11 +61,12 @@ var localized string CheatsNow;
 
 var Color	YellowC;
 var Color	GreenC;
+var Color	PinkC;
 
 const	LEFT_START_X	=	0.20; 
 const	RIGHT_START_X	=	0.7; 
 const	START_Y			=	0.06; 
-const	INC_Y			=	0.03;
+const	INC_Y			=	0.025;	//0.03;
 const	REVEAL_TIME		=	0.1;
 const   FINAL_WAIT_TIME	=	2.0;
 
@@ -74,6 +81,16 @@ function Show(String URLin)
 	
 	gamest = GetGameSingle().TheGameState;
 	PlayerRank = gamest.GetPlayerRanking();
+	
+	// xPatch:
+	if(GetGameSingle().InClassicMode())
+		classicmode = GetGameSingle().ClassicSaveText;
+	else
+		classicmode = "";
+		
+	if(gamest.StartDay > 0)
+		dayname = GetGameSingle().DayNames[gamest.StartDay];
+	// End
 
 	// Set our first state and start it up
 	AfterFadeInScreen = 'RevealScreen1';
@@ -114,11 +131,9 @@ function Tick(float DeltaTime)
 ///////////////////////////////////////////////////////////////////////////////
 function RenderScreen(canvas Canvas)
 	{
-	local int i;
+	local int i, CheckStatNum;
 	local float sxl, sxr, sy,NearestFourByThree, OffsetX;
 	local string ustr, Mods;
-	
-	
 
 	if(!bEnableRender
 		|| gamest == None) return;
@@ -133,7 +148,7 @@ function RenderScreen(canvas Canvas)
 		MyFont.DrawTextEx(Canvas, Canvas.ClipX, MsgX * Canvas.ClipX, MsgY * Canvas.ClipY, Message, 0, false, EJ_Center);	
 		bTest = true;
 	}
-
+	
     NearestFourByThree = GetPlayer().GetFourByThreeResolution(canvas);
 	OffsetX = (canvas.ClipX - NearestFourByThree) /2;
 
@@ -141,101 +156,161 @@ function RenderScreen(canvas Canvas)
 	sxl = LEFT_START_X;
 	sxr = RIGHT_START_X;
 	sy = START_Y;
-	if(StatNum == 0) return;
+	
+	// xPatch: Added CheckStatNum instead of numbers so it can be automatic 
+	// and we can now hide some stats in Classic Game without breaking the whole thing.
+	CheckStatNum = 0;	
+	
+	if(StatNum == CheckStatNum) return;
+	CheckStatNum++;
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxl * NearestFourByThree), sy * Canvas.ClipY, PeopleKilled, 0, false, EJ_Left);
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$gamest.PeopleKilled, 0, false, EJ_Left);
 	sy += INC_Y;
-	if(StatNum == 1) return;
+	if(StatNum == CheckStatNum) return;
+	CheckStatNum++;
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxl * NearestFourByThree), sy * Canvas.ClipY, CopsKilled, 0, false, EJ_Left);
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$gamest.CopsKilled, 0, false, EJ_Left);
-	sy += INC_Y;
-	if(StatNum == 2) return;
+	sy += INC_Y;	
+	if(StatNum == CheckStatNum) return;
+	CheckStatNum++;
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxl * NearestFourByThree), sy * Canvas.ClipY, PeopleRoasted, 0, false, EJ_Left);
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$gamest.PeopleRoasted, 0, false, EJ_Left);
-	sy += INC_Y;
-	if(StatNum == 3) return;
+	sy += INC_Y;	
+	if(StatNum == CheckStatNum) return;
+	CheckStatNum++;
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxl * NearestFourByThree), sy * Canvas.ClipY, ElephantsKilled, 0, false, EJ_Left);
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$gamest.ElephantsKilled, 0, false, EJ_Left);
-	sy += INC_Y;
-	if(StatNum == 4) return;
+	sy += INC_Y;	
+	if(StatNum == CheckStatNum) return;
+	CheckStatNum++;
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxl * NearestFourByThree), sy * Canvas.ClipY, DogsKilled, 0, false, EJ_Left);
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$gamest.DogsKilled, 0, false, EJ_Left);
-	sy += INC_Y;
-	if(StatNum == 5) return;
+	sy += INC_Y;	
+	if(StatNum == CheckStatNum) return;
+	CheckStatNum++;
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxl * NearestFourByThree), sy * Canvas.ClipY, CatsKilled, 0, false, EJ_Left);
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$gamest.CatsKilled, 0, false, EJ_Left);
-	sy += INC_Y;
-	if(StatNum == 6) return;
+	sy += INC_Y;	
+	if(StatNum == CheckStatNum) return;
+	CheckStatNum++;
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxl * NearestFourByThree), sy * Canvas.ClipY, PistolHeadShot, 0, false, EJ_Left);
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$gamest.PistolHeadShot, 0, false, EJ_Left);
-	sy += INC_Y;
-	if(StatNum == 7) return;
+	sy += INC_Y;	
+	if(StatNum == CheckStatNum) return;
+	CheckStatNum++;
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxl * NearestFourByThree), sy * Canvas.ClipY, ShotgunHeadShot, 0, false, EJ_Left);
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$gamest.ShotgunHeadShot, 0, false, EJ_Left);
 	sy += INC_Y;
-	if(StatNum == 8) return;
+	if(StatNum == CheckStatNum) return;
+	CheckStatNum++;
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxl * NearestFourByThree), sy * Canvas.ClipY, RifleHeadShot, 0, false, EJ_Left);
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$gamest.RifleHeadShot, 0, false, EJ_Left);
 	sy += INC_Y;
-	if(StatNum == 9) return;
+	if(StatNum == CheckStatNum) return;
+	CheckStatNum++;
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxl * NearestFourByThree), sy * Canvas.ClipY, CatsUsed, 0, false, EJ_Left);
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$gamest.CatsUsed, 0, false, EJ_Left);
-	sy += INC_Y;
-	if(StatNum == 10) return;
+	sy += INC_Y;	
+	if(StatNum == CheckStatNum) return;
+	CheckStatNum++;
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxl * NearestFourByThree), sy * Canvas.ClipY, MoneySpent, 0, false, EJ_Left);
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$gamest.MoneySpent, 0, false, EJ_Left);
-	sy += INC_Y;
-	if(StatNum == 11) return;
+	sy += INC_Y;	
+	if(StatNum == CheckStatNum) return;
+	CheckStatNum++;
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxl * NearestFourByThree), sy * Canvas.ClipY, PeeTotal, 0, false, EJ_Left);
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$(0.1*float(gamest.PeeTotal)), 0, false, EJ_Left);
-	sy += INC_Y;
-	if(StatNum == 12) return;
+	sy += INC_Y;	
+	if(StatNum == CheckStatNum) return;
+	CheckStatNum++;
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxl * NearestFourByThree), sy * Canvas.ClipY, LimbsHacked, 0, false, EJ_Left);
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$gamest.LimbsHacked, 0, false, EJ_Left);
-	sy += INC_Y;
-	if(StatNum == 13) return;
+	sy += INC_Y;	
+	if(StatNum == CheckStatNum) return;
+	CheckStatNum++;
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxl * NearestFourByThree), sy * Canvas.ClipY, HeadsLopped, 0, false, EJ_Left);
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$gamest.HeadsLopped, 0, false, EJ_Left);
 	sy += INC_Y;
-	if(StatNum == 14) return;
+	
+	// xPatch: Don't need these in Classic Mode
+	if(!GetGameSingle().InClassicMode()) {
+	if(StatNum == CheckStatNum) return;
+	CheckStatNum++;
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxl * NearestFourByThree), sy * Canvas.ClipY, HeadsBattedOff, 0, false, EJ_Left);
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$gamest.BaseballHeads, 0, false, EJ_Left);
+	sy += INC_Y;	
+	if(StatNum == CheckStatNum) return;
+	CheckStatNum++;
+	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxl * NearestFourByThree), sy * Canvas.ClipY, BaliStabs, 0, false, EJ_Left);
+	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$gamest.BaliStabs, 0, false, EJ_Left);
 	sy += INC_Y;
-	if(StatNum == 15) return;
+	if(StatNum == CheckStatNum) return;
+	CheckStatNum++;
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxl * NearestFourByThree), sy * Canvas.ClipY, ChainsawKills, 0, false, EJ_Left);
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$gamest.ChainsawKills, 0, false, EJ_Left);
 	sy += INC_Y;
-	if(StatNum == 16) return;
+	}
+	
+	if(StatNum == CheckStatNum) return;
+	CheckStatNum++;
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxl * NearestFourByThree), sy * Canvas.ClipY, DoorsKicked, 0, false, EJ_Left);
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$gamest.DoorsKicked, 0, false, EJ_Left);
-	sy += INC_Y;
-	if(StatNum == 17) return;
+	sy += INC_Y;	
+	if(StatNum == CheckStatNum) return;
+	CheckStatNum++;
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxl * NearestFourByThree), sy * Canvas.ClipY, TimesArrested, 0, false, EJ_Left);
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$gamest.TimesArrested, 0, false, EJ_Left);
-	sy += INC_Y;
-	if(StatNum == 18) return;
+	sy += INC_Y;	
+	if(StatNum == CheckStatNum) return;
+	CheckStatNum++;
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxl * NearestFourByThree), sy * Canvas.ClipY, DressedAsCop, 0, false, EJ_Left);
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$gamest.DressedAsCop, 0, false, EJ_Left);
-	sy += INC_Y;
-	if(StatNum == 19) return;
+	sy += INC_Y;	
+	if(StatNum == CheckStatNum) return;
+	CheckStatNum++;
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxl * NearestFourByThree), sy * Canvas.ClipY, DogsTrained, 0, false, EJ_Left);
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$gamest.DogsTrained, 0, false, EJ_Left);
-	sy += INC_Y;
-	if(StatNum == 20) return;
+	sy += INC_Y;	
+	if(StatNum == CheckStatNum) return;
+	CheckStatNum++;
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxl * NearestFourByThree), sy * Canvas.ClipY, CopsLuredByDonuts, 0, false, EJ_Left);
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$gamest.CopsLuredByDonuts, 0, false, EJ_Left);
-	sy += INC_Y;
-	if(StatNum == 21) return;
+	sy += INC_Y;	
+	if(StatNum == CheckStatNum) return;
+	CheckStatNum++;
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxl * NearestFourByThree), sy * Canvas.ClipY, GameMode, 0, false, EJ_Left);
-	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$GetGameSingle().GameName, 0, false, EJ_Left);
-	sy += INC_Y;
-	if(StatNum == 22) return;
+	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$GetGameSingle().GameName@classicmode, 0, false, EJ_Left);
+	sy += INC_Y;	
+	if(StatNum == CheckStatNum) return;
+	CheckStatNum++;
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxl * NearestFourByThree), sy * Canvas.ClipY, Difficulty, 0, false, EJ_Left);
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$GetGameSingle().GetDiffName(gamest.GameDifficulty), 0, false, EJ_Left);
 	sy += INC_Y;
 	
+	// xPatch: Day the game started on
+	if(dayname != "")
+	{
+		if(StatNum == CheckStatNum) return;
+		CheckStatNum++;
+		
+		MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxl * NearestFourByThree), sy * Canvas.ClipY, StartDay, 0, false, EJ_Left);
+		MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$dayname, 0, false, EJ_Left);
+		sy += INC_Y;
+	}
+	
 	if (URL == "") return;
-
+	
+	// xPatch: How many cheats were used
+	if(gamest.CheatCodesUsed > 0)
+	{
+		if(StatNum < CheckStatNum) return;
+		CheckStatNum++;
+		
+		MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxl * NearestFourByThree), sy * Canvas.ClipY, CheatsUsed, 0, false, EJ_Left, PinkC);
+		MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$gamest.CheatCodesUsed, 0, false, EJ_Left, PinkC);
+		sy += INC_Y;
+	}
+	
 	// Hide this if they cheated
 	if (!gamest.DidPlayerCheat())
 	{
@@ -246,11 +321,14 @@ function RenderScreen(canvas Canvas)
 		MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxl * NearestFourByThree), sy * Canvas.ClipY, TimeElapsed@gamest.GetPlayerRankingSpeedRun(), 0, false, EJ_Left);
 		MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$gamest.HoursPlayed()$":"$gamest.MinutesPlayed()$":"$gamest.SecondsPlayed()@gamest.GetSingleSegmentString(), 0, false, EJ_Left);
 		MyFont.TextColor=MyFont.default.TextColor;
+
 		sy += INC_Y;
-		if (StatNum < 23) return;
+		
+		if (StatNum < CheckStatNum) return;
+		CheckStatNum++;
 	}
 	
-	if (StatNum < 24) return;
+	if (StatNum < CheckStatNum) return;
 
 	// Mods
 	Mods = gamest.GetModList();
@@ -268,6 +346,7 @@ function RenderScreen(canvas Canvas)
 	sy += INC_Y;
 	if (GetGameSingle().FinallyOver())
 		MyFont.DrawTextEx(Canvas, Canvas.ClipX, 0.5 * Canvas.ClipX, sy * Canvas.ClipY, CheatsNow, 1, false, EJ_Center);
+			
 	}
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -379,7 +458,7 @@ defaultproperties
 	DogsTrained="Times a dog was befriended:"
 	CopsLuredByDonuts="Number of cops you lured with donuts:"
 	Ranking="Summary:  "
-	StatMax=25
+	StatMax=26
 	CheatsNow="Cheats now accessible with in-game menu (press Esc)!"
 	Song="map_muzak.ogg"
 	BackgroundName="P2Misc_full.InkyBlackness"
@@ -388,10 +467,15 @@ defaultproperties
 	TimeElapsed="Time Elapsed:"
 	YellowC=(G=200,R=255,A=255)
 	GreenC=(G=255,R=200,A=200)
+	PinkC=(G=105,R=255,B=180,A=200)
 	HeadsBattedOff="Heads batted off:"
 	ChainsawKills="People chainsawed to bits:"
 	LimbsHacked="Limbs hacked:"
 	HeadsLopped="Heads lopped:"
 	GameMode="Game mode:"
 	ModsUsed="Mods used:"
+	// xPatch:
+	StartDay="Started from day:"
+	BaliStabs="Backs stabbed:"
+	CheatsUsed="Cheats used:"
 }

@@ -12,5 +12,5 @@ defaultproperties
 	MuzzleOffset=(X=75.000000,Y=0.000000,Z=5.000000)
 	WeapClass=class'ShotgunWeapon'
 
-	FireSound=Sound'WeaponSounds.shotgun_fire'
+	FireSound=Sound'WeaponSoundsToo.BetaShotgun' //'WeaponSounds.shotgun_fire'
 	}

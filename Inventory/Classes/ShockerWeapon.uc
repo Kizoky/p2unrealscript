@@ -32,9 +32,8 @@ const ANIMAL_PELVIS	= 'bip01 pelvis';
 ///////////////////////////////////////////////////////////////////////////////
 simulated function DetachFromPawn(Pawn P)
 {
-	Super.DetachFromPawn(P);
-
 	EndLightning(true);
+	Super.DetachFromPawn(P);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -365,6 +364,12 @@ state DownWeapon
 	}
 }
 
+// xPatch: Make sure that this gun is not extension!
+function bool CanSwapHands()
+{
+	return (Class == Class'ShockerWeapon');
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Default properties
 ///////////////////////////////////////////////////////////////////////////////
@@ -377,7 +382,7 @@ defaultproperties
 	AttachmentClass=class'ShockerAttachment'
 	bMeleeWeapon=true
 
-//	Mesh=Mesh'FP_Weapons.FP_Dude_Tazer'
+	OldMesh=Mesh'FP_Weapons.FP_Dude_Tazer'
 	Mesh=Mesh'MP_Weapons.MP_LS_Tazer'
 //	Skins[0]=Texture'WeaponSkins.Dude_Hands'
 	Skins[0]=Texture'MP_FPArms.LS_arms.LS_hands_dude'
@@ -418,7 +423,7 @@ defaultproperties
 	AutoSwitchPriority=1
 	InventoryGroup=1
 	GroupOffset=1
-	BobDamping=0.975000
+//	BobDamping=0.975000
 	ReloadCount=0
 	ViolenceRank=1
 	TraceAccuracy=0.01
@@ -446,4 +451,8 @@ defaultproperties
 	AmmoGainRate=1.0
 	sparkoffset=(X=20,Y=-4.0,Z=2.0)
 	bDelayedStartSound=true
+	
+	BobDamping=1.12 
+	bDropInVeteranMode=1
+	VeteranModeDropChance=1.00
 	}

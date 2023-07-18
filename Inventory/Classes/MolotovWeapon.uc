@@ -133,6 +133,13 @@ function DropFrom(vector StartLocation)
 	Super.DropFrom(StartLocation);
 }
 
+// xPatch: Make sure that this gun is not extension!
+function bool CanSwapHands()
+{
+	return (Class == Class'MolotovWeapon');
+}
+
+
 ///////////////////////////////////////////////////////////////////////////////
 // Default properties
 ///////////////////////////////////////////////////////////////////////////////
@@ -143,7 +150,7 @@ defaultproperties
 	PickupClass=class'MolotovPickup'
 	AttachmentClass=class'MolotovAttachment'
 
-	//Mesh=Mesh'FP_Weapons.FP_Dude_Molotov'
+	OldMesh=Mesh'FP_Weapons.FP_Dude_Molotov'
 	Mesh=Mesh'MP_Weapons.MP_LS_Molotov'
 
 	Skins[0]=Texture'MP_FPArms.LS_arms.LS_hands_dude'
@@ -176,7 +183,7 @@ defaultproperties
 	WeaponSpeedCharge  = 0.5
 	WeaponSpeedShoot1  = 1.0
 	WeaponSpeedShoot1Rand=0.1
-	WeaponSpeedShoot2  = 2.0
+	WeaponSpeedShoot2  = 1.10 //2.0
 
 	AimError=500
 	ChargeDistRatio=1600
@@ -191,4 +198,8 @@ defaultproperties
 
 	AltHint1="Press %KEY_AltFire% to place bombs."
 	AltHint2="They explode after several seconds."
+	
+	BobDamping=1.12 
+	bDropInVeteranMode=1
+	VeteranModeDropChance=0.75
 	}

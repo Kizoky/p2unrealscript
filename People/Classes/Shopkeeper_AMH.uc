@@ -50,7 +50,7 @@ defaultproperties
 	BaseEquipment[0]=(weaponclass=class'Inventory.MachinegunWeapon')
 
 	TakesShotgunHeadShot=	0.15
-	TakesRifleHeadShot=		0.3
+	TakesRifleHeadShot=		1.0 //0.3
 	TakesShovelHeadShot=	0.25
 	TakesOnFireDamage=		0.3
 	TakesAnthraxDamage=		0.4

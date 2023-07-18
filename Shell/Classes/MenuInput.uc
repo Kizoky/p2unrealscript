@@ -115,12 +115,17 @@ function CreateMenuContents()
 	InvertMouseCheckbox = AddCheckbox(InvertMouseText, InvertMouseHelp, ItemFont);
 	//MouseSmoothCheckbox = AddCheckbox(MouseSmoothText, MouseSmoothHelp, ItemFont);
 	EnableJoystickCheckbox = AddCheckbox(EnableJoystickText, EnableJoystickHelp, ItemFont);
+    
+    if (PlatformIsSteamDeck())
+        EnableJoystickCheckbox.bDisabled = true;
 	
 	// Stub out on non-Windows platforms.
 	if (PlatformIsWindows())
 		EnableXJoystickCheckbox = AddCheckbox(EnableXJoystickText, EnableXJoystickHelp, ItemFont);
-	else
+	else {
 		EnableXJoystickCheckboxLinux = AddCheckbox(EnableXJoystickTextLinux, EnableXJoystickHelpLinux, ItemFont);
+        if (PlatformIsSteamDeck()) EnableXJoystickCheckboxLinux.bDisabled = true;
+    }
 	
 	JoystickTypeCombo = AddComboBox(JoystickTypeText, JoystickTypeHelp, ItemFont);
 	JoystickTypeCombo.List.MaxVisible = FPSHUD(GetPlayerOwner().MyHUD).MyButtons.GetJoystickCount();
@@ -146,12 +151,15 @@ function SetDefaultValues()
 	AutoSlopeCheckbox.SetValue(false);
 	InvertMouseCheckbox.SetValue(false);
 	//MouseSmoothCheckbox.SetValue(true);
-	EnableJoystickCheckbox.SetValue(true);
+	EnableJoystickCheckbox.SetValue(PlatformIsSteamDeck());
 	if (EnableXJoystickCheckbox != None)
-		EnableXJoystickCheckbox.SetValue(true);
+		EnableXJoystickCheckbox.SetValue(PlatformIsSteamDeck());
 	else if (EnableXJoystickCheckboxLinux != None)
-		EnableXJoystickCheckboxLinux.SetValue(true);
-	JoystickTypeCombo.SetValue(FPSHUD(GetPlayerOwner().MyHUD).MyButtons.GetJoystickName(1));	
+		EnableXJoystickCheckboxLinux.SetValue(PlatformIsSteamDeck());
+    if (PlatformIsSteamDeck())
+        JoystickTypeCombo.SetValue(FPSHUD(GetPlayerOwner().MyHUD).MyButtons.GetJoystickName(6));
+    else
+        JoystickTypeCombo.SetValue(FPSHUD(GetPlayerOwner().MyHUD).MyButtons.GetJoystickName(1));
 
 	bAsk = true;
 	}

@@ -51,5 +51,5 @@ defaultproperties
 	PowerupDesc="Warning: Holds a forbidden power!"
      PickupClass=Class'AWInventory.GaryHeadPickup'
      Icon=Texture'AW_Textures.Gary_Bookfire_Icon'
-	 IconOffsetY=-0.5
+	 //IconOffsetY=-0.5	
 }

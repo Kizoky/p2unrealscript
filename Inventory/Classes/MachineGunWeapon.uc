@@ -67,6 +67,7 @@ simulated function PlayAltFiring()
 	PlayAnim('Shoot1', WeaponSpeedShoot1 + (WeaponSpeedShoot1Rand*FRand()), 0.05);
 
 	SetupMuzzleFlash();
+	SetupMuzzleFlashEmitter();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -103,7 +104,8 @@ simulated function AltFire( float Value )
 {
 	if(P2GameInfoSingle(Level.Game) != None
 		&& P2GameInfoSingle(Level.Game).VerifySeqTime()
-		&& Pawn(Owner).Controller.bIsPlayer)
+		&& Pawn(Owner).Controller.bIsPlayer
+		|| ShootScissors==1)
 	{
 		Super.AltFire(Value);
 	}
@@ -304,6 +306,32 @@ function ChangeSpeed(float NewSpeed)
 	ActualFireRate = default.ActualFireRate*NewSpeed;
 }
 
+// xPatch: Make sure that this gun is not extension!
+function bool CanSwapHands()
+{
+	return (Class == Class'MachineGunWeapon');
+}
+
+// xPatch: So apparently the old cat mesh has no Cylinder01 bone huh...
+function SwapCatOn()
+{
+	Super.SwapCatOn();
+	
+	if(Mesh == OldCatMesh)
+	{
+		MFBoneName=CatBoneName;
+		MFRelativeLocation.X=-40;
+		MFRelativeLocation.Y=-12;
+		MFRelativeLocation.Z=1;
+	}
+}
+function SwapCatOff()
+{
+	Super.SwapCatOff();
+	MFBoneName=default.MFBoneName;
+	MFRelativeLocation=default.MFRelativeLocation;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Default properties
 ///////////////////////////////////////////////////////////////////////////////
@@ -314,7 +342,7 @@ defaultproperties
 	PickupClass=class'MachineGunPickup'
 	AttachmentClass=class'MachinegunAttachment'
 
-//	Mesh=Mesh'FP_Weapons.FP_Dude_Machinegun'
+	OldMesh=Mesh'FP_Weapons.FP_Dude_Machinegun'
 	Mesh=Mesh'MP_Weapons.MP_LS_Machinegun'
 
 //	Skins[0]=Texture'WeaponSkins.Dude_Hands'
@@ -324,7 +352,7 @@ defaultproperties
 	Skins[3]=Texture'AnimalSkins.Cat_Orange'
 	FirstPersonMeshSuffix="MachineGun"
 
-//	CatMesh=Mesh'FP_Weapons.FP_Dude_MachinegunCat'
+	OldCatMesh=Mesh'FP_Weapons.FP_Dude_MachinegunCat'
 	CatMesh=Mesh'MP_Weapons.MP_LS_MachinegunCat'
 	CatFireSound=Sound'WeaponSounds.machinegun_catfire'
 
@@ -349,12 +377,12 @@ defaultproperties
 	switchstyle=WEAPONHOLDSTYLE_Both
 	firingstyle=WEAPONHOLDSTYLE_Both
 
-	ShakeOffsetMag=(X=3.0,Y=2.5,Z=2.5)
-	ShakeOffsetRate=(X=1000.0,Y=1000.0,Z=1000.0)
-	ShakeOffsetTime=2.0
-	ShakeRotMag=(X=120.0,Y=30.0,Z=30.0)
-	ShakeRotRate=(X=10000.0,Y=10000.0,Z=10000.0)
-	ShakeRotTime=2.0
+//	ShakeOffsetMag=(X=3.0,Y=2.5,Z=2.5)
+//	ShakeOffsetRate=(X=1000.0,Y=1000.0,Z=1000.0)
+//	ShakeOffsetTime=2.0
+//	ShakeRotMag=(X=120.0,Y=30.0,Z=30.0)
+//	ShakeRotRate=(X=10000.0,Y=10000.0,Z=10000.0)
+//	ShakeRotTime=2.0
 
 	FireSound=Sound'WeaponSounds.machinegun_fire'
 	SoundRadius=255
@@ -363,7 +391,7 @@ defaultproperties
 	AutoSwitchPriority=4
 	InventoryGroup=4
 	GroupOffset=1
-	BobDamping=0.975000
+	BobDamping=1.15 //0.975000
 	ReloadCount=0
 	SPAccuracy=0.7
 	TraceAccuracy=0.11
@@ -392,5 +420,30 @@ defaultproperties
 	bAllowHints=true
 	bShowHints=true
 	bUsesAltFire=true
+	
+	// Muzzle Flash
+	bSpawnMuzzleFlash=true
+	MFClass[0]=class'xMuzzleFlashEmitter'
+	MFClass[2]=class'FX2.MuzzleFlash01'
+	MFTex[0]=Texture'Timb.muzzleflash.machine_gun_corona'
+	MFScale[0]=(Min=1.6,Max=1.6) 
+	MFSizeRange[0]=(Min=20,Max=25) 
+	MFLifetime[0]=(Min=0.05,Max=0.05)
+	MFSpinRan[0]=(Min=-0.05,Max=0.05)
+	MFSpinsPerSec[0]=(Max=1)
+	MFBoneName="Cylinder01"
+	CatBoneName="MESH_Clip"
+	MFRelativeLocation=(X=0,Y=0,Z=98)
+	
+	// Shell
+	ShellBoneName="MESH_Rnd01"
+    ShellRelativeLocation=(Y=5.000000,Z=12.000000)
+    ShellClass=Class'P2Shell_MachineGun'
+    ShellSpeedY=650.000000
+    ShellSpeedZ=450.000000
+	ShellTex=Texture'WeaponSkins.brass-01'
+	bCheckShell=True
+	
+	VeteranModeDropChance=0.45
 	}
 

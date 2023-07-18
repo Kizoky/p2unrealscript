@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 // StumpCow
-// Copyright 2003 Running With Scissors, Inc.  All Rights Reserved.
+// Copyright 2023 Running With Scissors Studios LLC.  All Rights Reserved.
 //
 // Bloody neck stump where head was.
 //
@@ -37,8 +37,30 @@ simulated function SetupStump(Material NewSkin, byte NewAmbientGlow,
 		SetStaticMesh(ExplodedMesh);
 }
 
+// Change by NickP: MP fix
+simulated function PostNetBeginPlay()
+{
+	Super.PostNetBeginPlay();
+
+	if (Role < ROLE_Authority)// && bClientSync)
+	{
+		if (AWCowPawn(Base) != None 
+			&& !Base.bDeleteMe 
+			&& AttachmentBone != '')
+		{
+			AWCowPawn(Base).ClientSetupStump(self);
+		}
+		else Destroy();
+	}
+}
+// End
+
 defaultproperties
 {
+	// Change by NickP: MP fix
+	bReplicateSkin=true
+	// End
+
      ExplodedMesh=StaticMesh'awpeoplestatic.Limbs.Cow_neck_2'
      DrawType=DT_StaticMesh
      StaticMesh=StaticMesh'awpeoplestatic.Limbs.Cow_neck'

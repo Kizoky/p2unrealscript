@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 // MenuLoadSave.uc
-// Copyright 2003 Running With Scissors, Inc.  All Rights Reserved.
+// Copyright 2023 Running With Scissors Studios LLC.  All Rights Reserved.
 //
 // The Save menu.
 //
@@ -62,6 +62,9 @@ var UWindowMessageBox	DeleteSaveConfirmationBox;	// MessageBox to confirm deleti
 var localized string	DeleteSaveConfirmationTitle, DeleteSaveConfirmationMessage, DeleteSaveFailedTitle, DeleteSaveFailedMessage;
 var int					DeleteSaveSlot;				// Slot to delete.
 
+var color				CheatedColor;
+var color				CheatedColorHighlight;
+var localized string	strCheatSlotHelp;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Update a slot's UI
@@ -74,9 +77,10 @@ var int					DeleteSaveSlot;				// Slot to delete.
 ///////////////////////////////////////////////////////////////////////////////
 function UpdateSlotUI(int iSlot)
 	{
-	local string			strLabel;
+	local string			strLabel, strCheated;
 
 	strLabel = "";
+	strCheated	= "*";
 	if (aiSlotOrder[iSlot] < ArrayCount(astrLabels) )
 		strLabel = astrLabels[aiSlotOrder[iSlot] ];
 
@@ -93,6 +97,15 @@ function UpdateSlotUI(int iSlot)
 		SlotChoice[iSlot].SetValue(strLabel $ GetSlotName(iSlot));
 		SlotChoice[iSlot].Align			= TA_Right;
 		SlotChoice[iSlot].ValueAlign	= TA_Left;
+		}
+		
+		// xPatch: Mark cheated with eye-cathing color, almost no one notices that * mark...
+		//Log(self$"Left Str: "$Left(GetSlotName(iSlot), 1));
+		if( !IsSlotEmpty(iSlot) && Left(GetSlotName(iSlot), 1) ~= strCheated )
+		{
+			SlotChoice[iSlot].SetTextColor(CheatedColor);
+			SlotChoice[iSlot].SetHighlightTextColor(CheatedColorHighlight);
+			SlotChoice[iSlot].SetHelpText(strSlotHelp$strCheatSlotHelp);
 		}
 	}
 
@@ -453,4 +466,8 @@ defaultproperties
 	DeleteSaveConfirmationMessage="Are you sure you want to permanently delete this save?"
 	DeleteSaveFailedTitle="Delete Failed"
 	DeleteSaveFailedMessage="Unable to delete save. The save might be deleted already, or the file might be write-protected."
+	
+	CheatedColor=(G=200,R=255,A=255)
+	CheatedColorHighlight=(R=252,G=235,B=119,A=255)
+	strCheatSlotHelp = "\\nWARNING: Unlocking achievements has been disabled for this save.";
 }

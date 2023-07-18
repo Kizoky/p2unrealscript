@@ -3,7 +3,7 @@
 //   Eternal Damnation
 //   Dopamine|Silent-Scope
 //=============================================================
-class ShearsAmmoInv extends InfiniteAmmoInv;
+class ShearsAmmoInv extends MacheteAmmoInv;
 
 var Sound ShovelHitBody;
 var Sound ShovelStab;
@@ -11,6 +11,9 @@ var Sound ShovelHitWall;
 var Sound ShovelHitBot, ShovelHitSkel;
 
 const MIN_Z_MOMENTUM = 0.3;
+
+// xPatch: 
+var class<DamageType> LowerDamageTypeInflicted;
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -21,6 +24,7 @@ function ProcessTraceHit(Weapon W, Actor Other, Vector HitLocation, Vector HitNo
 	local SparkHitMachineGun spark1;
 	local Rotator NewRot;
 	local vector Momentum;
+	local byte BlockedHit;
 
 	if ( Other == None )
 		return;
@@ -31,6 +35,21 @@ function ProcessTraceHit(Weapon W, Actor Other, Vector HitLocation, Vector HitNo
 		DamageAmount = DamageAmountMP;
 	else DamageAmount = default.DamageAmount;
 	// End
+	
+	// Check if they're allowed to hit the person they did, if not, None out Other
+	// so it's like a wall hit
+	if(PersonPawn(Other) != None)
+	{
+		if(W != None
+			&& W.Owner != None)
+		{
+			// Instead of using hit location, ensure the block knows it comes from the 
+			// attacker originally, so use the weapon's owner
+			Personpawn(Other).CheckBlockMelee(W.Owner.Location, BlockedHit);
+			if(BlockedHit == 1)
+				Other = None;	// don't let them hit Other!
+		}
+	}
 
 	if (Other.bStatic)//Other.bWorldGeometry )
 	{
@@ -65,8 +84,12 @@ function ProcessTraceHit(Weapon W, Actor Other, Vector HitLocation, Vector HitNo
 					Momentum.z = (MIN_Z_MOMENTUM*FRand()) + MIN_Z_MOMENTUM;
 				Momentum = MomentumHitMag*Momentum;
 
-				Other.TakeDamage(DamageAmount, Pawn(Owner), HitLocation, Momentum, DamageTypeInflicted);
-                        }                     
+				// Use weaker damage type if the damage amount is not enough to kill them.
+				if (PersonPawn(Other) != None && PersonPawn(Other).Health > DamageAmount && AWZombie(Other) == None)
+					Other.TakeDamage(DamageAmount, Pawn(Owner), HitLocation, Momentum, LowerDamageTypeInflicted);
+				else
+					Other.TakeDamage(DamageAmount, Pawn(Owner), HitLocation, Momentum, DamageTypeInflicted);
+            }                     
 		}
 		else
 		{
@@ -74,7 +97,13 @@ function ProcessTraceHit(Weapon W, Actor Other, Vector HitLocation, Vector HitNo
 				|| HurtingAttacker(FPSPawn(Other)))
 			{
 				Momentum = MomentumHitMag*X + MomentumHitMag*vect(0, 0, 1.0)*FRand();
-				Other.TakeDamage(DamageAmount, Pawn(Owner), HitLocation, Momentum, AltDamageTypeInflicted);
+				
+				// Use weaker damage type if the damage amount is not enough to kill them.
+				if (PersonPawn(Other) != None && PersonPawn(Other).Health > DamageAmount 
+					&& AWZombie(Other) == None || Other.IsA('DoorMover'))
+					Other.TakeDamage(DamageAmount, Pawn(Owner), HitLocation, Momentum, LowerDamageTypeInflicted);
+				else
+					Other.TakeDamage(DamageAmount, Pawn(Owner), HitLocation, Momentum, AltDamageTypeInflicted);
 			}
 		}
 
@@ -126,11 +155,12 @@ defaultproperties
      ShovelHitWall=Sound'AWSoundFX.Machete.machetehitwall'
      ShovelHitBot=Sound'AWSoundFX.Machete.machetehitwall'
      ShovelHitSkel=Sound'AWSoundFX.Machete.machetehitwall'
-     DamageAmount=25.000000
-	 DamageAmountMP=50.000000
+     DamageAmount=80 //25
+	 DamageAmountMP=160 //50.000000
      MomentumHitMag=20000.000000
      DamageTypeInflicted=Class'MacheteDamage'
-     AltDamageTypeInflicted=Class'ShotGunDamage'
+	 AltDamageTypeInflicted=Class'SledgeDamage'		//Was ShotGunDamage	
+	 LowerDamageTypeInflicted=Class'CuttingDamage'
      bInstantHit=True
      Texture=Texture'EDHud.hud_Shears'
      TransientSoundRadius=80.000000

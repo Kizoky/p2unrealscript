@@ -57,10 +57,12 @@ defaultproperties
 	bActive=True
 	DrawScale=0.25
 	SunDist=2000
-	Coronas[0]=(Texture=Texture'GenFX.LensFlar.flare2',Size=0.5,Dist=1.0)
-	Coronas[1]=(Texture=Texture'RevSunTex.SunL1',Size=0.3,Dist=0.055556)
-	Coronas[2]=(Texture=Texture'RevSunTex.SunL2',Size=0.2,Dist=0.066667)
-	Coronas[3]=(Texture=Texture'RevSunTex.SunL3',Size=0.1,Dist=0.083333)
-	Coronas[4]=(Texture=Texture'RevSunTex.SunL4',Size=0.5,Dist=0.111112)
-	Coronas[5]=(Texture=Texture'RevSunTex.SunL5',Size=0.7,Dist=0.166667)
+	
+// It seems that RevSunTex causes crahes, let's see if removing it will fix it. 	
+//	Coronas[0]=(Texture=Texture'GenFX.LensFlar.flare2',Size=0.5,Dist=1.0)
+//	Coronas[1]=(Texture=Texture'RevSunTex.SunL1',Size=0.3,Dist=0.055556)
+//	Coronas[2]=(Texture=Texture'RevSunTex.SunL2',Size=0.2,Dist=0.066667)
+//	Coronas[3]=(Texture=Texture'RevSunTex.SunL3',Size=0.1,Dist=0.083333)
+//	Coronas[4]=(Texture=Texture'RevSunTex.SunL4',Size=0.5,Dist=0.111112)
+//	Coronas[5]=(Texture=Texture'RevSunTex.SunL5',Size=0.7,Dist=0.166667)	
 }

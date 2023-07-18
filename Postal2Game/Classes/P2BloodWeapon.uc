@@ -15,11 +15,16 @@ var() bool bStopAtDoor;		// If this is set, then we care about hitting doors fir
 							// we *don't* want them pissed off (attacking) because we couldn't know they	
 							// we're on the other side and for the most part we didn't mean to do that.
 
-var int BloodTextureIndex;			// index into following array
-var() array<Material> BloodTextures;// bloodier versions of this weapon skin
-var() int BloodSkinIndex;			// Index of weapon model that gets more and more bloody. This will be 1 for most weapons but some models may have the skins reversed.
+// xPatch Edit: BloodTextureIndex now travels between levels.
+var travel int BloodTextureIndex;			// index into following array
+var() array<Material> BloodTextures;		// bloodier versions of this weapon skin
+var() int BloodSkinIndex;					// Index of weapon model that gets more and more bloody. This will be 1 for most weapons but some models may have the skins reversed.
 
 var float AlertRadius;		// how big an area to tell people i'm going to hit about me
+
+// xPatch 2.0 Additions
+var bool bForceBlood;							// Forces weapon to restore blood no matter the setting (used by Sledge, Scythe and TravelPostAccept).
+var() int ThirdPersonBloodSkinIndex;			// Index of weapon attachment that gets more and more bloody.  			 			
 
 ///////////////////////////////////////////////////////////////////////////////
 // Give hints about this item
@@ -84,6 +89,11 @@ function SendSwingAlert(float UseRadius)
 function SetBloodTexture(Material NewTex)
 {
 	Skins[BloodSkinIndex] = NewTex;
+	
+	//xPatch
+	if (ThirdPersonActor != None && ThirdPersonBloodSkinIndex != -1)
+		ThirdPersonActor.Skins[ThirdPersonBloodSkinIndex] = NewTex;
+	//end
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -97,7 +107,7 @@ function DrewBlood()
 	{
 		// update the texture
 		SetBloodTexture(BloodTextures[BloodTextureIndex]);
-		BloodTextureIndex++;
+		BloodTextureIndex++;	
 	}
 	//log(self$" drew blood "$BloodTextureIndex$" new skin "$Skins[1]);
 }
@@ -109,7 +119,7 @@ function CleanWeapon()
 {
 	BloodTextureIndex = 0;
 	SetBloodTexture(default.Skins[BloodSkinIndex]);
-	//log(self$" clean weapon "$BloodTextureIndex$" new skin "$Skins[1]);
+	//log(self$" clean weapon "$BloodTextureIndex$" new skin "$Skins[1]);	
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -124,8 +134,36 @@ state Active
 	function BeginState()
 	{
 		Super.BeginState();
-		CleanWeapon();
+		
+		if(!RestoreBlood())	// xPatch: Check for restoring blood.
+			CleanWeapon();
 	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// xPatch: Returns if we should clean or not + restores blood if needed. 
+///////////////////////////////////////////////////////////////////////////////
+function bool RestoreBlood()
+{
+	if((P2GameInfoSingle(Level.Game) != None && P2GameInfoSingle(Level.Game).xManager.bKeepBlood && BloodTextureIndex != 0)
+	|| (bForceBlood && BloodTextureIndex != 0))
+	{
+		SetBloodTexture(BloodTextures[BloodTextureIndex - 1]);	// NOTE: BloodTextureIndex defines the next blood skin so do -1
+		bForceBlood=False;
+		return true;
+	}
+	return false;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// xPatch: Always restore blood after the player goes to the next level
+///////////////////////////////////////////////////////////////////////////////
+event TravelPostAccept()
+{
+	if (Instigator.Weapon == self)
+		bForceBlood = true;
+		
+	Super.TravelPostAccept();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -135,4 +173,5 @@ state Active
 defaultproperties
 {
 	BloodSkinIndex=1
+	ThirdPersonBloodSkinIndex=-1	// -1 = Disabled
 }

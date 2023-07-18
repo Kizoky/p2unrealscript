@@ -1,4 +1,20 @@
-class SledgePickup extends P2WeaponPickup;
+class SledgePickup extends P2BloodWeaponPickup;
+// Added by Man Chrzan: xPatch 2.0
+var bool bForceSwitch;
+
+// Force switching to this weapon.
+function inventory SpawnCopy( pawn Other )
+{
+	local inventory Copy;
+
+	Copy = Super.SpawnCopy(Other);
+	
+	if(bForceSwitch)
+		P2Player(Other.Controller).PickupThrownWeapon(Copy.InventoryGroup, Copy.GroupOffset, true);
+		
+	return Copy;
+}
+// End
 
 defaultproperties
 {

@@ -2074,6 +2074,56 @@ function RespondToTalker(Pawn Talker, Pawn AttackingShouter, ETalk TalkType, out
 		case TALK_askformoney:
 			DonateSetup(Talker, StateChange);
 		break;
+		// xPatch: make Police respond to it too!
+		case TALK_FuckYou:
+			InsultResponse(Talker);
+		break;
+		// End
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Dude said something mean to us, see if we care to respond.
+///////////////////////////////////////////////////////////////////////////////
+function InsultResponse(Pawn Shouter)
+{
+	if(MyPawn.Physics == PHYS_WALKING
+		&& MyPawn.MyBodyFire == None)
+	{
+		if(CanSeePawn(Shouter, MyPawn))
+		{
+			if(IsInState('LegMotionToTarget'))
+				bPreserveMotionValues=true;
+
+			Focus = Shouter;
+			// If the attacker has his pants down *don't* crouch in front of him.. move somehow
+			if(Attacker != None
+				&& Attacker.HasPantsDown())
+			{
+				StrategicSideStep();
+			}
+			else // Check first for guys yelling at you to get down
+				 // See if they are enemies of your friends
+				if(Attacker == None
+					&& !SameGang(FPSPawn(Shouter))
+					&& MyPawn.bHasViolentWeapon
+					&& (!P2Pawn(Shouter).bAuthorityFigure
+						|| (PersonController(Shouter.Controller) != None
+							&& PersonController(Shouter.Controller).Attacker == MyPawn)))
+			{
+				SetAttacker(FPSPawn(Shouter));
+				SetNextState('AssessAttacker');
+				if(IsInState('LegMotionToTarget'))
+					bPreserveMotionValues=true;
+				GotoStateSave('ConfusedByDanger');
+			}
+			else 
+			{
+				if(IsInState('LegMotionToTarget'))
+					bPreserveMotionValues=true;
+				GotoStateSave('RespondToFuckYou');
+			}
+		}
 	}
 }
 

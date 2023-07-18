@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 // ACTION_AtMyHouse.uc
-// Copyright 2003 Running With Scissors, Inc.  All Rights Reserved.
+// Copyright 2023 Running With Scissors Studios LLC.  All Rights Reserved.
 //
 // Setup to handle all the various cases of when the dude arrives at his house
 // and expects the game to end, to go to home for the night, etc..

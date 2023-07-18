@@ -74,7 +74,8 @@ var globalconfig array<SteamStat> StatValues;
 var globalconfig array<SteamAchievement> AchievementValues;
 
 //ErikFOV Change: for localization
-const NameLen = 71;
+//const NameLen = 71;	
+const NameLen = 91;	// xPatch: Fix for PLAchievementManager
 var localized string AchievementsDisplayName[NameLen];
 var localized string AchievementsDescription[NameLen];
 //var localized array<string> AchievementsDisplayName;

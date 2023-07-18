@@ -96,7 +96,8 @@ defaultproperties
 	Stomach=1.000000
 	TalkWhileFighting=0.250000
 	TakesShotgunHeadShot=0.010000
-	TakesRifleHeadShot=0.100000
+	TakesRifleHeadShot=0.2 //0.100000
+	TakesPistolHeadShot=0.15
 	TakesShovelHeadShot=0.100000
 	TakesOnFireDamage=0.200000
 	TakesAnthraxDamage=0.400000

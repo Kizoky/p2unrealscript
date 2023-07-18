@@ -30,6 +30,9 @@ function UseAmmoForShot(optional float UseThisAmmo)
 {
 }
 
+// Change by Man Chzan: xPatch 2.0
+// Dunno why but it's causing weapon to change after using middle finger.
+/*
 ///////////////////////////////////////////////////////////////////////////////
 // Doesn't check weapon/ammo readiness, just checks if you have ammo in some
 // way or another.
@@ -43,6 +46,7 @@ simulated function bool HasAmmoStrict()
 // Check to invalidate the hands when you get added, so the clipboard is the
 // only hands option
 ///////////////////////////////////////////////////////////////////////////////
+
 function AddedToPawnInv(Pawn UsePawn, Controller UseCont)
 {
 	local P2Player p2p;
@@ -55,7 +59,7 @@ function AddedToPawnInv(Pawn UsePawn, Controller UseCont)
 			p2p.SetWeaponUseability(false, p2p.MyPawn.HandsClass);
 	}
 }
-
+*/
 ///////////////////////////////////////////////////////////////////////////////
 // Add money up to our max
 // If we reach it, return false, saying the errand is over

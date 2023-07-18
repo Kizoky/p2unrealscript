@@ -20,6 +20,8 @@ var(PawnAttributes) float SmashDamage;			// Amount of damage done by the zombie'
 
 const PI_OVER_TWO = 1.5707963267949;
 
+var(Character) MeshAnimation BaseMeshAnim; // more single player anims for AW characters
+
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 simulated event PostBeginPlay()
@@ -47,6 +49,8 @@ simulated function SetupAnims()
 simulated function LinkAnims()
 {
     LinkSkelAnim(CoreMeshAnim);
+	// xPatch: T-Pose Fix
+	LinkSkelAnim(BaseMeshAnim);
 }
 
 function SetupHead()
@@ -1026,6 +1030,12 @@ simulated function PreBeginPlay()
 	MyRace = RACE_Skeleton;
 }
 
+// xPatch: T-Pose Fix
+simulated function name GetAnimDeathFallForward()
+{
+	return 'p_death1';
+}
+
 defaultproperties
 {
 	ActorID="Skeleton"
@@ -1069,4 +1079,6 @@ defaultproperties
 
     TurnLeftAnim=""
     TurnRightAnim=""
+	
+	BaseMeshAnim=MeshAnimation'Halloweeen_Anims.animAvg'	// xPatch
 }

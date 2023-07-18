@@ -54,6 +54,7 @@ var localized string	LaunchEDHelp;
 var ShellMenuChoice		DLCChoice;
 var localized string	DLCText;
 var color				DLCTextColor;
+var color				DLCHighlightTextColor;
 
 var ShellMenuChoice		ExitChoice;
 var localized string	ExitGameText;
@@ -94,7 +95,19 @@ var globalconfig bool bShowMP;
 function CreateMenuContents()
 	{
 	Super.CreateMenuContents();
+	
+    if (PlatformIsSteamDeck())
+        log("Test - PlatformIsSteamDeck() worked and returned TRUE.");
+    else
+        log("Test - PlatformIsSteamDeck() worked and returned FALSE.");
+
+	// Change by Man Chrzan: xPatch 2.0
+	// Fix for having a mod title after returning to Main Game menu.
+	if(class == class'MenuMain')
+		TitleTexture = Default.TitleTexture;
+
 	AddTitleBitmap(TitleTexture);
+	
 	NewChoice     = AddChoice(NewGameText,		NewGameHelp,									ItemFont, ItemAlign);
 
 	if(GetGameSingle() != None && GetGameSingle().VerifySeqTime(true))
@@ -115,7 +128,7 @@ function CreateMenuContents()
 		MultiChoice   = AddChoice(MultiText,		MultiHelp,									ItemFont, ItemAlign);
 	// End
 
-	if (!GetLevel().SteamOwnsDLC(PL_DLC_APPID) && GetLevel().IsSteamBuild())
+	if (BuyParadiseLost())
 		ActualDLCChoice = AddChoice(ActualDLCText, ActualDLCHelp, ItemFont, ItemAlign);
 	else if (PlatformIsWindows())
 		LaunchPLChoice = AddChoice(LaunchPLText, LaunchPLHelp, ItemFont, ItemAlign);
@@ -127,6 +140,7 @@ function CreateMenuContents()
 	{
 		DLCChoice	= AddChoice(DLCText,		"",									ItemFont, ItemAlign);
 		DLCChoice.SetTextColor(DLCTextColor);
+		DLCChoice.SetHighlightTextColor(DLCHighlightTextColor);
 	}
 	
 	OptionsChoice = AddChoice(OptionsText,		"",									ItemFont, ItemAlign);
@@ -139,9 +153,23 @@ function CreateMenuContents()
 	// Reset this value. When MenuDifficultyPatch starts up, it's the only one that needs it
 	// and it will set it when necessary.
 	ShellRootWindow(Root).bFixSave=false;
-	
+
 	AddSocialIcons();
 	}
+
+// xPatch: extra check, detects Paradise Lost even if you  
+// are playing offline and are not connected with Steam.
+function bool BuyParadiseLost()
+{
+	local bool DLCInstalled;
+	local int n;
+
+	n = FileSize("..\\Paradise Lost\\System\\PLGame.u");
+	if( n > -1 )
+		DLCInstalled=True;
+	
+	return (!GetLevel().SteamOwnsDLC(PL_DLC_APPID) && GetLevel().IsSteamBuild() && !DLCInstalled);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -336,13 +364,15 @@ function Notify(UWindowDialogControl C, byte E)
 						// Start new game
 						SetSingleplayer();
 						ShellRootWindow(Root).bVerifiedPicked=false;
-						bShowEnhanced = bool(GetPlayerOwner().ConsoleCommand("get"@EnhancedPath));
+// xPatch: It's now handled by the new Game Mode Menu
+/*						bShowEnhanced = bool(GetPlayerOwner().ConsoleCommand("get"@EnhancedPath));
 						if (!bShowEnhanced
 							&& GetGameSingle().SeqTimeVerified())
 							GotoMenu(class'MenuEnhanced');
-						else if(!GetLevel().IsDemoBuild())
+						else*/ if(!GetLevel().IsDemoBuild())
 							// If not in the demo--allow them to pick the difficulty
-							GotoMenu(class'MenuStart');
+							//GotoMenu(class'MenuStart');
+							GotoMenu(class'MenuGameMode');		// Change by Man Chrzan: xPatch 2.0	
 						else
 							// The difficulty is set to default for the demo.
 							// Go to the explaination instead.
@@ -451,6 +481,7 @@ defaultproperties
 	ExitGameText = "Exit"
 	DLCText = "Paid DLC (NEW!!)"
 	DLCTextColor=(G=255)
+	DLCHighlightTextColor=(R=75,G=255,B=75,A=255)
 	ActualDLCText = "DLC: Paradise Lost"
 	ActualDLCHelp = "No foolin'! We made real, actual DLC! No Champ Armor here, this is a full-blown 5-day expansion with the REAL Dude voice!"
 	LaunchPLText = "Paradise Lost"

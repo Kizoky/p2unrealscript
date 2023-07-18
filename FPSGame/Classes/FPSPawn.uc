@@ -472,8 +472,10 @@ event Bump( actor Other )
 // If we hit a wall, treat it as a bump into the wall we hit
 event HitWall( vector HitNormal, actor HitWall )
 {
-	if (HitWall.bWorldGeometry)
-		Controller.Bump(HitWall);
+	if (HitWall.bWorldGeometry) {
+		if(Controller != None)	// xPatch: Check for None
+			Controller.Bump(HitWall);
+	}
 }
 
 

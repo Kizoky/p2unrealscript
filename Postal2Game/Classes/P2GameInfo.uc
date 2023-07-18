@@ -130,6 +130,11 @@ var globalconfig bool bTheyHateMeMode;
 var globalconfig bool bInsaneoMode;
 var globalconfig bool bLudicrousMode;
 var globalconfig bool bExpertMode;
+var globalconfig bool bVeteranMode; 		// xPatch: for Ludicrous Difficulty
+var globalconfig bool bMasochistMode; 		// xPatch: for Ludicrous Difficulty
+var globalconfig bool bMeeleMode; 			// xPatch: for Custom Difficulty
+var globalconfig bool bHardLieberMode;		// xPatch: for Custom Difficulty
+var globalconfig bool bNukeMode;			// xPatch: for Custom Difficulty
 var globalconfig bool bCustomMode;
 
 // Need these for user configuration!
@@ -138,6 +143,7 @@ var globalconfig bool bPlayerShadows;
 
 // Allow dismemberment.
 var globalconfig bool bEnableDismemberment;
+var globalconfig bool bEnableExplosionDismemberment;	// xPatch
 var globalconfig bool bEnableDismembermentPhysics;
 
 
@@ -197,6 +203,13 @@ var globalconfig bool bWeaponSelectorAutoSwitch;// If true, switches weapons whi
 // Change by NickP: MP fix
 var globalconfig float DroppedPickupLifespan;
 // End
+
+// xPatch: New settings
+var globalconfig bool bNoEDWeapons;				// Classic Game
+var globalconfig float BodiesLifetimeMax;		// Remove bodies after some time
+var globalconfig float LimbsLifetimeMax;		// Remove limbs after some time
+var globalconfig bool bLocalizedDialog;			// For localized game version or optional setting
+var globalconfig bool bUseInventorySelector;	// Might not seem useful but disabling it might actually prevent certain (rare) crash during loading...
 
 ///////////////////////////////////////////////////////////////////////////////
 // Startup stuff
@@ -651,6 +664,14 @@ function bool InLiebermode()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// In a custom Hard Lieberman mode
+///////////////////////////////////////////////////////////////////////////////
+function bool InHardLiebermode()
+{
+	return false;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // In super-hard Heston mode
 ///////////////////////////////////////////////////////////////////////////////
 function bool InHestonmode()
@@ -689,6 +710,29 @@ function bool InNightmareMode()
 }
 
 function bool InLudicrousMode()
+{
+	return false;
+}
+
+function bool InMasochistMode()
+{
+	// STUB
+	return false;
+}
+
+function bool InVeteranMode()
+{
+	// STUB
+	return false;
+}
+
+function bool InMeeleMode()
+{
+	// STUB
+	return false;
+}
+
+function bool InNukeMode()
 {
 	return false;
 }
@@ -1109,7 +1153,8 @@ event RenderOverlays(Canvas Canvas)
 function bool IsMainMenuMap()
 	{
 	//log("IsMainMenuMap"@Level.GetLocalUrl()@"vs."@MainMenuURL);
-	return ParseLevelName(Level.GetLocalURL()) ~= ParseLevelName(MainMenuURL);
+	return (ParseLevelName(Level.GetLocalURL()) ~= ParseLevelName(MainMenuURL)
+			||	Left(ParseLevelName(Level.GetLocalURL()), 7) ~= "Startup");	// xPatch: Change to allow anything with "Startup" in the name to work as Main Menu.
 	}
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1218,6 +1263,7 @@ function NotifyPickupDropped(Pickup aPickup)
 }
 // End
 
+
 ///////////////////////////////////////////////////////////////////////////////
 // Default properties
 ///////////////////////////////////////////////////////////////////////////////
@@ -1236,7 +1282,8 @@ defaultproperties
 	 FluidDetail=5
      BloodSpouts=1
      SplatDetail=10
-     BodiesSliderMax=200
+    // BodiesSliderMax=200	// xPatch: Crash Fix
+	 BodiesSliderMax=15		// Why was it so high by default?!
      bInventoryHints=True
      bGameplayHints=True
      GeneralFogEnd=16000
@@ -1253,5 +1300,8 @@ defaultproperties
      PlayerControllerClassName="GameTypes.DudePlayer"
 	 bEnableDismemberment=true
 	 bEnableDismembermentPhysics=true
+	 bEnableExplosionDismemberment=true
 	bUseWeaponSelector=true
+	bUseInventorySelector=true
+	LimbsLifetimeMax=60
 }

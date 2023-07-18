@@ -7,6 +7,9 @@
  * passing controls onto a "sidekick" weapon.
  *
  * @author Gordon Cheng
+ *
+ * @edited by Piotr S. aka Man Chrzan aka xPatch Guy
+ * Fixed some bugs and issues (as usual), added some extra stuff too. 
  */
 class P2DualWieldWeapon extends P2Weapon;
 
@@ -27,6 +30,10 @@ var P2DualWieldWeapon LeftWeapon, RightWeapon;
 
 var Font DebugFont;
 
+// xPatch: Sometimes we just want to disable it
+// for weapons that have to extend this class...
+var  bool bDisableDualWielding;	
+
 simulated function AttachToPawn(Pawn P)
 {
 	Super.AttachToPawn(P);
@@ -45,7 +52,8 @@ simulated function DetachFromPawn(Pawn P)
 simulated function ChangeHandTexture(Texture NewHandsTexture, Texture DefHandsTexture, Texture NewFootTexture)
 {
 	Super.ChangeHandTexture(NewHandsTexture, DefHandsTexture, NewFootTexture);
-	LeftWeapon.ChangeHandTexture(NewHandsTexture, DefHandsTexture, NewFootTexture);
+	if (LeftWeapon != None && bDualWielding)
+		LeftWeapon.ChangeHandTexture(NewHandsTexture, DefHandsTexture, NewFootTexture);
 }
 
 /** Overriden to handle dual wielding setup */
@@ -59,7 +67,9 @@ simulated function PostBeginPlay() {
 /** Sets the left arm base bone either to 0 or 1 depending on */
 function SetLeftArmVisibility() {
 
-    // Handle your primary right weapon's left hand scale
+    local int i;
+	
+	// Handle your primary right weapon's left hand scale
     if (bDualWielding)
         SetBoneScale(0, 0.0, LeftHandBoneName);
     else
@@ -68,6 +78,19 @@ function SetLeftArmVisibility() {
     // The left weapon will always have a missing right (left) hand
     if (RightWeapon != none)
         SetBoneScale(0, 0.0, LeftHandBoneName);
+		
+	// Man Chrzan: xPatch 
+	// Fix for left arm skin.
+	if(LeftWeapon != None)
+	{
+		for(i=0; i<Skins.Length; i++)
+		{
+			if(default.Skins[i] == class'P2Player'.default.DefaultHandsTexture)
+			{
+				LeftWeapon.Skins[i] = Skins[i];
+			}
+		}
+	}
 }
 
 /** Create the left weapon for dual wielding. Like the foot, we don't add it
@@ -76,7 +99,8 @@ function SetLeftArmVisibility() {
 function SetupDualWielding() {
     local vector LeftWeapDrawScale;
     local Ammunition LeftWeaponAmmo;
-
+	local int i;
+	
     if (LeftWeaponOverrideClass != none)
         LeftWeapon = Spawn(LeftWeaponOverrideClass);
     else
@@ -114,6 +138,10 @@ function SetupDualWielding() {
         LeftWeapon.ThirdPersonRelativeRotation.Roll = 32768;
 
         LeftWeapon.RightWeapon = self;
+		
+		// Man Chrzan: xPatch 
+		LeftWeapon.ShellSpeedY *= -1;	// reverse shells
+		// End
 
         bAllowDualWielding = true;
     }
@@ -148,12 +176,29 @@ function ChangeWeaponHoldStyle() {
 /** Various state change functions that have been overriden to pass commands
  * over to the left weapon
  */
-simulated function BringUp() {
+ simulated function BringUp() 
+ {
+	// xPatch: No Dual-Wielding 
+	if(bDisableDualWielding)
+	{
+		super.BringUp();
+		return;
+	}
+	
 	// Automatically go into dual-wielding if brought up while the dude
 	// is under the influence of some kind of caffeinergy sauce
 	if (RightWeapon == None
 		&& P2Player(Pawn(Owner).Controller) != None
 		&& (P2Player(Pawn(Owner).Controller).DualWieldUseTime > 0 || P2Player(Pawn(Owner).Controller).bCheatDualWield))
+	{
+		if (LeftWeapon == None)
+			SetupDualWielding();
+		bDualWielding = true;
+	}
+	// xPatch: Dual-Wielding for NPCs
+	else if (RightWeapon == None && P2Pawn(Owner) != None 
+		&& P2Player(Pawn(Owner).Controller) == None
+		&& P2Pawn(Owner).bForceDualWield)
 	{
 		if (LeftWeapon == None)
 			SetupDualWielding();
@@ -232,7 +277,9 @@ simulated event RenderOverlays(Canvas Canvas)
 	if (Instigator == none)
 		return;
 
-	DrawCrosshair(Canvas);
+	// xPatch: It's now handled with HUD by default.
+	if(!P2Player(Instigator.Controller).bHUDCrosshair)
+		DrawCrosshair(Canvas);
 
 	PlayerOwner = PlayerController(Instigator.Controller);
 
@@ -295,6 +342,20 @@ simulated event RenderOverlays(Canvas Canvas)
 	}
 	else
 		bSetFlashTime = false;
+		
+	// Man Chrzan: xPatch Overwrite Weapons FOV
+	if(xDisplayOverwrite)
+	{
+		if(xPreviousFOV == 0)
+			xPreviousFOV = DisplayFOV;
+		
+		DisplayFOV = xPreviousFOV + xDisplayFOV;
+		
+		PlayerViewOffset.X = Default.PlayerViewOffset.X + xOffsetX;
+		PlayerViewOffset.Y = Default.PlayerViewOffset.Y + xOffsetY;
+		PlayerViewOffset.Z = Default.PlayerViewOffset.Z + xOffsetZ;
+	}
+	// End
 
 	// Draw our right weapon
     Canvas.DrawActor(none, false, true);
@@ -359,6 +420,12 @@ function HandleDualFire() {
 			GotoState('Idle');
 		}
 	}
+	
+	// xPatch: And here we do it for NPCs :D
+	if(P2Player(Instigator.Controller) == None 
+	&& P2Pawn(Instigator) != None && P2Pawn(Owner).bForceDualWield 
+	&& LeftWeapon != None)
+		LeftWeapon.Fire(0);
 }
 
 /**
@@ -540,7 +607,7 @@ state ToggleDualWielding
     /*exec*/ function SwitchDualWielding();
 
     function BeginState() {
-        PlayDownAnim();
+		PlayDownAnim();
 
         if (bDualWielding && LeftWeapon != none) {
             LeftWeapon.GotoState('DownWeapon');
@@ -610,6 +677,47 @@ state DownWeapon
 
         super.BeginState();
     }
+}
+
+// xPatch: Called by xMuzzleFlashEmitter
+function SetupWeaponGlow(byte FlashGlow) 
+{
+	local int FinalGlow;
+	
+	// Handle flashes for left weapon
+	if(bDualWielding)
+	{
+		if (LeftWeapon != None)
+		{
+			if(FlashGlow == 0)
+			{
+				if(P2GameInfoSingle(Level.Game).xManager.bOverwriteWeaponProperties)
+					LeftWeapon.AmbientGlow = P2GameInfoSingle(Level.Game).xManager.iWeaponBrightness;
+				else
+					LeftWeapon.AmbientGlow = default.AmbientGlow;
+			}
+			else
+			{
+				FinalGlow = LeftWeapon.AmbientGlow + FlashGlow;
+				if( FinalGlow > 250 )
+					FinalGlow = 250;
+
+				LeftWeapon.AmbientGlow = FinalGlow;
+			}
+		}
+	}
+	
+	// Handle flashes for right weapon
+	Super.SetupWeaponGlow(FlashGlow);
+}
+
+// xPatch: main weapon got destroyed, make sure that left weapon too! 
+simulated function Destroyed()
+{
+	if (LeftWeapon != None)
+		LeftWeapon.DetachFromPawn(Instigator);	
+	
+	Super.Destroyed();
 }
 
 defaultproperties

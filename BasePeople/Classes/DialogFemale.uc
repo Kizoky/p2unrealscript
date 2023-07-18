@@ -848,8 +848,11 @@ function FillInLines()
 	Clear(lCockAsianHAND);
 	Addto(lCockAsianHAND,							"WFemaleDialog.wf_haveaniceday", 1);
 
-	Clear(lPhoto_FindWiseWang);
-	Addto(lPhoto_FindWiseWang,						"PL-Dialog.MondayA.WFemale-SpeakToTheWiseMan", 1);
+	if(bParadiseLost) // xPatch: Crash Fix
+	{
+		Clear(lPhoto_FindWiseWang);
+		Addto(lPhoto_FindWiseWang,						"PL-Dialog.MondayA.WFemale-SpeakToTheWiseMan", 1);
+	}
 	
 	Clear(lChampPhotoReaction);
 	Addto(lChampPhotoReaction,					"WFemaleDialog.wf_shit", 1);
@@ -859,13 +862,16 @@ function FillInLines()
 	Addto(lChampPhotoReaction,					"WFemaleDialog.wf_itshorrible", 1);
 	Addto(lChampPhotoReaction,					"WFemaleDialog.wf_ghasp", 1);
 
-	Clear(lKaraoke_Response1);
-	AddTo(lKaraoke_Response1,					"PL-Dialog2.ThursdayErrandC.FemaleBystander-1Boo", 1);
-	AddTo(lKaraoke_Response1,					"PL-Dialog2.ThursdayErrandC.FemaleBystander-1ThatWasTerrible", 1);
-	Clear(lKaraoke_Response2);
-	AddTo(lKaraoke_Response2,					"PL-Dialog2.ThursdayErrandC.FemaleBystander-1GetOffTheStage", 1);
-	AddTo(lKaraoke_Response2,					"PL-Dialog2.ThursdayErrandC.FemaleBystander-1YoureAwful", 1);
-
+	if(bParadiseLost) // xPatch: Crash Fix
+	{
+		Clear(lKaraoke_Response1);
+		AddTo(lKaraoke_Response1,					"PL-Dialog2.ThursdayErrandC.FemaleBystander-1Boo", 1);
+		AddTo(lKaraoke_Response1,					"PL-Dialog2.ThursdayErrandC.FemaleBystander-1ThatWasTerrible", 1);
+		Clear(lKaraoke_Response2);
+		AddTo(lKaraoke_Response2,					"PL-Dialog2.ThursdayErrandC.FemaleBystander-1GetOffTheStage", 1);
+		AddTo(lKaraoke_Response2,					"PL-Dialog2.ThursdayErrandC.FemaleBystander-1YoureAwful", 1);
+	}
+	
 	Clear(lSneezing);
 	AddTo(lSneezing, "WFemaleDialog.FSneezing01", 1);
 	AddTo(lSneezing, "WFemaleDialog.FSneezing02", 1);
@@ -877,5 +883,6 @@ function FillInLines()
 // Default properties
 ///////////////////////////////////////////////////////////////////////////////
 defaultproperties
-	{
-	}
+{
+	bCheckDLCDialog=True
+}

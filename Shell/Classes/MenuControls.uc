@@ -71,6 +71,10 @@ var ShellMenuChoice		InputChoice;
 var localized string	InputText;
 var localized string	InputHelp;
 
+var ShellMenuChoice		H2PChoice;
+var localized string	H2PText;
+var localized string	H2PHelp;
+
 ///////////////////////////////////////////////////////////////////////////////
 // Create menu contents
 ///////////////////////////////////////////////////////////////////////////////
@@ -85,11 +89,13 @@ function CreateMenuContents()
 	WeaponChoice2		= AddChoice(WeaponControlsText2		, WeaponControlsHelp2,	ItemFont, ItemAlign);
 	InvChoice			= AddChoice(InvControlsText			, InvControlsHelp,		ItemFont, ItemAlign);
 	MiscChoice			= AddChoice(MiscControlsText		, MiscControlsHelp,		ItemFont, ItemAlign);
-	//MultiChoice			= AddChoice(MultiControlsText		, MiscControlsHelp,		ItemFont, ItemAlign);
+	if (Class'MenuMain'.default.bShowMP)
+		MultiChoice			= AddChoice(MultiControlsText		, MiscControlsHelp,		ItemFont, ItemAlign);
 	GamepadChoice		= AddChoice(GamepadControlsText		, GamepadControlsHelp,	ItemFont, ItemAlign);
 	GamepadChoice2		= AddChoice(GamepadControlsText2	, GamepadControlsHelp2,	ItemFont, ItemAlign);
 	//DisplayChoice		= AddChoice(DisplayControlsText		, DisplayControlsHelp,	ItemFont, ItemAlign);
 	InputChoice			= AddChoice(InputText				, InputHelp,			ItemFont, ItemAlign);
+	H2PChoice			= AddChoice(H2PText				    , H2PHelp,			    ItemFont, ItemAlign);
 
 	BackChoice			= AddChoice(BackText 				, "", ItemFont, ItemAlign, true);
 	}
@@ -145,6 +151,12 @@ function Notify(UWindowDialogControl C, byte E)
 				case InputChoice		:
 					mnuNext = GoToMenu(class'MenuInput');
 					break;
+				case H2PChoice		    :
+                    if (PlatformIsSteamDeck())
+                        mnuNext = GoToMenu(class'MenuImageH2P_SteamDeck');
+                    else
+                        mnuNext = GoToMenu(class'MenuImageH2P');
+					break;
 				case BackChoice:
 					GoBack();
 					break;
@@ -197,4 +209,7 @@ defaultproperties
 
 	InputText			= "Input Config"
 	InputHelp			= "Edit your mouse and gamepad options"
+
+	H2PText			= "How to Play"
+	H2PHelp			= "Shows the default control layout."
 	}

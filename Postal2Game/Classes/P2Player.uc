@@ -119,6 +119,7 @@ const LOW_AI_DAMAGE_RATE			=   5.0;
 const LOW_AI_DAMAGE_TOTAL			=	30;
 const MIN_DAMAGE_RATE_TO_SHOW_HINT	=	18.0;
 const DEATH_MESSAGE_MAX				=	3;
+const DEATH_MESSAGE_MAX_LUDICROUS	=	6;
 const DeathMessagePath				=   "Postal2Game.P2GameInfo DeathMessageUseNum"; // ini path
 const PissedMeOutPath				=   "Postal2Game.P2GameInfo bPlayerPissedHimselfOut"; // ini path
 const CheatsPath					=	"Postal2Game.P2GameInfoSingle bAllowCManager"; // ini path
@@ -175,6 +176,17 @@ var class<Inventory> CurrentClothes;	// Inventory class of clothes we're wearing
 var class<Inventory> NewClothes;		// Clothes we're about to put on
 var class<Inventory> DefaultClothes;	// Our default dude clothes class
 var Texture DefaultHandsTexture;// Texture for normal dude hands
+
+// xPatch: Textures for classic dude hands etc.
+var Texture DefaultClassicHandsTexture;	
+var array<Texture> AltHandsSkins;
+struct ReplaceHandsSkinsStr
+{
+	var Texture NewSkin;	// P2 STP 
+	var Texture OldSkin;	// P2 2003
+};
+var array<ReplaceHandsSkinsStr> ReplaceHandsSkins;
+// End
 
 var int WeaponFirstTimeFireInstance;	// If you've shot your weapon for the first time or not, sometimes comment on it
 
@@ -250,6 +262,13 @@ var array<localized string>POSTALHints1;
 var array<localized string>POSTALHints2;
 var array<localized string>POSTALHints3;
 var array<localized string>ImpossibleHints;
+var array<localized string>LudicrousHints1;		// xPatch: New hints for new difficulty
+var array<localized string>LudicrousHints1Alt;
+var array<localized string>LudicrousHints2;
+var array<localized string>LudicrousHints3;
+var array<localized string>LudicrousHints4;
+var array<localized string>LudicrousHints5;
+var array<localized string>LudicrousHints6;
 
 // Hud code
 var float HeartBeatSpeed;			// How fast your heart is beating
@@ -288,6 +307,7 @@ var const localized string	HintsOffText;
 // Cheats on/off
 var const localized string	CheatsOnText;
 var const localized string	CheatsOffText;
+var const localized string	SissyOffText;
 
 // These damage values are only for calculating how fast the AI is hurting the player. They eventually
 // are put together to decide to give hints to the player. They might not be consecutive damage across
@@ -509,6 +529,20 @@ var globalconfig array<String> CutscenesSeen;
 var bool bPlayerIsValid;
 // End
 
+// Added by Man Chrzan: xPatch 2.0
+var globalconfig bool 	ThirdPersonView;
+var() Texture			NewReticles[8];			// Reticle icons for weapons
+var globalconfig int	ReticleRed;				// Reticle red value
+var globalconfig int	ReticleGreen;			// Reticle green value
+var globalconfig int	ReticleBlue;			// Reticle blue value
+var globalconfig float 	ReticleSize;			// Reticle size value
+var globalconfig int  	ReticleGroup;			// To switch between new and old rendering style ( 0 - Old, 1 - New)
+var globalconfig bool  	bNoCustomCrosshairs;	// Don't allow custom crosshair
+var globalconfig bool  	bHUDCrosshair;			// Draw crosshair with HUD
+
+var bool bForceCrosshair; 	// Forces crosshair to be shown (for settings menu)
+var bool bForceViewmodel; 	// Forces viewmodel to be shown (for settings menu)
+
 ///////////////////////////////////////////////////////////////////////////////
 // Replication
 ///////////////////////////////////////////////////////////////////////////////
@@ -534,6 +568,8 @@ replication
 	// Change by NickP: MP fix
 	reliable if( Role == ROLE_Authority )
 		ClientSwitchToHands;
+	reliable if(Role < ROLE_Authority)
+		ServerOnSelectedItem;
 	// End
 }
 
@@ -1116,10 +1152,13 @@ simulated function Texture GetReticleTexture()
 	{
 	if (bEnableReticle)
 	{
-		if (CustomReticle != None)
+		if (CustomReticle != None 
+			&& !bNoCustomCrosshairs)
 			return CustomReticle;
-		else
+		if(ReticleGroup == 0)
 			return Reticles[ReticleNum];
+		else
+			return NewReticles[ReticleNum];
 	}
 	return None;
 	}
@@ -1127,7 +1166,28 @@ simulated function Texture GetReticleTexture()
 simulated function Color GetReticleColor()
 	{
 	ReticleColor.A = ReticleAlpha;
+	ReticleColor.R = 255;
+	ReticleColor.G = 255;
+	ReticleColor.B = 255;
 	return ReticleColor;
+	}
+
+// Can't edit old function without causing bugs with old mods so here's new one.
+simulated function Color GetReticleColor2()
+	{
+	ReticleColor.A = ReticleAlpha;
+	ReticleColor.R = ReticleRed;
+	ReticleColor.G = ReticleGreen;
+	ReticleColor.B = ReticleBlue;
+	return ReticleColor;
+	}
+	
+simulated function bool IsCustomReticle()
+	{
+		if (CustomReticle != None)
+			return true;
+		else
+			return false;
 	}
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1241,6 +1301,10 @@ event PostLoadGame()
 
 	// Screens aren't saved so they need to be setup after a load
 	SetupScreens();
+	
+	// xPatch: Restore catnip effects
+	if(CatnipUseTime > 0)
+		P2HUD(MyHud).DoCatnipEffects();
 
 	/*
 	// Re-init the hud if we're killing things with a counter on the screen
@@ -1393,6 +1457,23 @@ exec function Sissy()
 	local P2GameInfoSingle psg;
 
 	psg = P2GameInfoSingle(Level.Game);
+	
+	// xPatch: Ludicrous Mode
+	// In this mode we do NOT alllow cheats :)
+	if(psg.InLudicrousMode()
+		&& psg.InMasochistMode()
+		&& psg.InVeteranMode()
+		&& !psg.InCustomMode() // but the Custom Mode is an exception ;)
+		&& !psg.GetPlayer().DebugEnabled())	// And debug too
+
+	{
+		// Say GottaBeKidding line
+		SayTime = MyPawn.Say(MyPawn.myDialog.lDude_GottaBeKidding) + 0.5;
+		SetTimer(SayTime, false);
+		bStillTalking=true;
+		ClientMessage(SissyOffText);
+		return;
+	}
 
 	if(psg != None)
 	{
@@ -1421,6 +1502,21 @@ exec function ForceSissy()
 	local P2GameInfoSingle psg;
 
 	psg = P2GameInfoSingle(Level.Game);
+	
+	// xPatch: Ludicrous Mode
+	// In this mode we do NOT alllow cheats :)
+	if(psg.InLudicrousMode()
+		&& psg.InMasochistMode()
+		&& psg.InVeteranMode()
+		&& !psg.InCustomMode())	// but the Custom Mode is an exception ;)
+	{
+		// Say GottaBeKidding line
+		SayTime = MyPawn.Say(MyPawn.myDialog.lDude_GottaBeKidding) + 0.5;
+		SetTimer(SayTime, false);
+		bStillTalking=true;
+		ClientMessage(SissyOffText);
+		return;
+	}
 
 	if(psg != None)
 	{
@@ -2266,6 +2362,10 @@ function InitCrackAddiction()
 ///////////////////////////////////////////////////////////////////////////////
 function SetupDualWielding(float starttime)
 {
+	// xPatch: Dual Wielding can be Disabled
+	if(P2DualWieldWeapon(Pawn.Weapon).bDisableDualWielding)
+		return;
+		
 	if(starttime > 0)
 	{
 		DualWieldUseTime = starttime;
@@ -2327,7 +2427,12 @@ function FollowDualWieldUse(float TimePassed)
 ///////////////////////////////////////////////////////////////////////////////
 function SmokeCatnip()
 {
-	SetupCatnipUseage(CATNIP_START_TIME);
+	// xPatch: In Ludicrous Difficulty make it 20 seconds instead of 60
+	if(P2GameInfoSingle(Level.Game) != None 
+		&& P2GameInfoSingle(Level.Game).InVeteranMode())
+		SetupCatnipUseage(CATNIP_START_TIME / 3);
+	else
+		SetupCatnipUseage(CATNIP_START_TIME);
 	MyPawn.Say(MyPawn.myDialog.lDude_SmokedCatnip);
 	if(P2GameInfoSingle(Level.Game) != None)
 		P2GameInfoSingle(Level.Game).TheGameState.SmokedCrackPipe(true);
@@ -2345,6 +2450,8 @@ function SetupCatnipUseage(float starttime)
 		//log(self$" Setting catnip time--slomo: "$starttime);
 		if(P2GameInfoSingle(Level.Game) != None)
 			P2GameInfoSingle(Level.Game).SetGameSpeedNoSave(1/CATNIP_SPEED);
+		// xPatch: Add New Catnip Effects
+		P2HUD(MyHud).DoCatnipEffects();
 	}
 	else // reset things
 	{
@@ -2353,6 +2460,8 @@ function SetupCatnipUseage(float starttime)
 		// Reset effects
 		if(P2GameInfoSingle(Level.Game) != None)
 			P2GameInfoSingle(Level.Game).SetGameSpeedNoSave(1.0);
+		// xPatch: Stop Catnip Effects
+		P2HUD(MyHud).StopCatnipEffects(CatnipUseTime);
 	}
 }
 
@@ -2364,7 +2473,11 @@ function FollowCatnipUse(float TimePassed)
 		return;
 
 	CatnipUseTime-=TimePassed;
-
+	
+	// xPatch: Start fading out the Catnip Effects
+	if(CatnipUseTime <= 5)
+		P2HUD(MyHud).StopCatnipEffects(CatnipUseTime);
+	
 	if(CatnipUseTime <= 0)
 	{
 		CatnipUseTime = 0;
@@ -2703,6 +2816,7 @@ function SomeoneDied(P2Pawn DeadGuy, P2Pawn Killer, class<DamageType> DeadDamage
 				}
 				else if(ClassIsChildOf(DeadDamageType , class'MacheteDamage')
 					|| ClassIsChildOf(DeadDamageType , class'ScytheDamage')
+					|| ClassIsChildOf(DeadDamageType , class'BaliDamage')	// xPatch: Comment on using bali too
 					// Don't comment on supershotgun damage
 					&& !ClassIsChildOf(DeadDamageType,class'SuperShotgunBodyDamage'))
 				{
@@ -2733,15 +2847,23 @@ function SomeoneDied(P2Pawn DeadGuy, P2Pawn Killer, class<DamageType> DeadDamage
 							&& (P2MocapPawn(DeadGuy).bIsBlack
 								|| P2MocapPawn(DeadGuy).bIsMexican
 								|| P2MocapPawn(DeadGuy).bIsHindu
-								|| P2MocapPawn(DeadGuy).bIsAsian))
+								|| P2MocapPawn(DeadGuy).bIsAsian)
+								&& !DeadGuy.IsA('Military') 			// Added by Man Chrzan: xPatch 2.0
+								&& !DeadGuy.IsA('AWMilitary'))			// Dunno why but it used to happen sometimes with military guys?
 							DelayedSayLine = MyPawn.myDialog.lDude_ShootMinorities;
+						// Added by Man Chrzan: xPatch 2.0
+						else if(DeadGuy.IsA('Bums'))
+							DelayedSayLine = MyPawn.myDialog.lDude_ShootBum;
+						// End
 						else
 							DelayedSayLine = MyPawn.myDialog.lDude_KillWithGun;
 						bWaitingToTalk=true;
 						SayTime = WAIT_FOR_DEATH_COMMENT_GUN;
 					}
 				}
-				else if(ClassIsChildOf(DeadDamageType , class'BludgeonDamage'))
+				else if(ClassIsChildOf(DeadDamageType , class'BludgeonDamage')
+						|| ClassIsChildOf(DeadDamageType , class'SledgeDamage')			// xPatch: Comment on Sledge 
+						|| ClassIsChildOf(DeadDamageType , class'BaseballBatDamage'))	// and Baseball too
 				{
 					DelayedSayLine = MyPawn.myDialog.lDude_KillWithMelee;
 					bWaitingToTalk=true;
@@ -2807,7 +2929,8 @@ simulated function FindNextWeapon(P2Weapon CurrentWeapon, out P2Weapon NewWeap, 
 			//	log(checkweap$" FindNextWeapon, has ammo "$checkweap.AmmoType.AmmoAmount);
 			if (checkweap != None
 				&& checkweap != pickweap
-				&& checkweap.AmmoType.HasAmmo())
+//				&& checkweap.AmmoType.HasAmmo())		// Change by Man Chrzan: xPatch 2.0
+				&& checkweap.HasAmmo())					// Reloadable weapons support.
 			{
 				checkrank = checkweap.GetRank();
 				if (checkrank > currank && checkrank < pickrank)
@@ -2877,7 +3000,8 @@ simulated function FindPrevWeapon(P2Weapon CurrentWeapon, out P2Weapon NewWeap, 
 			//	log(checkweap$" FindPrevWeapon, has ammo "$checkweap.AmmoType.AmmoAmount);
 			if (checkweap != None
 				&& checkweap != pickweap
-				&& checkweap.AmmoType.HasAmmo())
+				//&& checkweap.AmmoType.HasAmmo())							// Change by Man Chrzan: xPatch 2.0
+				&& checkweap.HasAmmo())										// Reloadable weapons support.	
 			{
 				checkrank = checkweap.GetRank();
 				if (checkrank < currank && checkrank > pickrank)
@@ -2940,7 +3064,8 @@ simulated function FindGroupWeapon(byte FindGroup, out P2Weapon NewWeap, out byt
 		{
 			//log(checkweap$" FindGroupWeapon, has ammo "$checkweap.AmmoType.AmmoAmount);
 			if(FindGroup == checkweap.InventoryGroup
-				&& checkweap.AmmoType.HasAmmo())
+			//&& checkweap.AmmoType.HasAmmo())						// Change by Man Chrzan: xPatch 2.0
+			&& checkweap.HasAmmo())									// Reloadable weapons support.	
 			{
 				checkrank = checkweap.GetRank();
 				// We disregard the last selected thing because I'm already in the right group
@@ -3183,7 +3308,8 @@ function bool SwitchAfterOutOfAmmo()
 	{
 		if(P2Weapon(inv) != None
 			// Make sure it has ammo
-			&& P2AmmoInv(Weapon(inv).AmmoType).HasAmmo()
+//			&& P2AmmoInv(Weapon(inv).AmmoType).HasAmmo()					// Change by Man Chrzan: xPatch 2.0
+			&& P2Weapon(inv).HasAmmo()										// Reloadable weapons support.	
 			&& P2Weapon(inv).CombatRating > newrat)
 		{
 			newrat = P2Weapon(inv).CombatRating;
@@ -3273,7 +3399,9 @@ function bool SwitchToThisWeapon(int GroupNum, int OffsetNum, optional bool bFor
 		// Make sure our pending weapon has some ammo
 		// Don't use HasAmmo--it checks ammo readiness. We need to simply see if it's either
 		// infinite or has any ammo at all-we don't care about weapon readiness here.
-		if(!P2AmmoInv(Weapon(inv).AmmoType).HasAmmoStrict())
+//		if(!P2AmmoInv(Weapon(inv).AmmoType).HasAmmoStrict())										// Change by Man Chrzan: xPatch 2.0
+		if( (!P2AmmoInv(Weapon(inv).AmmoType).HasAmmoStrict() && !P2Weapon(inv).bReloadableWeapon)	// Reloadable weapons support.
+			|| (!P2Weapon(inv).HasAmmo() && P2Weapon(inv).bReloadableWeapon) )		
 		{
 			return false;
 		}
@@ -3524,13 +3652,21 @@ exec function ToggleInvHints()
 ///////////////////////////////////////////////////////////////////////////////
 function IncDeathMessageNum()
 {
+	local int MaxDeathMessages; 
+	
 	if(DamageRate > MIN_DAMAGE_RATE_TO_SHOW_HINT
 		&& DamageTotal > LOW_AI_DAMAGE_TOTAL
 		&& !bCommitedSuicide
 		&& MyPawn.DyingDamageType != class'OnFireDamage')
 	{
+		// xPatch: Ludicrous mode has more hints.
+		if (P2GameInfoSingle(Level.Game).InLudicrousMode())
+			MaxDeathMessages = DEATH_MESSAGE_MAX_LUDICROUS;
+		else
+			MaxDeathMessages = DEATH_MESSAGE_MAX;
+		
 		P2GameInfo(Level.Game).DeathMessageUseNum++;
-		if(P2GameInfo(Level.Game).DeathMessageUseNum >= DEATH_MESSAGE_MAX)
+		if(P2GameInfo(Level.Game).DeathMessageUseNum >= MaxDeathMessages)
 			P2GameInfo(Level.Game).DeathMessageUseNum = 0;
 		// Save which message we'll use next
 		ConsoleCommand("set "@DeathMessagePath@P2GameInfo(Level.Game).DeathMessageUseNum);
@@ -3570,8 +3706,36 @@ function bool GetDeathHints(out array<string> strs)
 			// Returns a different set of hints in POSTAL mode.
 			if (P2GameInfoSingle(Level.Game).InNightmareMode())
 			{
+				// xPatch: Ludicrous mode hints.
+				if (P2GameInfoSingle(Level.Game).InLudicrousMode())
+				{
+					if (P2GameInfoSingle(Level.Game).InClassicMode())
+						LudicrousHints1 = LudicrousHints1Alt;
+					
+					switch(P2GameInfo(Level.Game).DeathMessageUseNum)
+					{
+						case 0:
+							strs = LudicrousHints1;
+							break;
+						case 1:
+							strs = LudicrousHints2;
+							break;
+						case 2:
+							strs = LudicrousHints3;
+							break;
+						case 3:
+							strs = LudicrousHints4;
+							break;
+						case 4:
+							strs = LudicrousHints5;
+							break;
+						case 5:
+							strs = LudicrousHints6;
+							break;
+					}
+				}
 				// Impossible mode hints.
-				if (P2GameInfoSingle(Level.Game).InImpossibleMode())
+				else if (P2GameInfoSingle(Level.Game).InImpossibleMode())
 					strs = ImpossibleHints;
 				else
 				{
@@ -5347,6 +5511,12 @@ exec function SwitchToHands(optional bool bForce)
 simulated function ClientSwitchToHands(optional bool bForceReady)
 {
 	SwitchToHands(bForceReady);
+}
+function ServerOnSelectedItem(Inventory UseInv)
+{
+	if (Powerups(UseInv) != None)
+		Pawn.SelectedItem = Powerups(UseInv);
+	//ClientMessage("ServerOnSelectedItem" @ UseInv);
 }
 // End
 
@@ -7744,7 +7914,56 @@ exec function ShowMP()
 	ConsoleCommand("set MenuMain bShowMP true");
 	ClientMessage("Multiplayer option added! Now restart the game.");
 }
+
+exec function HideMP()
+{
+	ConsoleCommand("set MenuMain bShowMP false");
+}
 // End
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+// xPatch: New functions for new stuff.
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+function PickupThrownWeapon(int GroupNum, int OffsetNum, optional bool bForceReady)
+{
+	// STUB. Defined in dudeplayer where it has access to the hands weapon type
+}
+
+function Texture GetCurrentClothesHandsTexture()
+{	
+	// STUB. Defined in dudeplayer where it has access to the clothes inv
+	return None;
+}
+
+function HideWeaponSelector()
+{
+	// STUB. Defined in dudeplayer where it has access to the selector
+}
+
+function bool GetWeaponGroupFull(class<Inventory> InvType, optional out int MaxCount)
+{
+	// STUB. Defined in dudeplayer where it has access to the Dude pawn
+	return false;
+}
+
+function bool UseGroupLimit()
+{
+	// STUB. Defined in dudeplayer
+	return False;
+}
+
+function FlipMiddleFinger()
+{
+	// STUB. Defined in AWDudePlayer where it has access to the hands
+}
+
+// Allows to use the classic boss health icon for Classic Game
+function bool ForceOldBossHealthMeter(int Index)
+{
+	return (KillJobs[Index].HUDIcon != None && P2GameInfoSingle(Level.Game).InClassicMode());
+}
 
 defaultproperties
 {
@@ -7762,8 +7981,11 @@ defaultproperties
 	CrackHintTimes[1]=30
 	CrackHintTimes[2]=60
 	CrackStartTime=400
-//	DefaultHandsTexture=Texture'WeaponSkins.Dude_Hands'
+	DefaultClassicHandsTexture=Texture'WeaponSkins.Dude_Hands'
 	DefaultHandsTexture=Texture'MP_FPArms.LS_arms.LS_hands_dude'
+	ReplaceHandsSkins[0]=(NewSkin=Texture'MP_FPArms.LS_hands_robber',OldSkin=Texture'WeaponSkins.Cop_Hands')
+	ReplaceHandsSkins[1]=(NewSkin=Texture'MP_FPArms.LS_arms.LS_hands_gimp',OldSkin=Texture'WeaponSkins.Gimp_Hands')
+	ReplaceHandsSkins[2]=(NewSkin=Texture'MP_FPArms.LS_arms.LS_hands_dude',OldSkin=Texture'WeaponSkins.Dude_Hands')
 	TimeForMapReminder=900
 	MapReminderRefresh=20
 	RadarSize=200
@@ -7827,10 +8049,30 @@ defaultproperties
 	ImpossibleHints[0]="Sorry, I got nothin'."
 	ImpossibleHints[1]="You ARE playing Impossible mode after all."
 	ImpossibleHints[2]="At least the enemies are kind enough to drop"
-	ImpossibleHints[3]="their weapons when they die..."
+	ImpossibleHints[3]="their weapons when they die... "
+// 	xPatch: Ludicrous Hints
+	LudicrousHints1[0]="You better get yourself a Machete as soon as possible."
+	LudicrousHints1[1]="But a Shocker and Shovel combo can be nice to start things off."
+	LudicrousHints1Alt[0]="Shame you can't get a Machete in Classic Mode."
+	LudicrousHints1Alt[1]="But hey, at least THEY don't have it either!"
+	LudicrousHints2[0]="You are not a hero. Don't be ashamed to run away or play dirty!"
+	LudicrousHints2[1]="Place unarmed grenades to make traps, block their path with fire, or combine them,"
+	LudicrousHints2[2]="kick back what they throw at you, and use cat silencers (they're not just decorations!)."
+	LudicrousHints2[3]="Put everything in your inventory to a good use. Every item has its purpose."
+	LudicrousHints3[0]="You can't carry too many weapons in the same group. Sucks, huh?"
+	LudicrousHints3[1]="At least you can always drop your current weapon to replace it."
+	LudicrousHints4[0]="In this difficulty, catnip works only for 20 seconds, and your Bass Sniffer"
+	LudicrousHints4[1]="radar isn't infinite. You should really consider looking for both of these"
+	LudicrousHints4[2]="power-ups and make a use of them only when you really need to."
+	LudicrousHints5[0]="Have you noticed that cats are also pretty crazy in this mode?"
+	LudicrousHints5[1]="If you have some in your inventory, maybe throwing a few at your"
+	LudicrousHints5[2]="enemies isn't such a bad idea. They can be good distractions!"
+	LudicrousHints6[0]="I know what you're thinking, but the funny thing is,"	
+	LudicrousHints6[1]="both 'Impossible' and this mode is perfectly possible to beat!"
 	NoMoreHealthItems="You're out of healing items."
 	CheatsOnText="Cheats are enabled. Hope you're happy."
 	CheatsOffText="Cheats are disabled. Restart the game to re-enable achievements."
+	SissyOffText="Don't be a sissy. Cheats are not allowed in this mode. :)"
 	QuickSaveString="Saving" 	// Change engine's default message
 	QuickKillGoodEndSound=Sound'LevelSounds.train_cross_bell_LP'
 	QuickKillBadEndSound=Sound'AmbientSounds.FactoryBuzzer'
@@ -7864,6 +8106,7 @@ defaultproperties
 	DudeBladeKill(4)=Sound'AWDialog.Dude.Dude_UseBlade_1'
 	DudeBladeKill(5)=Sound'AWDialog.Dude.Dude_UseBlade_2'
 	DudeBladeKill(6)=Sound'AWDialog.Dude.Dude_UseBlade_3'
+	DudeBladeKill(7)=Sound'AWDialog.Dude.Dude_UseBlade_4'		// xPatch: Unused Voiceline
 	DudeMacheteThrow(0)=Sound'AWDialog.Dude.Dude_AltBlade_1'
 	DudeMacheteThrow(1)=Sound'AWDialog.Dude.Dude_AltBlade_2'
 	DudeMacheteThrow(2)=Sound'AWDialog.Dude.Dude_AltBlade_3'
@@ -7877,6 +8120,11 @@ defaultproperties
 	DudeHalloweenKill(3)=Sound'DudeDialog.dude_halloween_trickortreat1'
 	DudeHalloweenKill(4)=Sound'DudeDialog.dude_halloween_trickortreat2'
 	DudeHalloweenKill(5)=Sound'DudeDialog.dude_halloween_trickortreat3'
+	DudeZombieKill(0)=Sound'AWDialog.Dude.Dude_Zombies_1'	// xPatch: Unused Voiceline
+	DudeZombieKill(1)=Sound'AWDialog.Dude.Dude_Zombies_2'	// xPatch: Unused Voiceline
+	DudeZombieKill(2)=Sound'AWDialog.Dude.Dude_Zombies_3'	// xPatch: Unused Voiceline
+	DudeZombieKill(3)=Sound'AWDialog.Dude.Dude_Zombies_4'	// xPatch: Unused Voiceline
+	DudeZombieKill(4)=Sound'AWDialog.Dude.Dude_Zombies_5'	// xPatch: Unused Voiceline
 	SayThingsOnCatch=0.200000
 	SayThingsOnThrow=0.200000
 	ShakeRotMag=(X=300.000000,Y=50.000000,Z=50.000000)
@@ -7888,4 +8136,25 @@ defaultproperties
 	JoySensitivity=1.4
 	LookSensitivityX=1.4
 	LookSensitivityY=1.5
+	
+	// xPatch: New Crosshairs
+	bHUDCrosshair=True
+	ReticleGroup=1
+	ReticleSize=1.00
+	ReticleRed=136
+	ReticleGreen=255
+	ReticleBlue=136
+	NewReticles[0]=Texture'xPatchTex.Crosshairs.Crosshair_01'
+	NewReticles[1]=Texture'xPatchTex.Crosshairs.Crosshair_03' 
+	NewReticles[2]=Texture'xPatchTex.Crosshairs.Crosshair_02'
+	NewReticles[3]=Texture'xPatchTex.Crosshairs.Crosshair_04'
+	NewReticles[4]=Texture'xPatchTex.Crosshairs.Crosshair_05'
+	NewReticles[5]=Texture'xPatchTex.Crosshairs.Crosshair_06'
+	NewReticles[6]=Texture'xPatchTex.Crosshairs.Crosshair_07'
+	NewReticles[7]=Texture'xPatchTex.Crosshairs.Crosshair_08'
+	NewReticles[8]=Texture'xPatchTex.UniqueCrosshair'
+	
+	// xPatch: Alternative hands skins
+	AltHandsSkins[1]=Texture'xPatchExtraTex.LS_hands_dude_black'
+	AltHandsSkins[2]=Texture'xPatchExtraTex.LS_hands_dude_black2'
 }

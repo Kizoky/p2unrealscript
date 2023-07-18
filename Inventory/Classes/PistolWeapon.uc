@@ -20,7 +20,8 @@
 //
 //=============================================================================
 
-class PistolWeapon extends P2DualWieldWeapon;
+class PistolWeapon extends DualCatableWeapon;
+//P2DualWieldWeapon;
 
 
 var bool bCanFireAgain;		// If you're the player and this is set to true, then you
@@ -60,7 +61,8 @@ simulated function PostBeginPlay()
 ///////////////////////////////////////////////////////////////////////////////
 simulated function PlayFiring()
 	{
-	// Basics
+	// Change by Man Chrzan: xPatch 2.0
+/*	// Basics
 	IncrementFlashCount();
 	if(Level.Game == None
 		|| !FPSGameInfo(Level.Game).bIsSinglePlayer)
@@ -80,6 +82,20 @@ simulated function PlayFiring()
 	// until the sleep in the NormalFire state let's him
 	if(PlayerController(Instigator.Controller) != None)
 		bCanFireAgain=false;
+	*/
+	IncrementFlashCount();
+	
+	if(Level.Game == None || !FPSGameInfo(Level.Game).bIsSinglePlayer)
+		PlayAnim('Shoot1', WeaponSpeedShoot1MP + (WeaponSpeedShoot1Rand*FRand()), 0.05);
+	else
+		PlayAnim('Shoot1', WeaponSpeedShoot1 + (WeaponSpeedShoot1Rand*FRand()), 0.05);
+		
+	SetupMuzzleFlash();
+
+	if(PlayerController(Instigator.Controller) != None)
+		bCanFireAgain=false;
+	
+	Super.PlayFiring();
 	}
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -126,6 +142,8 @@ simulated function SetupMuzzleFlash()
 ///////////////////////////////////////////////////////////////////////////////
 state NormalFire
 {
+	ignores AltFire;	// Added by Man Chrzan: bug fix
+	
 	///////////////////////////////////////////////////////////////////////////////
 	// Same as standard ServerFire
 	///////////////////////////////////////////////////////////////////////////////
@@ -202,22 +220,43 @@ state ClientFiring
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Added by Man Chrzan: xPatch 2.0
+///////////////////////////////////////////////////////////////////////////////
+function TraceFire( float Accuracy, float YOffset, float ZOffset )
+{
+	// Reduce the cat ammo if we're using one
+	if(CatOnGun == 1)
+		CatAmmoLeft--;
+
+	Super.TraceFire(Accuracy, YOffset, ZOffset);
+}
+
+// xPatch: Make sure that this gun is not extension!
+function bool CanSwapHands()
+{
+	return (Class == Class'PistolWeapon');
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Default properties
 ///////////////////////////////////////////////////////////////////////////////
 defaultproperties
 	{
+	bAttachCat=True
+	
 	ItemName="Pistol"
 	AmmoName=class'PistolBulletAmmoInv'
 	PickupClass=class'PistolPickup'
 	AttachmentClass=class'PistolAttachment'
 
 	Mesh=Mesh'MP_Weapons.MP_LS_Pistol'
-//	Mesh=Mesh'FP_Weapons.FP_Dude_Pistol'
+	OldMesh=Mesh'FP_Weapons.FP_Dude_Pistol'
 	Skins[0]=Texture'MP_FPArms.LS_arms.LS_hands_dude'
+	Skins[2]=Texture'WeaponSkins.brass-01'
 //	Skins[0]=Texture'WeaponSkins.Dude_Hands'
 	FirstPersonMeshSuffix="Pistol"
 
-	AmbientGlow = 64
+	AmbientGlow = 128
     //PlayerViewOffset=(X=0.0000,Y=0.000000,Z=-1.0000)
 	PlayerViewOffset=(X=0.0000,Y=0.000000,Z=-7.0000)
 
@@ -259,7 +298,8 @@ defaultproperties
 	AutoSwitchPriority=2
 	InventoryGroup=2
 	GroupOffset=1
-	BobDamping=0.975000
+	//BobDamping=0.975000
+	BobDamping=1.12 
 	ReloadCount=0
 	SPAccuracy=0.15
 	TraceAccuracy=0.02
@@ -282,4 +322,37 @@ defaultproperties
 	MaxRange=1024
 	MinRange=250
 	bCanFireAgain=true
+	
+	// Muzzle Flash
+	bSpawnMuzzleFlash=true
+	MFBoneName="MESH_Barrel"
+	MFRelativeLocation=(X=0,Y=0,Z=-6)
+	MFTex[0]=Texture'Timb.muzzle_flash.pistol_corona' 
+	MFScale[0]=(Min=0.8,Max=0.8) 
+	MFSizeRange[0]=(Min=15,Max=20) 
+	MFLifetime[0]=(Min=0.05,Max=0.05)
+	MFClass[2]=class'FX2.MuzzleFlash01'
+	//SmokeClass=class'MuzzleSmoke02'
+	MFScale[2]=(Min=0.3,Max=0.5)
+	MFSizeRange[2]=(Min=12,Max=15)
+	MFLifetime[2]=(Min=0.1,Max=0.15)
+	
+	// Meow! 
+	CatFireSound=Sound'WeaponSounds.machinegun_catfire'
+	CatBoneName="MESH_Barrel"
+	CatRelativeLocation=(X=0,Y=-2,Z=-2)
+	CatRelativeRotation=(Pitch=-16384,Yaw=-16384)
+	StartShotsWithCat=9
+	CatScale=1.0
+	
+	// Shell
+	ShellBoneName="MESH_Slide"
+	ShellRelativeLocation=(Y=2.000000,Z=-10.000000)
+	ShellSpeedY=350.000000
+    ShellSpeedZ=400.000000
+	ShellClass=Class'P2Shell_Pistol'
+	ShellTex=Texture'WeaponSkins.brass-01'
+	bCheckShell=True
+	
+	bDropInVeteranMode=2
 	}

@@ -24,15 +24,29 @@ var String MikeJDialog;
 var Sound BeginDualWield, DualWieldAmbient, EndDualWield;	// Ambient sound to play while dual-wielding
 
 // Weapon selector
-var globalconfig string				WeaponSelectorClassName;
-var protected transient P2WeaponSelector	WeaponSelector;
+var /*globalconfig*/ string				WeaponSelectorClassName;
+var /*protected*/ transient P2WeaponSelector	WeaponSelector;
+var name WeaponSelectorName;
 
 // Inventory selector
-var globalconfig string InventorySelectorClassName;
-var protected transient P2InventorySelector InventorySelector;
+var /*globalconfig*/ string 			InventorySelectorClassName;
+var /*protected*/ transient P2InventorySelector InventorySelector;
+var name InventorySelectorName;
 
 // "Last Weapon" button
 var int LastWeaponGroup, LastWeaponOffset;
+
+// xPatch:
+var float BehindViewCameraDist;			// Third Person View
+var vector TPPlayerCameraLocation;
+var vector ThirdPersonCameraOffset;
+const DOUBLE_DEUCE_CHANCE = 0.05;		// Percent chance to do a "double deuce" instead of a single deuce when telling people to fuck off
+var Material AltSkin;     	 			// Paradise Lost skin
+var globalconfig string	 CustomWeaponSelectorClassName;			// Custom Selectors (for User.ini configuration, not for workshop games)
+var globalconfig name 	 CustomWeaponSelectorName;				// NOTE: For workshop games/mods use WeaponSelectorClassName and WeaponSelectorName properties!
+var globalconfig string	 CustomInventorySelectorClassName;
+var globalconfig name 	 CustomInventorySelectorName;
+// End
 
 ///////////////////////////////////////////////////////////////////////////////
 // CONST
@@ -283,9 +297,17 @@ event PostLoadGame()
 {
 	Super.PostLoadGame();
 	SetClothes(CurrentClothes); // ensures the hud splash icons behind come up for each outfit
-	AddWeaponSelector();
-	AddInventorySelector();
-	WeaponSelector.RefreshSelector();
+	
+	// Nick's 3rd Person View
+	bBehindView = ThirdPersonView;
+
+	if(class'P2GameInfo'.Default.bUseWeaponSelector)
+		AddWeaponSelector();
+	if(class'P2GameInfo'.Default.bUseInventorySelector)	
+		AddInventorySelector();
+	
+	if(WeaponSelector != None)
+		WeaponSelector.RefreshSelector();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -300,7 +322,7 @@ function ChangeToNewClothes()
 	local P2Pawn CheckP;
 	local PoliceController policec;
 	local PersonController personc;
-	local int count;
+	local int count, i;
 
 	UseNewClass = class<ClothesInv>(NewClothes);
 	UseCurrClass= class<ClothesInv>(CurrentClothes);
@@ -314,9 +336,16 @@ function ChangeToNewClothes()
 		// Switch your inventory view to your old clothes, now in your inventory
 		MyPawn.SelectedItem = Powerups(MyPawn.CreateInventoryByClass(UseCurrClass));
 	}
-	
+
+// Change by Man Chrzan: xPatch 2.0		
 	// Destroy old bolton, if any
-	MyPawn.DestroyBolton(CLOTHES_BOLTON);
+/*	MyPawn.DestroyBolton(CLOTHES_BOLTON);*/
+	for (i=0; i<CLOTHES_BOLTON; i++)
+	{
+		if (MyPawn.Boltons[i].Part != None)
+			MyPawn.DestroyBolton(i);	
+	}
+// End
 
 	// Change third person texture and mesh
 	MyPawn.SwitchToNewMesh(UseNewClass.default.BodyMesh,
@@ -329,6 +358,25 @@ function ChangeToNewClothes()
 	MyPawn.SetupBolton(CLOTHES_BOLTON);
 	if (MyPawn.Boltons[CLOTHES_BOLTON].Part != None)
 		MyPawn.Boltons[CLOTHES_BOLTON].Part.SetRelativeLocation(UseNewClass.default.BoltonRelativeLocation);
+
+// Added by Man Chrzan: xPatch 2.0		
+// Support for more than one bolton 
+	// Destroy all existing boltons
+	for (i=0; i<CLOTHES_BOLTON; i++)
+	{
+		if (MyPawn.Boltons[i].Part != None)
+			MyPawn.DestroyBolton(i);	
+	}
+	
+	// Add boltons
+	for (i=0; i<UseNewClass.default.xBoltons.Length; i++)
+	{			
+		MyPawn.Boltons[i] = UseNewClass.default.xBoltons[i];
+		MyPawn.SetupBolton(i);
+		if (MyPawn.Boltons[i].Part != None)
+			MyPawn.Boltons[i].Part.SetRelativeLocation(UseNewClass.default.xBoltonsRelativeLocation[i]);
+	}
+// End
 
 	// Change first person textures
 	ChangeAllWeaponHandTextures(UseNewClass.default.HandsTexture, UseNewClass.default.FootTexture);
@@ -854,6 +902,10 @@ function CheckForCrackUse(float TimePassed)
 	{
 		if(P2Pawn(Pawn).CrackAddictionTime <= 0)
 		{
+			// In veteran mode (Ludicrous difficulty) it takes 3x more health (75% of current HP).
+			if (P2GameInfo(Level.Game).InVeteranMode())
+				CrackDamagePercentage = default.CrackDamagePercentage * 3;
+			
 			P2Pawn(Pawn).CrackAddictionTime = 0;
 			P2Pawn(Pawn).TakeDamage(CrackDamagePercentage*Pawn.Health, MyPawn, Pawn.Location,
 						vect(0,0,0), class'CrackSmokingDamage');
@@ -1394,8 +1446,12 @@ function EatingFood()
 	const FOOD_DIST = 25;
 
 	if(Level.Game == None
-		|| !FPSGameInfo(Level.Game).bIsSinglePlayer)
+		|| !FPSGameInfo(Level.Game).bIsSinglePlayer
+		|| P2GameInfoSingle(Level.Game).xManager.bEatEffect) // Added by Man Chrzan: xPatch 2.0
 	{
+		// Change by Man Chrzan: xPatch 2.0
+		// MyPawn -> Pawn 
+		
 		//mypawnfix
 		checkc = Pawn.GetBoneCoords(BONE_HEAD);
 
@@ -1404,7 +1460,8 @@ function EatingFood()
 		userot.Yaw   = Pawn.Velocity.y;
 		userot.Roll  = Pawn.Velocity.z;
 		useloc = checkc.origin + FOOD_DIST*vector(Pawn.Rotation) + FOOD_DIST*Normal(Pawn.Velocity);
-		spawn(class'FoodCrumbMaker',MyPawn,,useloc, userot);
+		/*spawn(class'FoodCrumbMaker',Pawn,,useloc, userot);*/	// Change by Man Chrzan: xPatch 2.0
+		spawn(class'FoodCrumbsMP',Pawn,,useloc, userot); 		// Always use MP effect, SP one isn't working correctly.
 	}
 }
 
@@ -1671,14 +1728,17 @@ function SetupDualWielding(float starttime)
 		// Go into head-injury overlay mode for effect
 		//AWDude(Pawn).HasHeadInjury=1;
 		//P2Hud(myHUD).DoWalkHeadInjury();
+		if(P2GameInfoSingle(Level.Game).xManager.bDualEffect) {	// Added by Man Chrzan: xPatch 2.0
 		Pawn.PlaySound(BeginDualWield, SLOT_Interface);
 		Pawn.AmbientSound=DualWieldAmbient;
+		}
 	}
 	else // reset things
 	{
 		// Turn off the head effects (but only if they were present to begin with)
 		//if (AWDude(Pawn).HasHeadInjury == 1)
-		if (Pawn.AmbientSound != None)
+		if (Pawn.AmbientSound != None 
+			&& Pawn.AmbientSound == DualWieldAmbient)	// xPatch: Bug-Fix
 		{
 			//AWDude(Pawn).HasHeadInjury=0;
 			//P2Hud(myHUD).StopHeadInjury();
@@ -1751,16 +1811,24 @@ exec function SwitchToLastWeaponInGroup(int GroupNum)
 // Functions for new Weapon Selector
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-protected function AddWeaponSelector()
+/*protected*/ function AddWeaponSelector()
 {
 	local int i;
-
+	
+	// xPatch: Allow to configure custom selectors
+	// NOTE: Must extend P2WeaponSelector to work!
+	if(CustomWeaponSelectorClassName != "" && CustomWeaponSelectorName != '')
+	{
+		WeaponSelectorClassName = CustomWeaponSelectorClassName;
+		WeaponSelectorName = CustomWeaponSelectorName;
+	}
+	
 	// Verify that WeaponSelectorClassName is valid.
 	assert(DynamicLoadObject(WeaponSelectorClassName, class'Class') != None);
-
+		
 	for(i = 0; i < Player.LocalInteractions.Length; i++)
 	{
-		if(Player.LocalInteractions[i].IsA('P2WeaponSelector'))
+		if(Player.LocalInteractions[i].IsA(WeaponSelectorName))
 		{
 			WeaponSelector = P2WeaponSelector(Player.LocalInteractions[i]);
 			WeaponSelector.RefreshSelector();
@@ -1771,6 +1839,7 @@ protected function AddWeaponSelector()
 	if(WeaponSelector == None)
 		WeaponSelector = P2WeaponSelector(Player.InteractionMaster.AddInteraction(WeaponSelectorClassName, Player));
 }
+
 function HideWeaponSelector()
 {
 	if (WeaponSelector != None)
@@ -1780,16 +1849,28 @@ function HideWeaponSelector()
 function Possess(Pawn aPawn)
 {
 	super.Possess(aPawn);
-	AddWeaponSelector();
-	AddInventorySelector();
+	
+	// 3rd Person View
+	bBehindView = ThirdPersonView;
+	
+	if(class'P2GameInfo'.Default.bUseWeaponSelector)
+		AddWeaponSelector();
+	if(class'P2GameInfo'.Default.bUseInventorySelector)	
+		AddInventorySelector();
 }
 
 // Change by NickP: MP fix
 simulated function NotifyPlayerValid()
 {
 	Super.NotifyPlayerValid();
-	AddWeaponSelector();
-	AddInventorySelector();
+	
+	// 3rd Person View
+	bBehindView = ThirdPersonView;
+	
+	if(class'P2GameInfo'.Default.bUseWeaponSelector)
+		AddWeaponSelector();
+	if(class'P2GameInfo'.Default.bUseInventorySelector)	
+		AddInventorySelector();
 }
 // End
 
@@ -1802,6 +1883,9 @@ function NotifyDeleteInventory(Inventory OldItem)
 
 exec function PrevWeapon()
 {
+	if(bBehindView)
+		class'P2WeaponAttachment'.default.CullDistance = 0;
+	
 	// Ignore while zooming with the rifle or other zoom weapon
 	if (P2Weapon(Pawn.Weapon) != None
 		&& P2Weapon(Pawn.Weapon).IsZoomed())
@@ -1834,6 +1918,9 @@ exec function PrevWeapon()
 
 exec function NextWeapon()
 {
+	if(bBehindView)
+		class'P2WeaponAttachment'.default.CullDistance = 0;
+	
 	// Ignore while zooming with the rifle or other zoom weapon
 	if (P2Weapon(Pawn.Weapon) != None
 		&& P2Weapon(Pawn.Weapon).IsZoomed())
@@ -1842,13 +1929,14 @@ exec function NextWeapon()
 		return;
 	}
 	
-	// If we're putting a cat on the gun, don't bring up the weapon selector
+/*	// If we're putting a cat on the gun, don't bring up the weapon selector
 	if ((CatableWeapon(Pawn.Weapon) != None && CatableWeapon(Pawn.Weapon).bPutCatOnGun)
 		|| (DualCatableWeapon(Pawn.Weapon) != None && DualCatableWeapon(Pawn.Weapon).bPutCatOnGun))
 	{
 		Super.NextWeapon();
 		return;
 	}
+*/
 
     if(WeaponSelector != None
 		&& class'P2GameInfo'.Default.bUseWeaponSelector
@@ -1875,7 +1963,10 @@ exec function NextWeapon()
 
 exec function SwitchWeapon(byte F)
 {
-    if(WeaponSelector != None
+    if(bBehindView)
+		class'P2WeaponAttachment'.default.CullDistance = 0;
+		
+	if(WeaponSelector != None
 		&& class'P2GameInfo'.Default.bUseWeaponSelector)
 	{
 		WeaponSelector.SwitchWeapon(F);
@@ -1920,24 +2011,36 @@ exec function AltFire(float Value)
 // Functions for new Inventory Selector
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-protected function AddInventorySelector()
+/*protected*/ function AddInventorySelector()
 {
 	local int i;
-
-	// Verify that WeaponSelectorClassName is valid.
+	
+	// xPatch: Allow to configure custom selectors
+	// NOTE: Must extend P2InventorySelector to work!
+	if(CustomInventorySelectorClassName != "" && CustomInventorySelectorName != '')
+	{
+		InventorySelectorClassName = CustomInventorySelectorClassName;
+		InventorySelectorName = CustomInventorySelectorName;
+	}
+	
+	// Verify that InventorySelectorClassName is valid.
 	assert(DynamicLoadObject(InventorySelectorClassName, class'Class') != None);
 
 	for(i = 0; i < Player.LocalInteractions.Length; i++)
 	{
-		if(Player.LocalInteractions[i].IsA('P2InventorySelector'))
+		if(Player.LocalInteractions[i].IsA(InventorySelectorName))
 		{
 			InventorySelector = P2InventorySelector(Player.LocalInteractions[i]);
+			InventorySelector.bReady = false;
 			return;
 		}
 	}
 
 	if(InventorySelector == None)
 		InventorySelector = P2InventorySelector(Player.InteractionMaster.AddInteraction(InventorySelectorClassName, Player));
+		
+	if(InventorySelector != None)
+		InventorySelector.bReady = false;
 }
 
 exec function InventoryMenu()
@@ -1954,6 +2057,529 @@ function bool InventoryMenuVisible()
 		return InventorySelector.bMenuVisible;
 	else
 		return false;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+// Man Chrzan: xPatch Functions
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////
+// xPatch 3.0 "Fuck You" feature backport, now handled differently.
+// Instead of sharing the "G" button with Get Down we trigger it 
+// by "Y" button or by firing hands or alt firnig petition and other stuff.
+///////////////////////////////////////////////////////////////////////////////
+exec function MiddleFinger()
+{
+	FlipMiddleFinger();
+}
+
+function FlipMiddleFinger()
+{
+	local FPSPawn CheckP;
+	local int peoplecount;
+	local byte StateChange;
+
+	//mypawnfix
+	if(P2Pawn(Pawn) == None)
+		return;
+
+	// don't allow this to unpause the game
+	if ( Level.Pauser == PlayerReplicationInfo )
+		return;
+		
+	// don't allow this in classic game 
+	//if (P2GameInfoSingle(Level.Game).InClassicMode())
+	//	return;
+
+	if(!bStillTalking
+		&& P2Pawn(Pawn).myDialog != None
+		&& P2Weapon(Pawn.Weapon).IsInState('Idle'))
+	{
+		// Handle Hands
+		if (HandsWeapon(Pawn.Weapon) != None
+			&& !HandsWeapon(Pawn.Weapon).UsingOldHands())
+		{
+			HandsWeapon(Pawn.Weapon).GotoState('NormalFire');
+			if (FRand() <= DOUBLE_DEUCE_CHANCE)
+				HandsWeapon(Pawn.Weapon).PlayAltFiring();
+			else
+				HandsWeapon(Pawn.Weapon).PlayFiring();
+				
+			MyPawn.PlayFlipOffAnim();
+		}
+		// Handle other weapons
+		else if (AWPostalDude(Pawn) != None && AWPostalDude(Pawn).LeftHandBird != None)
+		{
+			if(P2Weapon(Pawn.Weapon).bAllowMiddleFinger 
+			&& !P2Weapon(Pawn.Weapon).bOldHands)
+				AWPostalDude(Pawn).LeftHandBird.GotoState('NormalFire');
+				
+			MyPawn.PlayFlipOffAnim();
+		}
+		else
+		{
+			return;
+		}
+		
+		bFire = 0;	// Stuck in firing state fix
+			
+		// First send the message to people to get down. In the process,
+		// count how many people heard me.
+		peoplecount=0;
+		
+		ForEach RadiusActors(class'FPSPawn', CheckP, DUDE_SHOUT_GET_DOWN_RADIUS, Pawn.Location)
+		{
+			if(CheckP != Pawn
+				&& LambController(CheckP.Controller) != None)
+			{
+				// Tell them who's shouting
+				StateChange = 0;
+				LambController(CheckP.Controller).RespondToTalker(MyPawn, P2Pawn(Enemy), TALK_fuckyou, StateChange);
+				peoplecount++;
+			}
+		}
+		
+		// Check peoplecount here and then say something
+		//if(peoplecount == 0)
+		//	SayTime = P2Pawn(Pawn).Say(P2Pawn(Pawn).myDialog.lNegativeResponse) + 0.5;
+		//else
+			SayTime = P2Pawn(Pawn).Say(P2Pawn(Pawn).myDialog.lDude_FuckYou) + 0.5;
+			
+		SetTimer(SayTime, false);
+		bStillTalking = true;
+		bShoutGetDown = 0;
+	}
+}
+
+// For switching back to Sledge or Scythe after throwing it and picking it up.
+function PickupThrownWeapon(int GroupNum, int OffsetNum, optional bool bForceReady)
+{
+	// If we are empty handed switch weapon
+	if(Pawn.Weapon.InventoryGroup == MyPawn.HandsClass.default.InventoryGroup)
+		SwitchToThisWeapon(GroupNum, OffsetNum, bForceReady);
+}
+
+// Selectors
+function RemoveWeaponSelector()
+{
+	if(WeaponSelector != None)
+	{
+		Player.InteractionMaster.RemoveInteraction(WeaponSelector);
+		WeaponSelector = None;
+	}
+}
+function RemoveInventorySelector()
+{
+	if(InventorySelector != None)
+	{
+		Player.InteractionMaster.RemoveInteraction(InventorySelector);
+		InventorySelector = None;
+	}
+}
+function SetupWeaponSelector(bool bDefault)
+{
+	if(WeaponSelector != None)
+		WeaponSelector.SetupSelector(bDefault);
+}
+function SetupInventorySelector(bool bDefault)
+{
+	if(InventorySelector != None)
+		InventorySelector.SetupSelector(True, bDefault);
+}
+
+// DEBUG
+/*
+exec function xNoSelector()
+{
+	Player.InteractionMaster.RemoveInteraction(WeaponSelector);
+	WeaponSelector = None;
+	
+	Player.InteractionMaster.RemoveInteraction(WeaponSelector);
+	WeaponSelector = None;
+}
+exec function xAddSelector()
+{
+	AddWeaponSelector();
+	AddInventorySelector();
+	WeaponSelector.RefreshSelector();
+}
+exec function xSetSelector()
+{
+	SetupWeaponSelector(False);
+	SetupInventorySelector(False);
+}*/
+
+//////////////////////////////////////////////////////////
+// Third Person View
+// Some code comes from ShellModifier by Nick Pilshikov
+//////////////////////////////////////////////////////////
+exec function ToggleView()
+{
+	ThirdPersonView = !ThirdPersonView;
+	default.ThirdPersonView = ThirdPersonView;	// Keep the setting
+	bBehindView = ThirdPersonView;
+	bFreeCamera = false;
+}
+
+function CalcBehindView(out vector CameraLocation, out rotator CameraRotation, float Dist)
+{
+	local vector EndTrace, StartTrace;
+	local vector View, HitLocation, HitNormal;
+	local float ViewDist;
+	
+	// Man Chrzan: Fixed View Distance breaking after cutscenes
+	if (ViewTarget == Pawn && ThirdPersonView)
+	{
+		ViewDist = BehindViewCameraDist*Pawn.Default.CollisionRadius;
+		CameraRotation = Rotation;
+		
+		StartTrace = ViewTarget.Location;
+		EndTrace = StartTrace + class'P2EMath'.static.GetOffset(CameraRotation, ThirdPersonCameraOffset) + ShakeOffset;
+		if (Trace(HitLocation, HitNormal, EndTrace, StartTrace, false) != none)
+			CameraLocation = HitLocation;
+		else
+			CameraLocation = EndTrace;
+		
+		View = vect(1,0,0) >> CameraRotation;
+		if (Trace(HitLocation, HitNormal, EndTrace - (ViewDist + 30) * vector(CameraRotation), StartTrace) != none)
+			ViewDist = FMin( (EndTrace - HitLocation) Dot View, Dist );
+		else
+			ViewDist = ViewDist;
+		CameraLocation -= (ViewDist - 30) * View;
+		
+		TPPlayerCameraLocation = CameraLocation;
+	}
+	else
+		Super.CalcBehindView(CameraLocation, CameraRotation, Dist);
+}
+
+///fixed version of RotatorSpringInterp() - Nick
+static final function rotator xRotatorSpringInterpFixed(rotator Dest, rotator Current, float Delta, optional float SpringConst)
+{
+	local rotator ScrollDelta, ScrollAccel, ScrollVel;
+
+	if(SpringConst == 0)
+		SpringConst = 2048.f;
+
+	ScrollDelta = Normalize(Dest - Current);
+	ScrollAccel = SpringConst * ScrollDelta;
+	ScrollVel = ScrollAccel * Delta;
+	return (Current + ScrollVel * Delta);
+}
+
+simulated function bool IsRotNotReached(rotator Rot1, rotator Rot2)
+{
+	local float fRotDiff;
+	local rotator rRotDiff;
+	rRotDiff = Normalize((Normalize(Rot1)-Normalize(Rot2)));
+	fRotDiff = FMax((abs(rRotDiff.Yaw)+abs(rRotDiff.Roll)+abs(rRotDiff.Pitch))/3,4);
+	return (fRotDiff > 4);
+}
+
+simulated function FaceRotationEx(rotator NewRotation, float DeltaTime)
+{
+	if( Pawn.Physics == PHYS_Ladder )
+		SetRotation(Pawn.OnLadder.Walldir);
+	else
+	{
+		if( VSize(Pawn.Acceleration) == 0 
+			&& !PressingFire() 
+			&& !PressingAltFire() )
+			NewRotation = Pawn.Rotation;
+
+		if( IsRotNotReached(Pawn.Rotation, NewRotation) )
+			NewRotation = xRotatorSpringInterpFixed(NewRotation, Pawn.Rotation, DeltaTime, 1200);
+
+		if( (Pawn.Physics == PHYS_Walking) || (Pawn.Physics == PHYS_Falling) )
+			NewRotation.Pitch = 0;
+		Pawn.SetRotation(NewRotation);
+	}
+}
+
+function UpdateRotation(float DeltaTime, float maxPitch)
+{
+	local rotator newRotation, ViewRotation;
+	
+	// Man Chrzan: use super when 3rd person view is not enabled
+	if(!ThirdPersonView || !bBehindView)
+	{
+		Super.UpdateRotation(DeltaTime, maxPitch);
+		return;
+	}
+
+	if ( bInterpolating || ((Pawn != None) && Pawn.bInterpolating) )
+	{
+		ViewShake(deltaTime);
+		return;
+	}
+	ViewRotation = Rotation;
+	DesiredRotation = ViewRotation; //save old rotation
+	if ( bTurnToNearest != 0 )
+		TurnTowardNearestEnemy();
+	else if ( bTurn180 != 0 )
+		TurnAround();
+	else
+	{
+		TurnTarget = None;
+		bRotateToDesired = false;
+		bSetTurnRot = false;
+		//log("UpdateRotation"@aTurn@aLookUp@LookAccelTimeTurn@LookAccelTimeUp);
+		if (InputTracker.bUsingJoystick)
+		{
+			// The longer we hold the stick, the faster it builds up to the desired look speed.
+			// Reset if the axis drops
+			//log("aTurn"@aTurn@OldaTurn@"aLookUp"@aLookUp@OldALookUp);
+			/*
+			if (Abs(aTurn) < 30)
+				LookAccelTimeTurn = 0;
+			else if (Abs(aTurn) > Abs(OldaTurn))
+			{
+				// Adjust value if aTurn goes up further after hitting 1.0, so the 1.0 doesn't "follow" the aTurn value
+				if (LookAccelTimeTurn >= 1.0)
+					LookAccelTimeTurn = Abs(OldaTurn / aTurn);
+				else
+					LookAccelTimeTurn += DeltaTime * (LookSensitivityX);
+			}
+			*/
+			
+			//log("BEFORE aTurn ("$UseaTurn$"/"$aTurn$") aLookUp ("$UseaLookUp$"/"$aLookUp$")");
+			if (Abs(aTurn) > Abs(UseaTurn))
+			{
+				if ((aTurn < 0 && UseaTurn > 0)
+					|| (aTurn > 0 && UseaTurn < 0))
+					UseaTurn = 0;
+				else
+					UseaTurn += DeltaTime * LookSensitivityX * aTurn;
+			}
+			else
+				UseaTurn = aTurn;			
+			OldaTurn = aTurn;
+			
+			/*
+			if (Abs(aLookUp) < 30)
+				LookAccelTimeUp = 0;
+			else if (Abs(aLookUp) > Abs(OldaLookUp))
+			{
+				if (LookAccelTimeUp >= 1.0)
+					LookAccelTimeUp = Abs(OldaLookUp / aLookUp);
+				else
+					LookAccelTimeUp += DeltaTime * (LookSensitivityY);
+			}
+			*/
+			if (Abs(aLookUp) > Abs(UseaLookUp))
+			{
+				if ((aLookUp < 0 && UseaLookUp > 0)
+					|| (aLookUp > 0 && UseaLookUp < 0))
+					UseaLookUp = 0;
+				else
+					UseaLookUp += DeltaTime * LookSensitivityY * aLookUp;
+			}
+			else
+				UseaLookUp = aLookUp;
+			OldaLookUp = aLookUp;
+			
+			/*
+			LookAccelTimeTurn = FClamp(LookAccelTimeTurn, 0, 1.0);
+			LookAccelTimeUp = FClamp(LookAccelTimeUp, 0, 1.0);
+			ViewRotation.Yaw += 32.0 * DeltaTime * LookAccelTimeTurn * aTurn;
+			ViewRotation.Pitch += 32.0 * DeltaTime * LookAccelTimeUp * aLookUp;
+			*/
+			if (aTurn < 0)
+				UseaTurn = FClamp(UseaTurn, aTurn, 0);
+			else
+				UseaTurn = FClamp(UseaTurn, 0, aTurn);
+			if (aLookUp < 0)
+				UseaLookUp = FClamp(UseaLookUp, aLookUp, 0);
+			else
+				UseaLookUp = FClamp(UseaLookUp, 0, aLookUp);
+			//log("AFTER aTurn ("$UseaTurn$"/"$aTurn$") aLookUp ("$UseaLookUp$"/"$aLookUp$")");
+			ViewRotation.Yaw += 32.0 * DeltaTime * UseaTurn;
+			ViewRotation.Pitch += 32.0 * DeltaTime * UseaLookUp;
+		}
+		else
+		{
+			ViewRotation.Yaw += 32.0 * DeltaTime * aTurn;
+			ViewRotation.Pitch += 32.0 * DeltaTime * aLookUp;
+		}
+	}
+	// RWS CHANGE: Call func instead of doing work here
+	ViewRotation.Pitch = LimitPitch(ViewRotation.Pitch);
+	SetRotation(ViewRotation);
+
+	ViewShake(deltaTime);
+	ViewFlash(deltaTime);
+
+	NewRotation = ViewRotation;
+	NewRotation.Roll = Rotation.Roll;
+
+	if ( !bRotateToDesired && (Pawn != None) && (!bFreeCamera || !ThirdPersonView || !bBehindView) )
+		FaceRotationEx(NewRotation, deltatime);
+		//Pawn.FaceRotation(NewRotation, deltatime);
+}
+
+function rotator AdjustAim(Ammunition FiredAmmunition, vector projStart, int aimerror)
+{
+	local vector FireDir, AimSpot, HitNormal, HitLocation, OldAim, AimOffset;
+	local actor BestTarget;
+	local float bestAim, bestDist, projspeed;
+	local actor HitActor;
+	local bool bNoZAdjust, bLeading;
+	local rotator AimRot;
+	local rotator UseRot;
+	local float fDotFactor;
+	
+	// Man Chrzan: use super when 3rd person view is not enabled
+	if(!ThirdPersonView || !bBehindView)
+	{
+		return Super.AdjustAim(FiredAmmunition, projStart, aimerror);
+	}
+
+	FireDir = vector(Rotation);
+	if ( FiredAmmunition.bInstantHit )
+		HitActor = Trace(HitLocation, HitNormal, projStart + 10000 * FireDir, projStart, true);
+	else
+		HitActor = Trace(HitLocation, HitNormal, projStart + 4000 * FireDir, projStart, true);
+	if ( (HitActor != None) && HitActor.bProjTarget )
+	{
+		FiredAmmunition.WarnTarget(Target,Pawn,FireDir);
+		BestTarget = HitActor;
+		bNoZAdjust = true;
+		OldAim = HitLocation;
+		BestDist = VSize(BestTarget.Location - Pawn.Location);
+	}
+	else
+	{
+		// adjust aim based on FOV
+		bestAim = 0.95;
+		if ( AimingHelp == 1 )
+		{
+			bestAim = 0.93;
+			if ( FiredAmmunition.bInstantHit )
+				bestAim = 0.97;
+			if ( FOVAngle < DefaultFOV - 8 )
+				bestAim = 0.99;
+		}
+		else
+		{
+			if ( FiredAmmunition.bInstantHit )
+				bestAim = 0.98;
+			if ( FOVAngle != DefaultFOV )
+				bestAim = 0.995;
+		}
+		BestTarget = PickTarget(bestAim, bestDist, FireDir, projStart);
+		if ( BestTarget == None )
+		{
+			/*if (bBehindView)
+				return Pawn.Rotation;
+			else
+				return Rotation;*/
+			UseRot = Rotation;
+			UseRot.Yaw = Pawn.Rotation.Yaw;
+			fDotFactor = vector(UseRot) dot vector(Rotation);
+			if( fDotFactor < 0.7 )
+				return UseRot;
+			HitActor = Trace(HitLocation, HitNormal, TPPlayerCameraLocation + (FireDir*40000), TPPlayerCameraLocation, false);
+			if( HitLocation != vect(0,0,0) )
+				return Rotator(HitLocation-projStart);
+			return Rotation;
+		}
+		FiredAmmunition.WarnTarget(Target,Pawn,FireDir);
+		OldAim = projStart + FireDir * bestDist;
+	}
+	if ( AimingHelp == 0 )
+	{
+		/*if (bBehindView)
+			return Pawn.Rotation;
+		else
+			return Rotation;*/
+		UseRot = Rotation;
+		UseRot.Yaw = Pawn.Rotation.Yaw;
+		fDotFactor = vector(UseRot) dot vector(Rotation);
+		if( fDotFactor < 0.7 )
+			return UseRot;
+		HitActor = Trace(HitLocation, HitNormal, TPPlayerCameraLocation + (FireDir*40000), TPPlayerCameraLocation, false);
+		if( HitLocation != vect(0,0,0) )
+			return Rotator(HitLocation-projStart);
+		return Rotation;
+	}
+
+	// aim at target - help with leading also
+	if ( !FiredAmmunition.bInstantHit )
+	{
+		projspeed = FiredAmmunition.ProjectileClass.default.speed;
+		BestDist = vsize(BestTarget.Location + BestTarget.Velocity * FMin(2, 0.02 + BestDist/projSpeed) - projStart);
+		bLeading = true;
+		FireDir = BestTarget.Location + BestTarget.Velocity * FMin(2, 0.02 + BestDist/projSpeed) - projStart;
+		AimSpot = projStart + bestDist * Normal(FireDir);
+		// if splash damage weapon, try aiming at feet - trace down to find floor
+		if ( FiredAmmunition.bTrySplash
+			&& ((BestTarget.Velocity != vect(0,0,0)) || (BestDist > 1500)) )
+		{
+			HitActor = Trace(HitLocation, HitNormal, AimSpot - BestTarget.CollisionHeight * vect(0,0,2), AimSpot, false);
+			if ( (HitActor != None)
+				&& FastTrace(HitLocation + vect(0,0,4),projstart) )
+				return rotator(HitLocation + vect(0,0,6) - projStart);
+		}
+	}
+	else
+	{
+		FireDir = BestTarget.Location - projStart;
+		AimSpot = projStart + bestDist * Normal(FireDir);
+	}
+	AimOffset = AimSpot - OldAim;
+
+	// adjust Z of shooter if necessary
+	if ( bNoZAdjust || (bLeading && (Abs(AimOffset.Z) < BestTarget.CollisionHeight)) )
+		AimSpot.Z = OldAim.Z;
+	else if ( AimOffset.Z < 0 )
+		AimSpot.Z = BestTarget.Location.Z + 0.4 * BestTarget.CollisionHeight;
+	else
+		AimSpot.Z = BestTarget.Location.Z - 0.7 * BestTarget.CollisionHeight;
+
+	if ( !bLeading )
+	{
+		// if not leading, add slight random error ( significant at long distances )
+		if ( !bNoZAdjust )
+		{
+			AimRot = rotator(AimSpot - projStart);
+			if ( FOVAngle < DefaultFOV - 8 )
+				AimRot.Yaw = AimRot.Yaw + 200 - Rand(400);
+			else
+				AimRot.Yaw = AimRot.Yaw + 375 - Rand(750);
+			return AimRot;
+		}
+	}
+	else if ( !FastTrace(projStart + 0.9 * bestDist * Normal(FireDir), projStart) )
+	{
+		FireDir = BestTarget.Location - projStart;
+		AimSpot = projStart + bestDist * Normal(FireDir);
+	}
+
+	return rotator(AimSpot - projStart);
+}
+
+function Texture GetCurrentClothesHandsTexture()
+{	
+	return class<ClothesInv>(CurrentClothes).Default.HandsTexture;
+}
+
+function bool UseGroupLimit()
+{
+	if(P2GameInfoSingle(Level.Game) != None 
+		&& P2GameInfoSingle(Level.Game).InLudicrousMode()
+		&& P2GameInfoSingle(Level.Game).InVeteranMode())
+		return True;
+	return False;
+}
+
+function bool GetWeaponGroupFull(class<Inventory> InvType, optional out int MaxCount)
+{
+	if(UseGroupLimit())
+		return AWPostalDude(Pawn).WeaponGroupFull(InvType, MaxCount);
+	else
+		return False;
 }
 
 defaultproperties
@@ -1974,4 +2600,12 @@ defaultproperties
 	MikeJDialog="BasePeople.DialogMikeJ"
 	WeaponSelectorClassName="GameTypes.P2WeaponSelector"
 	InventorySelectorClassName="GameTypes.P2InventorySelector"
+// xPatch:
+	WeaponSelectorName=P2WeaponSelector
+	InventorySelectorName=P2InventorySelector
+	BeginDualWield=Sound'xItemSounds.DualWield.DualWieldStart'
+	DualWieldAmbient=Sound'xItemSounds.DualWield.DualWieldLoop'
+	EndDualWield=Sound'xItemSounds.DualWield.DualWieldWindDown'
+	BehindViewCameraDist=7
+	ThirdPersonCameraOffset=(X=0,Y=25,Z=72)
 }

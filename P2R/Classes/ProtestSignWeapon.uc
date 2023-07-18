@@ -13,8 +13,9 @@ var Texture InvisSkinTex;
 ///////////////////////////////////////////////////////////////////////////////
 function SetBloodTexture(Material NewTex)
 {
-	if (A != None)
-		A.Skins[BloodSkinIndex] = NewTex;
+// Change by Man Chrzan: Commented out to not change our various skins
+//	if (A != None)
+//		A.Skins[BloodSkinIndex] = NewTex;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -22,8 +23,9 @@ function SetBloodTexture(Material NewTex)
 ///////////////////////////////////////////////////////////////////////////////
 function CleanWeapon()
 {
-	BloodTextureIndex = 0;
-	SetBloodTexture(A.default.Skins[BloodSkinIndex]);
+// Change by Man Chrzan: Commented out to not change our various skins 
+//	BloodTextureIndex = 0;
+//	SetBloodTexture(A.default.Skins[BloodSkinIndex]);
 	//log(self$" clean weapon "$BloodTextureIndex$" new skin "$Skins[1]);
 }
 
@@ -233,6 +235,31 @@ simulated function Destroyed()
     A = None;
   }
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// Added by Man Chrzn: xPatch 2.0
+// Setup the weapon skin to match it's pickup
+///////////////////////////////////////////////////////////////////////////////
+state Active
+{
+	function BeginState()
+	{
+		Super.BeginState();
+		SetupSign(ProtestSkin);
+	}
+}
+
+function SetupSign(Material ProtestSkin)
+{
+	if (ProtestSkin != None)
+	{
+		if (A != None)
+			A.Skins[0] = ProtestSkin;
+		if (ThirdPersonActor != None)
+			ThirdPersonActor.Skins[0] = ProtestSkin;
+	}
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Default properties
 ///////////////////////////////////////////////////////////////////////////////

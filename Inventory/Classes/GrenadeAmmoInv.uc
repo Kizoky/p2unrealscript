@@ -13,6 +13,7 @@ class GrenadeAmmoInv extends P2AmmoInv;
 ///////////////////////////////////////////////////////////////////////////////
 defaultproperties
 	{
+	PickupClass=class'GrenadePickup'
 	ProjectileClass=Class'GrenadeProjectile'
 	bInstantHit=false
 	WarnTargetPct=+0.2

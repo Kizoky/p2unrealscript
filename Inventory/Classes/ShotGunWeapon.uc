@@ -28,6 +28,8 @@ const BASE_FLASH_OFFSET_X = 0.055;
 const BASE_FLASH_OFFSET_Y = 0.01;
 const RAND_OFFSET = 0.01;
 
+var sound PumpSound; 				// xPatch
+
 ///////////////////////////////////////////////////////////////////////////////
 // Fire the weapon
 ///////////////////////////////////////////////////////////////////////////////
@@ -79,12 +81,20 @@ simulated function PlayFiring()
 		&& FPSGameInfo(Level.Game).bIsSinglePlayer)
 		Instigator.PlaySound(FireSound, SLOT_None, 1.0, true, , UsePitch);
 
-	if (bDualWielding || (RightWeapon != none && RightWeapon.bDualWielding))
-	    PlayAnim('DualFire', WeaponSpeedShoot1 + (WeaponSpeedShoot1Rand*FRand()), 0.05);
+
+	if ( (bDualWielding || (RightWeapon != none && RightWeapon.bDualWielding)) && !DoSwapHands() ) // xPatch: DoSwapHands Fix
+		PlayAnim('DualFire', WeaponSpeedShoot1 + (WeaponSpeedShoot1Rand*FRand()), 0.05);
 	else
 	    PlayAnim('Shoot1', WeaponSpeedShoot1 + (WeaponSpeedShoot1Rand*FRand()), 0.05);
 
 	SetupMuzzleFlash();
+
+	// Man Chrzan: xPatch
+	SetupMuzzleFlashEmitter(); 
+	if( Cat != None )
+		Cat.PlayAnim(CatFireAnim);
+	if (P2WeaponAttachment(ThirdPersonActor).CatSilencer3rd != None)
+		P2WeaponAttachment(ThirdPersonActor).CatSilencer3rd.PlayAnim(CatFireAnim);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -132,6 +142,7 @@ simulated function PlayAltFiring()
 	PlayAnim('Shoot1', WeaponSpeedShoot1 + (WeaponSpeedShoot1Rand*FRand()), 0.05);
 
 	SetupMuzzleFlash();
+	SetupMuzzleFlashEmitter();	// Man Chrzan: xPatch
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -196,6 +207,20 @@ function PostBeginPlay()
 			AI_BurstCountExtra+=(diffoffset/2);
 		}
 	}
+	
+	// xPatch: Give it's primary fire a little buff in Enhanced Game too!
+	if(P2GameInfoSingle(Level.Game).VerifySeqTime() && Pawn(Owner).Controller.bIsPlayer)
+		ShotCountMaxForNotify=ShotCountMaxForNotify * 2;
+}
+
+// xPatch
+event PostLoadGame()
+{
+	Super.PostLoadGame();
+	
+	// Give it's primary fire a little buff in Enhanced Game too!
+	if(P2GameInfoSingle(Level.Game).VerifySeqTime() && Pawn(Owner).Controller.bIsPlayer)
+		ShotCountMaxForNotify=ShotCountMaxForNotify * 2;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -350,6 +375,24 @@ state NormalFire
 {
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// Added by Man Chrzan: xPatch 2.0
+///////////////////////////////////////////////////////////////////////////////
+function Notify_Pump()
+{
+	// Allow only for players. This pump sound can be a little annoying when made by NPCs...
+	if ( Instigator.IsHumanControlled() )
+	{
+        Instigator.PlaySound(PumpSound, SLOT_None, 1.0, true, , WeaponFirePitchStart + (FRand()*WeaponFirePitchRand));
+	}
+}
+
+// xPatch: Make sure that this gun is not extension!
+function bool CanSwapHands()
+{
+	return (Class == Class'ShotgunWeapon');
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // Default properties
@@ -361,17 +404,17 @@ defaultproperties
 	PickupClass=class'ShotGunPickup'
 	AttachmentClass=class'ShotgunAttachment'
 
-//	Mesh=Mesh'FP_Weapons.FP_Dude_Shotgun'
+	OldMesh=Mesh'FP_Weapons.FP_Dude_Shotgun'	// xPatch
 	Mesh=Mesh'MP_Weapons.MP_LS_Shotgun'
 
 	Skins[0]=Texture'MP_FPArms.LS_arms.LS_hands_dude'
-//	Skins[0]=Texture'WeaponSkins.Dude_Hands'
+	//Skins[0]=Texture'WeaponSkins.Dude_Hands'
 	Skins[1]=Texture'WeaponSkins.shotgun_timb'
 	Skins[2]=Texture'AnimalSkins.Cat_Orange'
 	Skins[3]=Texture'AnimalSkins.Cat_Orange'
 	FirstPersonMeshSuffix="Shotgun"
 
-//	CatMesh=Mesh'FP_Weapons.FP_Dude_ShotgunCat'
+	OldCatMesh=Mesh'FP_Weapons.FP_Dude_ShotgunCat'	// xPatch
 	CatMesh=Mesh'MP_Weapons.MP_LS_ShotgunCat'
 	CatFireSound=Sound'WeaponSounds.shotgun_catfire'
 	CatSkinIndex=2
@@ -413,8 +456,8 @@ defaultproperties
 	AIRating=0.3
 	AutoSwitchPriority=3
 	InventoryGroup=3
-	GroupOffset=1
-	BobDamping=0.975000
+	GroupOffset=2
+	BobDamping=1.120000
 	ReloadCount=0
 	TraceAccuracy=0.7
 	SPAccuracy=1.4
@@ -442,4 +485,26 @@ defaultproperties
 	bAllowHints=true
 	bShowHints=true
 	bUsesAltFire=true
+	
+	PumpSound=Sound'WeaponSounds.shotgun_ejectshell'
+	
+	// Muzzle Flash
+	bSpawnMuzzleFlash=True
+	MFBoneName="MESH_Shotgun"
+	MFRelativeLocation=(X=46.5,Y=0,Z=-1)
+	MFClass[0]=class'xMuzzleFlashEmitter'
+	MFTex[0]=Texture'Timb.muzzleflash.shotgun_corona'
+	MFScale[0]=(Min=1.3,Max=1.3) 
+	MFSizeRange[0]=(Min=25,Max=30) 
+	MFLifetime[0]=(Min=0.05,Max=0.05)
+	MFClass[2]=class'FX2.MuzzleFlash02'
+	
+	// Shell
+	ShellBoneName="MESH_Shell"
+    ShellRelativeLocation=(Y=-5.000000)
+    ShellClass=Class'P2Shell_12Gauge'
+    ShellSpeedY=-600.000000
+    ShellSpeedZ=-200.000000
+	
+	VeteranModeDropChance=0.15	// Make it rare, we don't want them to easily get ammo for Sawn-Off Shotgun ;P
 	}

@@ -22,6 +22,14 @@ var localized string DifficultyHelp;
 var UWindowCheckBox NoHolidaysCheckbox;
 var localized string NoHolidaysText, NoHolidaysHelp;
 
+// xPatch:
+var UWindowCheckbox ClassicCheck;
+var localized string ClassicText;
+var localized string ClassicHelp;
+var UWindowCheckbox SkipCheck;
+var localized string SkipText;
+var localized string SkipHelp;
+
 // Game summary
 var UWindowDynamicTextArea GameSummaryWindow;
 var localized string GameDescriptionMissingText;
@@ -53,11 +61,16 @@ const InsaneoPath = "Postal2Game.P2GameInfo bInsaneoMode";
 const ExpertPath = "Postal2Game.P2GameInfo bExpertMode";
 const ContraPath = "Postal2Game.P2GameInfoSingle bContraMode";
 const LudicrousPath = "Postal2Game.P2GameInfo bLudicrousMode";
+const MasochistPath = "Postal2Game.P2GameInfo bMasochistMode";
+const VeteranPath = "Postal2Game.P2GameInfo bVeteranMode";
+const MeleePath = "Postal2Game.P2GameInfo bMeeleMode";
+const HardLieberPath = "Postal2Game.P2GameInfo bHardLieberMode";
+const NukeModePath = "Postal2Game.P2GameInfo bNukeMode";
 const CustomPath = "Postal2Game.P2GameInfo bCustomMode";
 
 const EnhancedPath = "Shell.ShellMenuCW bShowedEnhancedMode";
 
-const DIFFICULTY_NUMBER_CUSTOM = 15;
+const DIFFICULTY_NUMBER_CUSTOM = 16;
 
 var bool bInCustomMode;
 
@@ -77,6 +90,8 @@ function Created()
 	local class<P2GameInfoSingle> UseClass;
 	local string Desc;
 	local int val;
+	local bool CustomBool;
+	local int ControlOffset2;
 
 	Super(UMenuPageWindow).Created();
 	
@@ -96,57 +111,109 @@ function Created()
 		warn(self @ "Error: Missing UMenuBotmatchClientWindow parent.");
 
 	// Game Type
-	GameCombo = UWindowComboControl(CreateControl(class'UWindowComboControl', ControlLeft, ControlOffset, ControlWidth, ControlHeight));
+	GameCombo = UWindowComboControl(CreateControl(class'UWindowComboControl', /*ControlLeft*/ 10, ControlOffset, ControlWidth, ControlHeight));
 	GameCombo.SetButtons(True);
 	GameCombo.SetText(GameTypeText);
 	GameCombo.SetHelpText(GameTypeHelp);
 	GameCombo.SetFont(ControlFont);
 	GameCombo.SetEditable(False);
-	ControlOffset += (ControlHeight * 1.5);	
-	
-	ControlOffset += (ControlHeight * 1.5);	
-	// Enhanced Mode Checkbox
-	if (GetGameSingle().SeqTimeVerified()
-		&& !bInCustomMode)
-	{
-		EnhancedCheck = UWindowCheckbox(CreateControl(class'UWindowCheckbox', 10, ControlOffset, 270, ControlHeight));
-		EnhancedCheck.SetText(EnhancedText);
-		EnhancedCheck.SetHelpText(EnhancedHelp);
-		EnhancedCheck.SetFont(F_SmallBold);
-		EnhancedCheck.bChecked = false;
-		EnhancedCheck.Align = TA_LeftofText;
-	}
-	else
-	{
-		// Pull enhanced setting from custom difficulty menu
-		WorkshopStartGameCW(BotmatchParent).bEnhanced = MenuStart(ShellRootWindow(Root).MyMenu).EnhancedCheckbox.bChecked;
-	}
-	
-	if (GetGameSingle().IsHoliday('ANY_HOLIDAY'))
-	{
-		NoHolidaysCheckbox = UWindowCheckbox(CreateControl(class'UWindowCheckbox', 150, ControlOffset, 270, ControlHeight));
-		NoHolidaysCheckbox.SetText(NoHolidaysText);
-		NoHolidaysCheckbox.SetHelpText(NoHolidaysHelp);
-		NoHolidaysCheckbox.SetFont(F_SmallBold);
-		NoHolidaysCheckbox.bChecked = false;
-		NoHolidaysCheckbox.Align = TA_LeftofText;
-		if (bInCustomMode)
-			ControlOffset += ControlHeight * 1.5;
-	}
+	GameCombo.EditBoxWidth = 240;
 	
 	// Difficulty Combo
 	if (!bInCustomMode)
 	{
-		DifficultyCombo = UWindowComboControl(CreateControl(class'UWindowComboControl', 300, ControlOffset, 270, ControlHeight));
+		DifficultyCombo = UWindowComboControl(CreateControl(class'UWindowComboControl', 365, ControlOffset, ControlWidth, ControlHeight));
 		DifficultyCombo.SetButtons(True);
 		DifficultyCombo.SetText(DifficultyText);
 		DifficultyCombo.SetHelpText(DifficultyHelp);
 		DifficultyCombo.SetFont(ControlFont);
 		DifficultyCombo.SetEditable(False);
-		DifficultyCombo.Align = TA_Left;
-		ControlOffset += (ControlHeight * 1.5);	
+		//DifficultyCombo.Align = TA_Left;
+		DifficultyCombo.EditBoxWidth = 150;
 	}
-
+	
+	ControlOffset += (ControlHeight * 1.5);	
+	
+	ControlLeft = 10;
+	ControlWidth = 130;
+	
+	// Classic Mode Checkbox
+	ClassicCheck = UWindowCheckbox(CreateControl(class'UWindowCheckbox', ControlLeft, ControlOffset, ControlWidth, ControlHeight));
+	ClassicCheck.SetText(ClassicText);
+	ClassicCheck.SetHelpText(ClassicHelp);
+	ClassicCheck.SetFont(F_SmallBold);
+	ClassicCheck.bChecked = false;
+	ClassicCheck.bDisabled = false;
+	ClassicCheck.Align = TA_LeftofText;
+	if (bInCustomMode)
+	{
+		// Pull classic setting from custom difficulty menu
+		CustomBool = MenuStart(ShellRootWindow(Root).MyMenu).ClassicGameCheckbox.bChecked;
+		WorkshopStartGameCW(BotmatchParent).bClassic = CustomBool;
+		ClassicCheck.SetValue(CustomBool);
+	}
+	
+	// Enhanced Mode Checkbox
+	if (GetGameSingle().SeqTimeVerified())
+	{
+		ControlLeft += ControlWidth + 15;
+		
+		EnhancedCheck = UWindowCheckbox(CreateControl(class'UWindowCheckbox', ControlLeft, ControlOffset, ControlWidth, ControlHeight));
+		EnhancedCheck.SetText(EnhancedText);
+		EnhancedCheck.SetHelpText(EnhancedHelp);
+		EnhancedCheck.SetFont(F_SmallBold);
+		EnhancedCheck.bChecked = false;
+		EnhancedCheck.Align = TA_LeftofText;
+		if(bInCustomMode)
+		{
+			// Pull enhanced setting from custom difficulty menu
+			CustomBool = MenuStart(ShellRootWindow(Root).MyMenu).EnhancedCheckbox.bChecked;
+			WorkshopStartGameCW(BotmatchParent).bEnhanced = CustomBool;
+			EnhancedCheck.SetValue(CustomBool);
+		}
+	}
+	
+	
+	
+	// Right Side
+	ControlLeft += ControlWidth + 15;
+	
+	SkipCheck = UWindowCheckbox(CreateControl(class'UWindowCheckbox', ControlLeft, ControlOffset, ControlWidth, ControlHeight));
+	SkipCheck.SetText(SkipText);
+	SkipCheck.SetHelpText(SkipHelp);
+	SkipCheck.SetFont(F_SmallBold);
+	SkipCheck.bChecked = false;
+	SkipCheck.Align = TA_LeftofText;
+	if(bInCustomMode)
+	{
+		// Pull enhanced setting from custom difficulty menu
+		CustomBool = MenuStart(ShellRootWindow(Root).MyMenu).SkipCheckbox.bChecked;
+		WorkshopStartGameCW(BotmatchParent).bSkipIntro = CustomBool;
+		SkipCheck.SetValue(CustomBool);
+	}
+	
+	if (GetGameSingle().IsHoliday('ANY_HOLIDAY'))
+	{
+		ControlLeft += ControlWidth + 15;
+		
+		NoHolidaysCheckbox = UWindowCheckbox(CreateControl(class'UWindowCheckbox', ControlLeft, ControlOffset, ControlWidth, ControlHeight));
+		NoHolidaysCheckbox.SetText(NoHolidaysText);
+		NoHolidaysCheckbox.SetHelpText(NoHolidaysHelp);
+		NoHolidaysCheckbox.SetFont(F_SmallBold);
+		NoHolidaysCheckbox.bChecked = false;
+		NoHolidaysCheckbox.Align = TA_LeftofText;
+		
+		if(bInCustomMode)
+		{
+			// Pull holiday setting from custom difficulty menu
+			CustomBool = MenuStart(ShellRootWindow(Root).MyMenu).NoHolidaysCheckbox.bChecked;
+			WorkshopStartGameCW(BotmatchParent).bNoHolidays = CustomBool;
+			NoHolidaysCheckbox.SetValue(CustomBool);	
+		}
+	}
+	
+	ControlOffset += (ControlHeight * 4.0);	
+	
 	// Game Summary Window
 	GameSummaryWindow = UWindowDynamicTextArea(CreateWindow(class'UWindowDynamicTextArea', 0, 0, 100, 100));
 	GameSummaryWindow.bAutoScrollbar = true;
@@ -166,7 +233,6 @@ function Created()
 	BotmatchParent.GameType = Games[Selection];
 	BotmatchParent.GameClass = Class<GameInfo>(DynamicLoadObject(BotmatchParent.GameType, class'Class'));
 	GameCombo.SetSelectedIndex(Selection);
-	GameCombo.EditBoxWidth = 170;
 	
 	UseClass = class<P2GameInfoSingle>(BotmatchParent.GameClass);
 	desc = UseClass.Default.GameDescription;
@@ -175,6 +241,17 @@ function Created()
 	
 	GameSummaryWindow.Clear();
 	GameSummaryWindow.AddText(Desc);
+	
+	if (ClassicCheck != None)
+	{
+		if(!UseClass.Default.bAllowClassicGame)
+		{
+			ClassicCheck.bDisabled = true;
+			ClassicCheck.bChecked = false;
+		}
+		else
+			ClassicCheck.bDisabled = false;
+	}
 }
 
 function AfterCreate()
@@ -226,9 +303,11 @@ function BeforePaint(Canvas C, float X, float Y)
 	C.Font = root.Fonts[GameCombo.EditBox.Font];
 	C.StrLen(GameTypeText, XL, YL);
 	GameCombo.SetSize(XL + 15 + GameCombo.EditBoxWidth, ControlHeight);
-	GameCombo.WinLeft = BodyLeft + (BodyWidth - GameCombo.WinWidth) / 2;
+	//GameCombo.WinLeft = BodyLeft + (BodyWidth - GameCombo.WinWidth) / 2;
 	GameCombo.SetTextColor(TC);
 	C.Font = oldFont;
+	
+	DifficultyCombo.SetSize(60 + DifficultyCombo.EditBoxWidth, ControlHeight);
 
 	MapWindow.SetSize(BodyWidth - 6, MapWindowHeight);
 	MapWindow.WinLeft = BodyLeft + 3;
@@ -251,10 +330,10 @@ function BeforePaint(Canvas C, float X, float Y)
 	C.Font = root.Fonts[GameSummaryWindow.Font];
 	C.StrLen("Try", XL, YL);
 	SummarySpace = ScreenshotSize - YL;
-	lines = 3;
+	lines = 4;
 	GameSummaryWindow.SetSize(BodyWidth, (lines-1)*YL);
 	GameSummaryWindow.WinLeft = BodyLeft;
-	GameSummaryWindow.WinTop = GameCombo.WinTop + YL;
+	GameSummaryWindow.WinTop = GameCombo.WinTop + YL + (ControlHeight * 2.0);
 	C.Font = oldFont;
 }
 
@@ -288,9 +367,14 @@ function Notify(UWindowDialogControl C, byte E)
 		case GameCombo:
 			GameChanged();
 			break;
+		case ClassicCheck:
+			WorkshopStartGameCW(BotmatchParent).bClassic = ClassicCheck.bChecked; 
 		case EnhancedCheck:
 			WorkshopStartGameCW(BotmatchParent).bEnhanced = EnhancedCheck.bChecked;
 			break;
+		case SkipCheck:
+			WorkshopStartGameCW(BotmatchParent).bSkipIntro = SkipCheck.bChecked;
+			break;	
 		case NoHolidaysCheckbox:
 			WorkshopStartGameCW(BotmatchParent).bNoHolidays = NoHolidaysCheckbox.bChecked;		
 			break;
@@ -312,8 +396,8 @@ function DiffChanged()
 	local string diffname;
 	local int val, diffnum;
 	local P2GameInfoSingle psg;
-	local bool bLieberMode, bHestonMode, bTheyHateMeMode, bInsaneoMode, bExpertMode;
-	local bool bTheyHateMeWarning, bPOSTALWarning;
+	local bool bLieberMode, bHestonMode, bTheyHateMeMode, bInsaneoMode, bExpertMode, bMasochistMode, bVeteranMode, bLudicrousMode;
+	local bool bTheyHateMeWarning, bPOSTALWarning, bImpossibleWarning, bLudicrousWarning;
 	local class<P2GameInfoSingle> GameClass;
 
 	psg = GetGameSingle();
@@ -418,6 +502,18 @@ function DiffChanged()
 		bExpertMode = True;
 		bPOSTALWarning = True;
 	}
+	// Ludicrous Mode - turns on Masochist, They Hate Me, and Expert... EVERYTHING!
+	else if(diffname == psg.DifficultyNames[15])
+	{
+		val = 15;
+		diffnum = 15;
+		bVeteranMode = True;
+		bMasochistMode = True;
+		bLudicrousMode = True;
+		bTheyHateMeMode = True;
+		bExpertMode = True;
+		bLudicrousWarning = True;
+	}
 	// Custom mode - reset to Average difficulty
 	else
 	{
@@ -445,12 +541,30 @@ function DiffChanged()
 	GetPlayerOwner().ConsoleCommand("set"@ExpertPath@bExpertMode);
 	psg.TheGameState.bExpertMode = bExpertMode;
 	GameClass.Default.bExpertMode = bExpertMode;
+	// xPatch:
+	GetPlayerOwner().ConsoleCommand("set"@LudicrousPath@bLudicrousMode);
+	psg.TheGameState.bLudicrousMode = bLudicrousMode;
+	GameClass.Default.bLudicrousMode = bLudicrousMode;
+	GetPlayerOwner().ConsoleCommand("set"@VeteranPath@bVeteranMode);
+	psg.TheGameState.bVeteranMode = bVeteranMode;
+	GameClass.Default.bVeteranMode = bVeteranMode;
+	GetPlayerOwner().ConsoleCommand("set"@MasochistPath@bMasochistMode);
+	psg.TheGameState.bMasochistMode = bMasochistMode;
+	GameClass.Default.bMasochistMode = bMasochistMode;
+	GetPlayerOwner().ConsoleCommand("set"@MeleePath@"false");
+	psg.TheGameState.bMeeleMode = false;
+	GameClass.Default.bMeeleMode = false;
+	GetPlayerOwner().ConsoleCommand("set"@HardLieberPath@"false");
+	psg.TheGameState.bHardLieberMode = false;
+	GameClass.Default.bHardLieberMode = false;
+	GetPlayerOwner().ConsoleCommand("set"@NukeModePath@"false");
+	psg.TheGameState.bNukeMode = false;
+	GameClass.Default.bNukeMode = false;
+	// End
 	GetPlayerOwner().ConsoleCommand("set"@CustomPath@"false");
 	psg.TheGameState.bCustomMode = false;
 	GameClass.Default.bCustomMode = false;
-	GetPlayerOwner().ConsoleCommand("set"@LudicrousPath@"false");
-	psg.TheGameState.bLudicrousMode = False;
-	GameClass.Default.bLudicrousMode = False;
+	
 	GameClass.StaticSaveConfig();
 	psg.GameDifficulty = val;
 	// Update the gamestate here, also, if we have one
@@ -516,9 +630,28 @@ function GameChanged()
 	
 	GameSummaryWindow.Clear();
 	GameSummaryWindow.AddText(Desc);
-
+	
 	// don't load the map list again...
 	//MapWindow.LoadMapList();
+	
+	// xPatch: new checkboxes
+	if(!UseClass.Default.bAllowClassicGame)
+	{
+		ClassicCheck.bDisabled = true;
+		ClassicCheck.bChecked = false;
+	}
+	else
+		ClassicCheck.bDisabled = false;
+
+	if(UseClass.Default.IntroURL == UseClass.Default.StartFirstDayURL
+		|| UseClass.Default.StartFirstDayURL == ""
+		|| UseClass.Default.IntroURL == "")
+	{
+		SkipCheck.bDisabled = true;
+		SkipCheck.bChecked = false;
+	}
+	else
+		SkipCheck.bDisabled = false;
 }
 
 function MapChanged()
@@ -529,7 +662,7 @@ function MapChanged()
 
 function int FillInGameCombo()
 {
-	local int i, Selection;
+	local int i, j, Selection;
 	local class<GameInfo> TempClass;
 	local string NextGame, NextCategory;
 	local string TempGames[256];
@@ -541,7 +674,20 @@ function int FillInGameCombo()
 	GetPlayerOwner().GetNextIntDesc("P2GameInfoSingle", 0, NextGame, NextCategory);
 	while (NextGame != "")
 	{
-		TempGames[i] = NextGame;
+		// xPatch: Check for dupilcates
+		bAlreadyHave=False;
+		for (j=0; j<256; j++)
+		{
+			if(TempGames[j] == NextGame) 
+			{
+				bAlreadyHave=True;
+				warn("Already have:"@NextGame);
+			}
+		}
+		
+		if(!bAlreadyHave)
+			TempGames[i] = NextGame;
+		
 		i++;
 		if(i == 256)
 		{
@@ -621,6 +767,9 @@ defaultproperties
 	MapTitleMissingText="Untitled"
 	EnhancedText="Enhanced Game"
 	EnhancedHelp="Play the Enhanced Game"
+	ClassicText="Classic Mode"
+	ClassicHelp="Play Classic Mode"
+	SkipText="Skip Intro"
 	GameDescriptionMissingText="No description has been provided for this game mode."
 	GameTitleMissingText="Untitled Game"
 	DefaultMapTitleText="Intro Map"

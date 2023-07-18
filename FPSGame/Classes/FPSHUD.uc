@@ -86,6 +86,7 @@ var color						TeamSayColor;	// team talking
 const TEAM_STR_KEY	= "(-*Team..)";
 const SPACE_AND_COLON_LEN					= 2;
 
+var globalconfig bool bSteamDeckInit;
 
 ///////////////////////////////////////////////////////////////////////////////
 // PostBeginPlay
@@ -101,6 +102,12 @@ simulated function PostBeginPlay()
 		MyFont.MyHUD = Self;
 	if (MyButtons != None)
 		MyButtons.MyHUD = Self;
+        
+    if (!bSteamDeckInit && PlatformIsSteamDeck()) {
+        MyButtons.SetJoystickType(6);
+        bSteamDeckInit = true;
+        SaveConfig();
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

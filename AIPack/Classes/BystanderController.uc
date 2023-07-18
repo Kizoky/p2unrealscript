@@ -1758,25 +1758,46 @@ function ConvertToRiotMode()
 
 	//  Give him a good weapon, even if he already has one
 	// Every once in a while give him a big 'gun'
-	if(Rand(RIOT_BIG_GUN_PICK_RAND) == 0)
+	//if(Rand(RIOT_BIG_GUN_PICK_RAND) == 0)
+	if(Rand(RIOT_BIG_GUN_PICK_RAND) < 15)	
 	{
-		randpick = Rand(RIOT_GUN_RAND);
-		switch(randpick)
-		{
-			case 0:
-				MyPawn.CreateInventoryByClass(class'GrenadeWeapon');
-				break;
-			case 1:
-				MyPawn.CreateInventoryByClass(class'MolotovWeapon');
-				break;
-			case 2:
-				MyPawn.CreateInventoryByClass(class'LauncherWeapon');
-				break;
-		}
+		// Added by Man Chrzan: Add ED Weapons too (if these are enabled)
+		if (P2GameInfoSingle(Level.Game).InClassicMode())
+			randpick = Rand(RIOT_GUN_RAND); 
+		else
+			randpick = Rand(6);
+		
+			switch(randpick)
+			{
+				case 0:
+					MyPawn.CreateInventoryByClass(class'GrenadeWeapon');
+					break;
+				case 1:
+					MyPawn.CreateInventoryByClass(class'MolotovWeapon');
+					break;
+				case 2:
+					MyPawn.CreateInventoryByClass(class'LauncherWeapon');
+					break;
+				case 3:
+					MyPawn.CreateInventory("EDStuff.GrenadeLauncherWeapon");
+					break;
+				case 4:
+					MyPawn.CreateInventory("AWPStuff.SawnOffWeapon");	// (it was fixed so its ok for NPCs to use)
+					break;
+				case 5:
+					MyPawn.CreateInventory("EDStuff.DynamiteWeapon");
+					break;
+			}
+		
 	}
 	else	// Otherwise he gets a smaller gun
 	{
-		randpick = Rand(RIOT_GUN_RAND);
+		// Added by Man Chrzan: Add ED Weapons too (if these are enabled)
+		if (P2GameInfoSingle(Level.Game).InClassicMode())
+			randpick = Rand(RIOT_GUN_RAND); 
+		else
+			randpick = Rand(5);
+			
 		switch(randpick)
 		{
 			case 0:
@@ -1788,7 +1809,14 @@ function ConvertToRiotMode()
 			case 2:
 				MyPawn.CreateInventoryByClass(class'MachinegunWeapon');
 				break;
+			case 3:
+				MyPawn.CreateInventory("EDStuff.GSelectWeapon");
+				break;
+			case 4:
+				MyPawn.CreateInventory("EDStuff.MP5Weapon");
+				break;
 		}
+		
 	}
 
 	// Make them meaner and stronger

@@ -45,6 +45,8 @@ var Sound SeekerSound;
 var Sound TradSwitchSound;
 var Sound NewSwitchSound;
 
+var bool bCatWasOnGun;
+
 const ZOOM_FOV				=	7;
 const KEEP_TARGET_TIME		=	1.0;
 const CHANGE_COUNT			=	2;
@@ -262,6 +264,20 @@ function Notify_ShootLauncher()
 					// Touch any actor that was in between, just in case.
 					if(HitActor != None)
 						HitActor.Bump(lpro);
+					
+					// xPatch: It's now catable
+					if( bCatWasOnGun || RepeatCatGun == 1 )
+					{
+						PlaySound(CatViolateSound);
+						lpro.CatConvert(CatSkin);
+						bCatWasOnGun = false;
+						if( RepeatCatGun == 1 )
+						{
+							bCatWasOnGun = true;
+							CatOnGun = 1;
+						}
+					}
+					// end
 				}
 			}
 			else // fire a seeking rocket
@@ -291,6 +307,20 @@ function Notify_ShootLauncher()
 					// Touch any actor that was in between, just in case.
 					if(HitActor != None)
 						HitActor.Bump(lspro);
+						
+					// xPatch: It's now catable
+					if( bCatWasOnGun || RepeatCatGun == 1 )
+					{
+						PlaySound(CatViolateSound);
+						lspro.CatConvert(CatSkin);
+						bCatWasOnGun = false;
+						if( RepeatCatGun == 1 )
+						{
+							bCatWasOnGun = true;
+							CatOnGun = 1;
+						}
+					}
+					// end
 				}
 			}
 		}
@@ -499,6 +529,7 @@ function ShootIt()
 {
 	GotoState('NormalFire');
 	PlayFiring();
+	SetupMuzzleFlashEmitterFix();	// xPatch
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -892,6 +923,61 @@ state DownWeapon
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+// xPatch
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////
+// Make sure that this gun is not extension!
+///////////////////////////////////////////////////////////////////////////////
+function bool CanSwapHands()
+{
+	return (Class == Class'LauncherWeapon');
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// for some reason PlayFiring gets triggered twice in this weapon
+// A little tricky but this will make it spawn only one emitter.
+///////////////////////////////////////////////////////////////////////////////
+simulated function SetupMuzzleFlashEmitter() 
+{
+}
+simulated function SetupMuzzleFlashEmitterFix() 
+{
+	Super.SetupMuzzleFlashEmitter();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// This gun is ready for a cat to be put on it
+///////////////////////////////////////////////////////////////////////////////
+function bool ReadyForCat()
+{
+	return (AmmoType.HasAmmo()
+			&& CatOnGun==0
+			&& !bPutCatOnGun
+			&& IsInState('Idle')
+			&& Class == Class'LauncherWeapon');
+}
+
+function ShootOffCat()
+{
+	// Record that we killed the cat
+	if(P2GameInfoSingle(Level.Game) != None
+		&& P2GameInfoSingle(Level.Game).TheGameState != None
+		&& P2Pawn(Instigator) != None
+		&& P2Pawn(Instigator).bPlayer)
+	{
+		P2GameInfoSingle(Level.Game).TheGameState.CatsKilled++;
+	}
+	if( CatOnGun == 1 )
+		bCatWasOnGun = true;
+	
+	CatOnGun = 0;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Default properties
 ///////////////////////////////////////////////////////////////////////////////
 defaultproperties
@@ -902,17 +988,19 @@ defaultproperties
 	PickupClass=class'LauncherPickup'
 	AttachmentClass=class'LauncherAttachment'
 
-//	Mesh=Mesh'FP_Weapons.FP_Dude_Launcher'
+	OldMesh=Mesh'FP_Weapons.FP_Dude_Launcher'
 	Mesh=Mesh'MP_Weapons.MP_LS_Launcher'
 
 //	Skins[0]=Texture'WeaponSkins.Dude_Hands'
 	Skins[0]=Texture'MP_FPArms.LS_arms.LS_hands_dude'
+	Skins[2]=Shader'xPatchTex.Weapons.fuel_gauge_empty_unit'		// xPatch
+	Skins[3]=Shader'xPatchTex.Weapons.fuel_gauge_full_unit'		// xPatch
 	FirstPersonMeshSuffix="Launcher"
     //Orginally didn't have a PlayerViewOffset
     PlayerViewOffset=(X=2.0000,Y=0.000000,Z=-15.0000)
 	FireOffset=(X=60.0000,Y=35.000000,Z=0.00000)
 
-    bDrawMuzzleFlash=True
+    bDrawMuzzleFlash=False
 	MuzzleScale=1.0
 	FlashOffsetY=0.015
 	FlashOffsetX=0.06
@@ -953,7 +1041,7 @@ defaultproperties
 	AutoSwitchPriority=9
 	InventoryGroup=9
 	GroupOffset=1
-	BobDamping=0.975000
+//	BobDamping=0.975000
 	ReloadCount=0
 	TraceAccuracy=0.3
 	ShotCountMaxForNotify=0
@@ -990,4 +1078,23 @@ defaultproperties
 	HudHint2="rockets for longer travel."
 	AltHint1=""
 	AltHint2=""
+	
+	BobDamping=1.15 
+	
+	// Muzzle Flash
+	bSpawnMuzzleFlash=True
+	MFBoneName="MESH_Gauge"
+	MFClass[0]=class'MuzzleFlash02'
+	MFRelativeLocation=(X=-8,Y=5,Z=37)
+	
+	// Meow! 
+	bAttachCat=true
+	CatSilencerClass=class'xLauncherCatSilencer'
+	BloodMFClass=None
+	CatBoneName="MESH_launcher"
+	CatIdleAnim="stand"
+	CatRelativeLocation=(X=1.0,Y=-5.0,Z=85.0)
+	CatRelativeRotation=(Yaw=0,Pitch=16384,Roll=-16384)
+	StartShotsWithCat=0	// Shoot off instantly
+	CatScale=1.0
 	}

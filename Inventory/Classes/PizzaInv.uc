@@ -31,6 +31,19 @@ function float RateHealingPower()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+function EatingFood()
+{
+	local P2MocapPawn CheckPawn;
+	local P2Player p2p;
+
+	CheckPawn = P2MocapPawn(Owner);
+	p2p = P2Player(CheckPawn.Controller);
+
+	p2p.EatingFood();
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Active state: this inventory item is armed and ready to rock!
 ///////////////////////////////////////////////////////////////////////////////
 state Activated
@@ -46,6 +59,7 @@ state Activated
 		{
 			TurnOffHints();	// When you use it, turn off the hints
 
+			EatingFood();
 			ReduceAmount(1);
 			return true;
 		}

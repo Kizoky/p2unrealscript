@@ -21,7 +21,7 @@ defaultproperties
 	WarnTargetPct=+0.2
 	bLeadTarget=true
 	RefireRate=0.990000
-	MaxAmmo=6
+	MaxAmmo=12 //6
 	DamageAmount=13
 	MomentumHitMag=10000
 	DamageTypeInflicted=class'ExplodedDamage'

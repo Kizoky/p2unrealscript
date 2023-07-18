@@ -42,7 +42,8 @@ defaultproperties
 	ArmorMax=100.000000
 	TalkWhileFighting=0.100000
 	TakesShotgunHeadShot=0.250000
-	TakesRifleHeadShot=0.300000
+	TakesRifleHeadShot=1.0 //0.300000
+	TakesPistolHeadShot=0.75
 	TakesShovelHeadShot=0.350000
 	TakesOnFireDamage=0.400000
 	TakesAnthraxDamage=0.500000

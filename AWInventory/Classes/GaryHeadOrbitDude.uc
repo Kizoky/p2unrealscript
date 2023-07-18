@@ -48,9 +48,11 @@ function TakeDamage( int Dam, Pawn instigatedBy, Vector hitlocation,
 	if(Dam <= 0)
 		return;
 
-	// Can't be hurt by my owner
+	// Change by Man Chrzan: xPatch 2.0
+	// Allow player to destroy heads if they want to...
+/*  // Can't be hurt by my owner
 	if(InstigatedBy == Owner)
-		return;
+		return; 	*/
 
 	// explosions knock them a distance away
 	if(ClassIsChildOf(damageType, class'ExplodedDamage'))
@@ -240,4 +242,8 @@ defaultproperties
      TransientSoundVolume=32.000000
      bBounce=False
      Mass=50.000000
+	 
+	 // Added by Man Chrzan: xPatch 2.0
+	 // Please don't rape my ears. Thank you.
+	 BurningSoundVolume=0.075
 }

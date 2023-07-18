@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 // AWStatsScreen.uc
-// Copyright 2003 Running With Scissors, Inc.  All Rights Reserved.
+// Copyright 2023 Running With Scissors Studios LLC.  All Rights Reserved.
 //
 ///////////////////////////////////////////////////////////////////////////////
 class AWStatsScreen extends StatsScreen;
@@ -29,7 +29,7 @@ var localized string NoStr;
 var bool bMPupdate;
 var bool bMP1, bMP2, bMP3;
 
-const	INC_Y			=	0.0365;
+const	INC_Y			=	0.025;	//0.0365;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Call this to bring up the screen
@@ -78,7 +78,7 @@ function DoMPupdate()
 ///////////////////////////////////////////////////////////////////////////////
 function RenderScreen(canvas Canvas)
 	{
-	local int i;
+	local int i, CheckStatNum;
 	local float sxl, sxr, sy,NearestFourByThree, OffsetX;
 	local string ustr, Mods;
 	local AWGameState newgs;
@@ -112,17 +112,24 @@ function RenderScreen(canvas Canvas)
 	// Show our stats
 	sxl = LEFT_START_X;
 	sxr = RIGHT_START_X;
+	
+	// xPatch: Added CheckStatNum instead of numbers so it can be automatic 
+	// and we can now hide some stats in Classic Game without breaking the whole thing.
+	CheckStatNum = 0;	
 
 	sy = START_Y;
-	if(StatNum == 0) return;
+	if(StatNum == CheckStatNum) return;
+	CheckStatNum++;
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxl * NearestFourByThree), sy * Canvas.ClipY, PeopleKilled, 0, false, EJ_Left);
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$newgs.PeopleKilled, 0, false, EJ_Left);
 	sy += INC_Y;
-	if(StatNum == 1) return;
+	if(StatNum == CheckStatNum) return;
+	CheckStatNum++;
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxl * NearestFourByThree), sy * Canvas.ClipY, ZombiesKilledOverall, 0, false, EJ_Left);
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$newgs.ZombiesKilledOverall, 0, false, EJ_Left);
 	sy += INC_Y;
-	if(StatNum == 2) return;
+	if(StatNum == CheckStatNum) return;
+	CheckStatNum++;
 	if(newgs.BryanSurvived != 0)
 	{
 		if(bMP1)
@@ -144,19 +151,23 @@ function RenderScreen(canvas Canvas)
 		MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$NoStr, 0, false, EJ_Left);
 	}
 	sy += INC_Y;
-	if(StatNum == 3) return;
+	if(StatNum == CheckStatNum) return;
+	CheckStatNum++;
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxl * NearestFourByThree), sy * Canvas.ClipY, FanaticsKilled, 0, false, EJ_Left);
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$newgs.FanaticsKilled, 0, false, EJ_Left);
 	sy += INC_Y;
-	if(StatNum == 4) return;
+	if(StatNum == CheckStatNum) return;
+	CheckStatNum++;
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxl * NearestFourByThree), sy * Canvas.ClipY, ArmyKilled, 0, false, EJ_Left);
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$newgs.ArmyKilled, 0, false, EJ_Left);
 	sy += INC_Y;
-	if(StatNum == 5) return;
+	if(StatNum == CheckStatNum) return;
+	CheckStatNum++;
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxl * NearestFourByThree), sy * Canvas.ClipY, LostSledgeInCow, 0, false, EJ_Left);
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$newgs.LostSledgeInCow, 0, false, EJ_Left);
 	sy += INC_Y;
-	if(StatNum == 6) return;
+	if(StatNum == CheckStatNum) return;
+	CheckStatNum++;
 	if(newgs.KillElephantsScythe != 0)
 	{
 		if(bMP2)
@@ -178,43 +189,63 @@ function RenderScreen(canvas Canvas)
 		MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$NoStr, 0, false, EJ_Left);
 	}
 	sy += INC_Y;
-	if(StatNum == 7) return;
+	if(StatNum == CheckStatNum) return;
+	CheckStatNum++;
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxl * NearestFourByThree), sy * Canvas.ClipY, RifleHeadShot, 0, false, EJ_Left);
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$newgs.RifleHeadShot, 0, false, EJ_Left);
 	sy += INC_Y;
-	if(StatNum == 8) return;
+	if(StatNum == CheckStatNum) return;
+	CheckStatNum++;
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxl * NearestFourByThree), sy * Canvas.ClipY, ShotgunHeadShot, 0, false, EJ_Left);
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$newgs.ShotgunHeadShot, 0, false, EJ_Left);
 	sy += INC_Y;
-	if(StatNum == 9) return;
+	if(StatNum == CheckStatNum) return;
+	CheckStatNum++;
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxl * NearestFourByThree), sy * Canvas.ClipY, CatsUsed, 0, false, EJ_Left);
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$newgs.CatsUsed, 0, false, EJ_Left);
 	sy += INC_Y;
-	if(StatNum == 10) return;
+	if(StatNum == CheckStatNum) return;
+	CheckStatNum++;
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxl * NearestFourByThree), sy * Canvas.ClipY, CatsKilled, 0, false, EJ_Left);
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$newgs.CatsKilled, 0, false, EJ_Left);
 	sy += INC_Y;
-	if(StatNum == 11) return;
+	if(StatNum == CheckStatNum) return;
+	CheckStatNum++;
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxl * NearestFourByThree), sy * Canvas.ClipY, PeeTotal, 0, false, EJ_Left);
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$(0.1*float(newgs.PeeTotal)), 0, false, EJ_Left);
 	sy += INC_Y;
-	if(StatNum == 12) return;
+	if(StatNum == CheckStatNum) return;
+	CheckStatNum++;
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxl * NearestFourByThree), sy * Canvas.ClipY, LimbsHacked, 0, false, EJ_Left);
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$newgs.LimbsHacked, 0, false, EJ_Left);
 	sy += INC_Y;
-	if(StatNum == 13) return;
+	if(StatNum == CheckStatNum) return;
+	CheckStatNum++;
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxl * NearestFourByThree), sy * Canvas.ClipY, HeadsLopped, 0, false, EJ_Left);
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$newgs.HeadsLopped, 0, false, EJ_Left);
 	sy += INC_Y;
-	if(StatNum == 14) return;
+	
+	// xPatch: Don't need these in Classic Mode
+	if(!GetGameSingle().InClassicMode()) {
+	if(StatNum == CheckStatNum) return;
+	CheckStatNum++;
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxl * NearestFourByThree), sy * Canvas.ClipY, HeadsBattedOff, 0, false, EJ_Left);
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$newgs.BaseballHeads, 0, false, EJ_Left);
 	sy += INC_Y;
-	if(StatNum == 15) return;
+	if(StatNum == CheckStatNum) return;
+	CheckStatNum++;
+	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxl * NearestFourByThree), sy * Canvas.ClipY, BaliStabs, 0, false, EJ_Left);
+	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$gamest.BaliStabs, 0, false, EJ_Left);
+	sy += INC_Y;
+	if(StatNum == CheckStatNum) return;
+	CheckStatNum++;
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxl * NearestFourByThree), sy * Canvas.ClipY, ChainsawKills, 0, false, EJ_Left);
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$newgs.ChainsawKills, 0, false, EJ_Left);
 	sy += INC_Y;
-	if(StatNum == 16) return;
+	}
+	
+	if(StatNum == CheckStatNum) return;
+	CheckStatNum++;
 	if(newgs.ZombiesResurrected > 0
 		&& bMP3)
 	{
@@ -229,14 +260,27 @@ function RenderScreen(canvas Canvas)
 		MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$newgs.ZombiesResurrected, 0, false, EJ_Left);
 	}
 	sy += INC_Y;
-	if(StatNum == 17) return;
+	if(StatNum == CheckStatNum) return;
+	CheckStatNum++;
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxl * NearestFourByThree), sy * Canvas.ClipY, GameMode, 0, false, EJ_Left);
-	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$GetGameSingle().GameName, 0, false, EJ_Left);
+	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$GetGameSingle().GameName@classicmode, 0, false, EJ_Left);
 	sy += INC_Y;
-	if(StatNum == 18) return;
+	if(StatNum == CheckStatNum) return;
+	CheckStatNum++;
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxl * NearestFourByThree), sy * Canvas.ClipY, Difficulty, 0, false, EJ_Left);
 	MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$GetGameSingle().GetDiffName(gamest.GameDifficulty), 0, false, EJ_Left);
 	sy += INC_Y;
+	
+	// xPatch: Day the game started on
+	if(dayname != "")
+	{
+		if(StatNum == CheckStatNum) return;
+		CheckStatNum++;
+		
+		MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxl * NearestFourByThree), sy * Canvas.ClipY, StartDay, 0, false, EJ_Left);
+		MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$dayname, 0, false, EJ_Left);
+		sy += INC_Y;
+	}
 	
 	if (URL == "") return;
 
@@ -249,11 +293,12 @@ function RenderScreen(canvas Canvas)
 		MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxl * NearestFourByThree), sy * Canvas.ClipY, TimeElapsed, 0, false, EJ_Left);
 		MyFont.DrawTextEx(Canvas, NearestFourByThree, OffsetX + (sxr * NearestFourByThree), sy * Canvas.ClipY, ustr$newgs.HoursPlayed()$":"$newgs.MinutesPlayed()$":"$newgs.SecondsPlayed()@newgs.GetSingleSegmentString(), 0, false, EJ_Left);
 		sy += INC_Y;
-		if (StatNum == 19) return;
+		if (StatNum == CheckStatNum) return;
+		CheckStatNum++;
 	}
 
-	if (StatNum < 20)
-		return;
+	if (StatNum < CheckStatNum) return;	
+	CheckStatNum++;
 
 	// Mods
 	Mods = newgs.GetModList();
@@ -271,7 +316,7 @@ function RenderScreen(canvas Canvas)
 	sy += INC_Y;
 	if (useinfo.FinallyOver())
 		MyFont.DrawTextEx(Canvas, Canvas.ClipX, 0.5 * Canvas.ClipX, sy * Canvas.ClipY, CheatsNow, 1, false, EJ_Center);
-	if(StatNum < 21) return;
+	if(StatNum < CheckStatNum) return;
 	if(
 		useinfo.VerifyGH()
 		&& useinfo.SeqTimeVerified())
@@ -299,8 +344,9 @@ defaultproperties
      NewC1=" (New Sledge Cheats!)"
      NewC2=" (New Cheat: Reaper of Love)"
      NewC3=" (New Cheat: Bladey)"
-     NewItemNow="Make sure to check out the Apocalypse Weekend levels for a new powerup!"
+//   NewItemNow="Make sure to check out the Apocalypse Weekend levels for a new powerup!"
+     NewItemNow="Make sure to check out the levels in Enhanced Game for a new powerup!"
      YesStr="Yes"
      NoStr="No"
-	 StatMax=22
+	 StatMax=23
 }

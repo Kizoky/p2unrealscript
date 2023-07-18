@@ -2,12 +2,15 @@
 //   Axe
 //   Eternal Damnation
 //   MaDJacKaL / MaDJacKaL
+//
+//   Edit by Man Chrzn, for xPatch
+//   Added charge alt-fire and fixed bugs
 //=============================================================
 
 class AxeWeapon extends P2BloodWeapon;
 
-var float saveTime, PlayEvery, WeaponSpeedEnd;							// we *don't* want them pissed off (attacking) because we couldn't know they
-							// we're on the other side and for the most part we didn't mean to do that.
+var float WeaponSpeedCharge, StartFrame;
+//var float StartChargeTime, EndChargeTime, ChargeTime;
 
 replication
 {
@@ -44,6 +47,9 @@ function RefreshHints()
 
 simulated function PlayFiring()
 {
+	// xPatch: Alert NPCs so they can block this melee attack
+	SendSwingAlert(AlertRadius);
+	
 	IncrementFlashCount();
 	// Play MP sounds on everyone's computers
 	if(Level.Game == None
@@ -51,6 +57,7 @@ simulated function PlayFiring()
 		PlayOwnedSound(FireSound,SLOT_Interact,1.0,,,WeaponFirePitchStart + (FRand()*WeaponFirePitchRand),false);
 	else // just on yours in SP games
 		Instigator.PlaySound(FireSound, SLOT_None, 1.0, true, , WeaponFirePitchStart + (FRand()*WeaponFirePitchRand));
+	
 	if(bShowHint1)
 	{
 		bShowHint1=false;
@@ -58,19 +65,30 @@ simulated function PlayFiring()
 	}
 
        //randomly pick the animation to use (left)
-       switch ( rand(2) ){
-
+       switch ( rand(4) )
+	   {
        case 0:
             PlayAnim('Shoot1Down1', WeaponSpeedShoot1 + (WeaponSpeedShoot1Rand*FRand()), 0.05);
             break;
        case 1:
             PlayAnim('Shoot1Down2', WeaponSpeedShoot1 + (WeaponSpeedShoot1Rand*FRand()), 0.05);
             break;
-
+	   case 2:
+            PlayAnim('Shoot1Left', WeaponSpeedShoot1 + (WeaponSpeedShoot1Rand*FRand()), 0.05);
+            break;
+	   case 3:
+            PlayAnim('Shoot1Right', WeaponSpeedShoot1 + (WeaponSpeedShoot1Rand*FRand()), 0.05);
+            break;
        }
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// xPatch: New Alt Firing
+///////////////////////////////////////////////////////////////////////////////
 simulated function PlayAltFiring()
 {
+	//SendSwingAlert(AlertRadius);
+	
 	IncrementFlashCount();
 	// Play MP sounds on everyone's computers
 	if(Level.Game == None
@@ -81,18 +99,160 @@ simulated function PlayAltFiring()
 
 	if(!bShowHint1)
 		TurnOffHint();
-       //randomly pick the animation to use (right)
-       switch ( rand(2) ){
 
-       case 0:
-            PlayAnim('Shoot1Left', WeaponSpeedShoot1 + (WeaponSpeedShoot1Rand*FRand()), 0.05);
-            break;
-       case 1:
-            PlayAnim('Shoot1Right', WeaponSpeedShoot1 + (WeaponSpeedShoot1Rand*FRand()), 0.05);
-            break;
-
-       }
+	// epic hack, start from 2nd frame (after charge part) so I don't need to make new animations.
+	PlayAnimAt('Shoot1Right', WeaponSpeedShoot2 + (WeaponSpeedShoot2Rand*FRand()), 0.05, , StartFrame);	
 }
+
+simulated function AltFire( float Value )
+{
+	if ( AmmoType == None
+		|| !AmmoType.HasAmmo() )
+	{
+		ClientForceFinish();
+		ServerForceFinish();
+		return;
+	}
+	
+	ServerAltFire();
+
+	if ( Role < ROLE_Authority )
+	{
+		PrepSwing();
+		GotoState('PullBackSwing');
+	}
+}
+
+function ServerAltFire()
+{
+	bAltFiring=true;
+	PrepSwing();
+	GotoState('PullBackSwing');
+}
+
+simulated function PrepSwing()
+{
+	// Alert anyone around you that you're swinging your big weapon
+	SendSwingAlert(AlertRadius);
+	
+	// play our windup anim
+	PlayPullBackSwing();
+}
+
+simulated function PlayPullBackSwing()
+{
+	PlayAnim('Shoot1Right', WeaponSpeedCharge + (0.01*FRand()), 0.05);
+}
+
+simulated function ClientSwingIt()
+{
+	LocalAltFire();
+	bAltFiring=true;
+	GotoState('ClientFiring');
+}
+
+function SwingIt()
+{
+	//EndChargeTime = Level.TimeSeconds;
+	//ChargeTime =  EndChargeTime - StartChargeTime;
+	
+	//AxeAmmoInv(AmmoType).ChargeTime = ChargeTime;
+	//PlayerController(Pawn(Owner).Controller).ClientMessage("Charge Time:"@ChargeTime);
+	//ChargeTime = 0;	// Reset charge time
+	
+	bAltFiring=true;
+	GotoState('NormalFire');
+	PlayAltFiring();
+}
+
+state PullBackSwing
+{
+	ignores Fire, AltFire, ServerFire, ServerAltFire;
+
+	// Animation notifies us when it's the time to stop
+	function Notify_WaitToSwing()
+	{
+		//PlayerController(Pawn(Owner).Controller).ClientMessage("Notify_WaitToSwing (State)");
+		
+		// If it's the guy playing that hosts the listen server
+		// or it's a typical client/stand alone game.
+		if(NotDedOnServer())
+		{
+			//StartChargeTime = Level.TimeSeconds;
+			
+			if(!Instigator.PressingAltFire())
+			{
+				SwingIt();
+				ClientSwingIt();
+				return;
+			}
+			
+			GotoState('WaitToSwing');
+		}
+	}
+	
+	// should not happen - unless the script notify in animation is missing
+	simulated function AnimEnd(int Channel)
+	{
+		//PlayerController(Pawn(Owner).Controller).ClientMessage("ERROR: Animation ended before state change!");
+		GotoState('Idle');
+	}
+}
+
+state WaitToSwing
+{
+	ignores DropFrom, PutDown, Fire, AltFire, ServerFire, ServerAltFire;
+
+	///////////////////////////////////////////////////////////////////////////////
+	// Wait till they're not pressing fire to shoot it
+	///////////////////////////////////////////////////////////////////////////////
+	simulated function Tick(float DeltaTime)
+	{
+		// If it's the guy playing that hosts the listen server
+		// or it's a typical client/stand alone game.
+		if(NotDedOnServer())
+		{
+			if(!Instigator.PressingAltFire())
+			{
+				AxeAmmoInv(AmmoType).bCharged = True;
+				SwingIt();
+				ClientSwingIt();
+			}
+		}
+	}
+	
+	///////////////////////////////////////////////////////////////////////////////
+	// I don't need any silly wait animation, just stop animating current one :P
+	///////////////////////////////////////////////////////////////////////////////
+	simulated function AnimEnd(int Channel)
+	{
+		StopAnimating();
+	}
+	simulated function BeginState()
+	{
+		StopAnimating();
+	}
+}
+
+state Idle
+{
+Begin:
+	bPointing=False;
+	if ( NeedsToReload() && P2AmmoInv(AmmoType).HasAmmoFinished() )
+		GotoState('Reloading');
+	if ( !P2AmmoInv(AmmoType).HasAmmoFinished() ) 
+		Instigator.Controller.SwitchToBestWeapon();  //Goto Weapon that has Ammo
+
+	if ( Instigator.PressingFire() ) 
+	{
+		Fire(0.0);
+	}
+	//if (Instigator.PressingAltFire())
+	//	AltFire(0.0);	
+
+	PlayIdleAnim();
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // Start hurting things
@@ -276,11 +436,12 @@ function DoHit( float Accuracy, float YOffset, float ZOffset )
 					if(Victims.bStatic)
 						bHitSolid=true;
 					// If we hit a live pawn, record that too
-					else if(LivePawnHit == None
+/*					else if(LivePawnHit == None
 						&& FPSPawn(Victims) != None
 						&& FPSPawn(Victims).Health > 0)
 						LivePawnHit = FPSPawn(Victims);
-						//DrewBlood();
+						DrewBlood();
+*/
 
 					// Check to deliver damage
 					dir = Victims.Location - HitLocation;
@@ -299,13 +460,14 @@ function DoHit( float Accuracy, float YOffset, float ZOffset )
 	}
 
 	// If we hit a pawn, don't say it was a solid hit, even if we hit other stuff
-	if(LivePawnHit != None)
+/*	if(LivePawnHit != None)
 	{
 		bHitSolid = false;
 		if (P2MocapPawn(LivePawnHit) == None
 			|| P2MocapPawn(LivePawnHit).MyRace < RACE_Automaton)
 			DrewBlood();
 	}
+*/
 
 	//log(self$" shovel hit something 0, inst "$Instigator$" hit something "$bHitSomething$" role "$Role);
 	// If we hit something, only then (not when we fire) do we shake the view
@@ -357,56 +519,6 @@ function DoHit( float Accuracy, float YOffset, float ZOffset )
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Play our proper idling animation
-///////////////////////////////////////////////////////////////////////////////
-simulated function PlayIdleAnim()
-{
-	PlayAnim('Idle', WeaponSpeedIdle, 0.0);
-}
-
-state Idle
-{
-	simulated function BeginState()
-		{
-		// If instigator doesn't want to fire anymore then we can finally
-		// end the whole pouring sequence.
-		if (!Instigator.PressingFire())
-			{
-			if (Owner != None)
-				ForceEndFire();
-			}
-		}
-
-
-
-                /*
-	        event Tick(float DeltaTime)
-                {
-                local int i;
-
-	        i = frand() * 5;
-
-                //dopamine if they have reached the amount of time in talk every
-	        If (Level.TimeSeconds - SaveTime > PlayEvery){
-
-                   //if they are not currently firing then play the animation
-    	           if (!IsFiring()){
-                        PlayAnim('Idle_Play', WeaponSpeedEnd, 0.05);
-
-                        if(BloodTextureIndex > BloodTextures.Length)
-	                {
-		             // update the texture
-		             SetBloodTexture(BloodTextures[BloodTextureIndex]);
-	 	             BloodTextureIndex--;
-	                }
-                   }
-	           SaveTime = Level.TimeSeconds;
-                }
-        }
-        */
-}
-
-///////////////////////////////////////////////////////////////////////////////
 // Default properties
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -416,8 +528,8 @@ defaultproperties
      BloodTextures(0)=Texture'ED_WeaponSkins.Melee.Axe2'
      BloodTextures(1)=Texture'ED_WeaponSkins.Melee.Axe3'
      AlertRadius=150.000000
-     PlayEvery=12.000000
-     WeaponSpeedEnd=1.000000
+     //PlayEvery=12.000000
+     //WeaponSpeedEnd=1.000000
      bUsesAltFire=True
      ViolenceRank=3
      RecognitionDist=600.000000
@@ -430,14 +542,14 @@ defaultproperties
      PlayerMeleeDist=70.000000
      NPCMeleeDist=70.000000
      HudHint1="Press %KEY_Fire% to swing."
-     HudHint2="Press %KEY_AltFire% to swing."
+     HudHint2="Press and hold %KEY_AltFire% to charge."
      CombatRating=1.500000
      FirstPersonMeshSuffix="Axe"
      WeaponsPackageStr="ED_WEAPONS."
      WeaponSpeedHolster=1.500000
-     WeaponSpeedShoot1=0.900000
-     WeaponSpeedShoot1Rand=0.100000
-     //WeaponSpeedShoot2=1.100000
+     WeaponSpeedShoot1=0.850000
+	 WeaponSpeedShoot1Rand=0.100000
+	 WeaponSpeedShoot2Rand=0.100000
      AltFireSound=Sound'EDWeaponSounds.Weapons.Meatcleaver_slash'
      bCanThrowMP=true
      AmmoName=Class'AxeAmmoInv'
@@ -450,10 +562,11 @@ defaultproperties
      AIRating=0.110000
      MaxRange=95.000000
      FireSound=Sound'EDWeaponSounds.Weapons.Meatcleaver_slash'
-     GroupOffset=11
+     GroupOffset=8
 	 InventoryGroup=1
      PickupClass=Class'AxePickup'
-     BobDamping=0.970000
+//   BobDamping=0.970000
+	 BobDamping=1.120000
      AttachmentClass=Class'AxeAttachment'
      ItemName="Axe"
      //Texture=Texture'ED_SecretWeapons.HUDAxe'
@@ -461,4 +574,10 @@ defaultproperties
      Skins(0)=Texture'MP_FPArms.LS_arms.LS_hands_dude'
      Skins(1)=Texture'ED_WeaponSkins.Melee.axe1'
      AmbientGlow=128
+	 ThirdPersonBloodSkinIndex=0
+	 
+	 WeaponSpeedCharge=0.2
+	 WeaponSpeedShoot2=0.9
+	 StartFrame=0.2
+	 bAllowMiddleFinger=True
 }

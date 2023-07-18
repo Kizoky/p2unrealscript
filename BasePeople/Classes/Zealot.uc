@@ -36,4 +36,5 @@ defaultproperties
 	bNoChamelBoltons=True
 	RandomizedBoltons(0)=None
 	BlockMeleeFreq=0.25
+	bAllowRandomGuns=True	// xPatch
 	}

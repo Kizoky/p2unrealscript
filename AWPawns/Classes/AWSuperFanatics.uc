@@ -16,4 +16,5 @@ defaultproperties
 	BaseEquipment(0)=(WeaponClass=Class'Inventory.MachineGunWeapon')
 	HealthMax=100.000000
 	Skins(0)=Texture'Zo_Tora_Height.Meshes.MF__Red__Avg_Dude'
+	bAllowRandomGuns=True	// xPatch
 }

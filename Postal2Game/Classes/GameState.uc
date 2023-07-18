@@ -90,6 +90,7 @@ class GameState extends FPSGameState;
 // Game statistics start
 //////////////
 var travel private bool bCheated;		// if player used any cheat codes
+var travel private bool bActuallyCheated;	// xPatch: Since bCheated is set true by workshop I need this one to tell if player used actual cheat codes.
 var travel private bool bMultiSegment;	// Speed runs only: set to true if PostLoadGame is ever called
 var travel int PeopleKilled;		// total people player killed in game
 var travel int ZombiesKilledOverall;
@@ -118,6 +119,9 @@ var travel int ArmyKilled;
 var travel int ChainsawKills;
 var travel bool bNightMode;			// If true, game is in "night mode", nighttime maps will be loaded if present (ngt-XXXXX.fuk)
 var travel int BirdsFlipped;
+// xPatch: New Stats
+var travel int BaliStabs;
+var travel int CheatCodesUsed;		// Record how many too, let them be ashamed >:D
 
 //Ranking! either a name or a summary, Jesus..pansy.. murderer... Satan
 
@@ -340,12 +344,20 @@ var travel bool bCharisma;
 var travel bool bSuperMario;
 var travel bool bSonicBoom;
 var travel bool bMoonMan;
+var travel bool bDualWield;
 
 // Enhanced game started
 var travel bool bEGameStart;
 
 // No-hlidays mode
 var travel bool bNoHolidays;
+
+// Man Chrzan: xPatch
+var travel bool bNoEDWeapons;	// Classic Game
+var travel bool bForceMap;		// for intro skip
+var travel bool bStartDayPostTravel;	// for starting new game from the selected day.
+var travel int StartDay;				// keeps number of the day we started the game on (after we used day select option)
+// End
 
 // When this is true it indicates the game has not yet officially started.  This will be
 // true throughout the intro and any other such maps.  Once the game starts, it will be false.
@@ -399,6 +411,13 @@ var travel bool bLudicrousMode;		// 1 if in Ludicrous Mode. Same as Insaneo but 
 var travel bool bExpertMode;		// 1 if in Expert Mode. Only one autosave and one normal save allowed per level, and health pickups cannot be saved. Crack pickups turn into medkits.
 var travel bool bCustomMode;		// 1 if using a Custom Difficulty. Player chooses NPC difficulty plus any of the above flags.
 
+// xPatch: More difficulty settings
+var travel bool bMeeleMode;			// for Custom Difficulty
+var travel bool bHardLieberMode;	// for Custom Difficulty
+var travel bool bNukeMode;			// for Custom Difficulty
+var travel bool bVeteranMode;		// Ludicrous Difficulty
+var travel bool bMasochistMode;		// Ludicrous Difficulty
+
 // Names of player after he finishes the game, based on what he did.
 var localized string Killed0Ranking;
 var localized string Killed1Ranking;
@@ -432,6 +451,11 @@ var localized string ShotgunRanking;	// ranking for exploding lots of heads
 var localized string BaseballRanking;	// ranking for batting lots of heads
 var localized string ZombieRanking;		// ranking for killing lots of zombies
 var localized string ChainsawRanking;	// ranking for killing with chainsaw
+// xPatch: New ranks for cheaters
+var localized string CheaterRanking;
+var localized string MegaCheaterRanking;
+var localized string HardCheaterRanking;
+var localized string LudicrousRanking;
 
 
 const MAX_SPAWN_TRY	=	5;	// Number of times you can fail when trying to spawn a pawn after bringing him
@@ -801,7 +825,7 @@ function string SecondsPlayed()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Returns true if the player used any cheat codes during the game.
+// Returns true if the player used any cheat codes, debug or workshop.
 ///////////////////////////////////////////////////////////////////////////////
 final function bool DidPlayerCheat()
 {
@@ -810,13 +834,35 @@ final function bool DidPlayerCheat()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Returns true if the player used any cheat codes during the game.
+///////////////////////////////////////////////////////////////////////////////
+final function bool DidPlayerCheatCode()
+{
+	return bActuallyCheated;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Called by the individual cheats to disable achievements even after saving.
 ///////////////////////////////////////////////////////////////////////////////
 final function PlayerCheated(optional string Reason)
 {
+	// xPatch: bActuallyCheated -- Ignores workshop and debug
+	if(Reason != "Workshop game" 
+	&& Reason != "Using Workshop game mod"
+	&& Reason != "Used EnableDebugMenu"
+	&& Reason != "Debug Menu")
+	{
+		bActuallyCheated = True;
+		CheatCodesUsed++;
+		
+		// Reason for debugging only
+		log("========== PLAYER USED CHEATS. Reason:"@Reason);
+	}
+	// End
+	
 	bCheated = True;
 	// Reason for debugging only
-	//log("========== PLAYER CHEATED. Reason:"@Reason);
+	log("========== PLAYER CHEATED. Reason:"@Reason);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1712,6 +1758,10 @@ function string GetPlayerRanking()
 	// If you cheated, short-circuit these rankings and go to the regular results
 	if (!DidPlayerCheat())
 	{
+		// xPatch: If you beat the game on the ludicrously hard difficulty
+		if (bExpertMode && bLudicrousMode && bVeteranMode && bMasochistMode)
+			return LudicrousRanking;
+		
 		// If you beat the game in Impossible mode, it says it wasn't even possible
 		if (bExpertMode && bInsaneoMode)
 			return ImpossibleRanking;
@@ -1750,6 +1800,25 @@ function string GetPlayerRanking()
 		if (bHestonMode)
 			return HestonRanking;
 	}
+	// xPatch: New ranks for cheaters :P
+	else	
+	{
+		// Player used actual Cheat Codes
+		if(DidPlayerCheatCode())
+		{
+			if(CheatCodesUsed > 15)
+				return MegaCheaterRanking;
+			else
+				return CheaterRanking;
+		}
+		
+		// Really Hard Difficulty no cheat codes but still cheated (with mods, debug commands or something else)
+		if (bExpertMode || bInsaneoMode || bTheyHateMeMode)
+		{
+			return HardCheaterRanking;
+		}
+	}
+	// End
 	
 	// If the number of chainsaw kills was over half the people you killed in the game
 	// (Put this before the limb-hacking rating, since it's very, very easy to get the
@@ -2441,6 +2510,11 @@ defaultproperties
 	BaseballRanking		=	"Head-Batting Major Leaguer"
 	ZombieRanking		=	"Zombie-Slaying Holy Warrior"
 	ChainsawRanking		=	"Leatherface would be proud."
+	// xPatch: New ranks, for cheating and new difficulty.
+	CheaterRanking		=	"Sissy"	
+	MegaCheaterRanking	=	"A Cheating Cheater Who Cheats"
+	HardCheaterRanking 	=	"Congratulations, Mr Cheater."
+	LudicrousRanking	=	"Holy shit! We didn't even think this was possible!"		// A PLACE-HOLDER ???
 
 	LastSelectedInventoryGroup=-1
 	LastSelectedInventoryOffset=-1

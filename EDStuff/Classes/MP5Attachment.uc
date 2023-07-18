@@ -7,6 +7,7 @@ defaultproperties
 {
      MuzzleFlashClass=Class'MP5MuzzleFlash'
      MuzzleOffset=(X=58.000000,Z=10.000000)
+	 CatOffset=(X=45.000000,Y=-2.000000,Z=12.000000)	// xPatch
      FireSound=Sound'EDWeaponSounds.Weapons.MP5'
      DrawType=DT_StaticMesh
      RelativeLocation=(Y=1.000000,Z=-0.300000)
